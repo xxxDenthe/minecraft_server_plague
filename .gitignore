@@ -1,0 +1,29 @@
+# Моды: джарники не версионируем — список зафиксирован в mods/MODLIST.md
+mods/*.jar
+mods/*.disabled
+
+# Сборка Gradle / Java
+build/
+.gradle/
+out/
+bin/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Сервер и клиент
+run/
+logs/
+crash-reports/
+world/
+world_nether/
+world_the_end/
+*.log
+
+# ОС
+Thumbs.db
+desktop.ini
+.DS_Store
