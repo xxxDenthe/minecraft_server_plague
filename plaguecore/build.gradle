@@ -52,6 +52,13 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+// Без этого консоль дев-сервера не читает stdin: команды вроде stop
+// или plague info просто некуда набирать. RunGameTask наследует JavaExec,
+// так что достаточно пробросить стандартный ввод.
+tasks.withType(JavaExec).configureEach {
+    standardInput = System.in
+}
+
 processResources {
     def props = [
         mod_id           : project.mod_id,
