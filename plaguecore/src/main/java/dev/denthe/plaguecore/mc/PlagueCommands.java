@@ -3,6 +3,7 @@ package dev.denthe.plaguecore.mc;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import dev.denthe.plaguecore.PlagueConstants;
 import dev.denthe.plaguecore.PlagueCore;
 import dev.denthe.plaguecore.core.PlagueGrid;
 import dev.denthe.plaguecore.core.SpreadEngine;
@@ -52,7 +53,9 @@ public final class PlagueCommands {
 
         корень.then(Commands.literal("generate")
             .then(Commands.argument("percent", FloatArgumentType.floatArg(0.01f, 1.0f))
-                .executes(PlagueCommands::сгенерировать)));
+                .executes(c -> сгенерировать(c, null))
+                .then(Commands.argument("epicenters", IntegerArgumentType.integer(1, 200))
+                    .executes(c -> сгенерировать(c, IntegerArgumentType.getInteger(c, "epicenters"))))));
 
         корень.then(Commands.literal("seed")
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
@@ -157,20 +160,29 @@ public final class PlagueCommands {
         return 1;
     }
 
-    private static int сгенерировать(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+    /**
+     * @param сколькоОчагов сколько очагов разбросать, или null — тогда берутся
+     *                      уже посаженные вручную, а если их нет, разбрасывается
+     *                      значение по умолчанию
+     */
+    private static int сгенерировать(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx,
+                                     Integer сколькоОчагов) {
         float доля = FloatArgumentType.getFloat(ctx, "percent");
         ServerLevel level = мир(ctx.getSource());
         PlagueState st = PlagueState.get(level);
 
-        long[] очаги = st.epicentersArray();
-        if (очаги.length == 0) {
-            ctx.getSource().sendFailure(Component.literal(
-                "Сначала посадите хотя бы один очаг: /plague seed <x> <z>"));
-            return 0;
-        }
-
         RandomGenerator rng = RandomGeneratorFactory.of("Xoshiro256PlusPlus")
             .create(level.getSeed());
+
+        // Число очагов задаёт темп сильнее любого другого числа: заражение
+        // растёт по краю пятна, поэтому один очаг ползёт втрое медленнее,
+        // чем та же площадь, разбитая на десятки мелких.
+        long[] очаги = st.epicentersArray();
+        if (сколькоОчагов != null || очаги.length == 0) {
+            int сколько = сколькоОчагов != null ? сколькоОчагов : PlagueConstants.START_EPICENTERS;
+            очаги = StartGenerator.scatterEpicenters(st.grid(), сколько, rng);
+            for (long p : очаги) st.addEpicenter(p);
+        }
 
         long t0 = System.nanoTime();
         StartGenerator.GenerationResult r =

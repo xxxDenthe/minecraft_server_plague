@@ -25,6 +25,52 @@ class StartGeneratorTest {
     }
 
     @Test
+    void разбросДаётЗапрошенноеЧислоОчаговВнутриСетки() {
+        PlagueGrid g = пустая();
+        long[] очаги = StartGenerator.scatterEpicenters(g, 32, rng(42));
+
+        assertEquals(32, очаги.length);
+        assertEquals(32, java.util.Arrays.stream(очаги).distinct().count(),
+            "очаги не должны повторяться");
+        for (long p : очаги) {
+            assertTrue(g.contains(StartGenerator.unpackX(p), StartGenerator.unpackZ(p)),
+                "очаг обязан лежать внутри сетки");
+        }
+    }
+
+    @Test
+    void разбросДетерминированПоСиду() {
+        PlagueGrid g = пустая();
+        assertArrayEquals(
+            StartGenerator.scatterEpicenters(g, 16, rng(5)),
+            StartGenerator.scatterEpicenters(g, 16, rng(5)));
+    }
+
+    @Test
+    void очагиНеСбиваютсяВОднуКучу() {
+        PlagueGrid g = пустая();
+        long[] очаги = StartGenerator.scatterEpicenters(g, 32, rng(7));
+
+        // хотя бы один очаг в каждой четверти карты — иначе разброс бесполезен
+        int[] четверти = new int[4];
+        for (long p : очаги) {
+            int cx = StartGenerator.unpackX(p);
+            int cz = StartGenerator.unpackZ(p);
+            четверти[(cx < 0 ? 0 : 1) + (cz < 0 ? 0 : 2)]++;
+        }
+        for (int i = 0; i < 4; i++) {
+            assertTrue(четверти[i] > 0,
+                "четверть " + i + " осталась без очагов: "
+                    + java.util.Arrays.toString(четверти));
+        }
+    }
+
+    @Test
+    void нольОчаговДаётПустойМассив() {
+        assertEquals(0, StartGenerator.scatterEpicenters(пустая(), 0, rng(1)).length);
+    }
+
+    @Test
     void генераторДостигаетЗаданнойДолиСТочностьюДвухПроцентов() {
         PlagueGrid g = пустая();
         long[] очаги = { StartGenerator.packChunk(0, 0) };

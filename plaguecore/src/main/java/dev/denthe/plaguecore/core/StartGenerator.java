@@ -33,6 +33,50 @@ public final class StartGenerator {
     /** Предохранитель от зацикливания, если цель недостижима. */
     private static final int MAX_NIGHTS = 2000;
 
+    /** Отступ очагов от края мира в чанках: у самой границы расти некуда. */
+    private static final int EDGE_MARGIN = 3;
+
+    /**
+     * Разбросать очаги по сетке.
+     *
+     * Не просто случайные точки: сетка режется на полосы, и в каждой полосе
+     * стоит ровно один очаг. Чистая случайность иногда собирает половину
+     * очагов в одном углу, а тогда пропадает весь смысл затеи — суммарная
+     * длина фронта, по которому и растёт чума.
+     */
+    public static long[] scatterEpicenters(PlagueGrid grid, int count, RandomGenerator rng) {
+        if (count <= 0) return new long[0];
+
+        int поле = grid.size() - 2 * EDGE_MARGIN;
+        int отступ = EDGE_MARGIN;
+        if (поле < 1) { // сетка меньше двух отступов — сажаем по всей
+            поле = grid.size();
+            отступ = 0;
+        }
+
+        int полос = Math.min((int) Math.ceil(Math.sqrt(count)), поле);
+        int ширина = поле / полос;
+        int всего = Math.min(count, полос * полос);
+
+        // перемешиваем номера полос, чтобы при count < полос*полос
+        // занятыми оказались не первые слева направо, а разные
+        int[] ячейки = new int[полос * полос];
+        for (int i = 0; i < ячейки.length; i++) ячейки[i] = i;
+        for (int i = ячейки.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
+            int t = ячейки[i]; ячейки[i] = ячейки[j]; ячейки[j] = t;
+        }
+
+        long[] out = new long[всего];
+        for (int k = 0; k < всего; k++) {
+            int ячейка = ячейки[k];
+            int cx = grid.originX() + отступ + (ячейка % полос) * ширина + rng.nextInt(ширина);
+            int cz = grid.originZ() + отступ + (ячейка / полос) * ширина + rng.nextInt(ширина);
+            out[k] = packChunk(cx, cz);
+        }
+        return out;
+    }
+
     public static long packChunk(int cx, int cz) {
         return ((long) cx << 32) | (cz & 0xFFFFFFFFL);
     }
