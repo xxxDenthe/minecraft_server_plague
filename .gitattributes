@@ -1,0 +1,13 @@
+# Перевод строк: в репозитории всегда LF, в рабочей копии — по платформе
+* text=auto
+
+# gradlew — shell-скрипт, с CRLF он не запустится ни в bash, ни на Linux-сервере
+gradlew text eol=lf
+
+# Батники Windows требуют CRLF
+*.bat text eol=crlf
+
+# Бинарные файлы не трогать
+*.jar binary
+*.png binary
+*.zip binary
