@@ -98,6 +98,18 @@ async function github(url, { token, method = 'GET', accept, body, contentType } 
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
+
+    // «Resource not accessible by personal access token» — самая
+    // частая осечка первой раздачи, и по тексту не видно, что чинить.
+    if (response.status === 403 && text.includes('not accessible')) {
+      throw new Error(
+        'токену не хватает прав на запись.\n' +
+          '  Нужно Permissions → Repository permissions → Contents: Read and write.\n' +
+          '  Права меняются на лету — поправьте их на GitHub и запустите заново,\n' +
+          '  новый токен делать не нужно. Уже залитые файлы повторно не поедут.'
+      );
+    }
+
     throw new Error(`GitHub ответил ${response.status} на ${method} ${url}: ${text.slice(0, 300)}`);
   }
 

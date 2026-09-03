@@ -70,10 +70,20 @@ async function main() {
   // 2. Видит ли токен репозиторий
   const repo = await ask(`${API}/repos/${args.repo}`, args.token);
   if (repo.status === 404) {
-    console.log('\n2. РЕПОЗИТОРИЙ НЕ ВИДЕН (404). Одно из двух:');
+    // 404, а не 403: GitHub не подтверждает существование репозитория
+    // тому, кому его не показывает. Поэтому причин три, и самая частая —
+    // третья: токен создан, репозиторий в нём выбран, но ни одного
+    // Repository permission не отмечено. Без них не выдаётся даже
+    // Metadata, а без Metadata репозиторий для токена не существует.
+    console.log('\n2. РЕПОЗИТОРИЙ НЕ ВИДЕН (404). Одно из трёх:');
+    console.log('   — в токене не отмечено ни одного Repository permission;');
+    console.log('     нужно Permissions → Repository permissions → Contents:');
+    console.log('     Read and write (Metadata подтянется само);');
     console.log('   — в токене не выбран этот репозиторий (Repository access);');
     console.log('   — опечатка во владельце или названии.');
     console.log(`   Проверьте, что https://github.com/${args.repo} открывается у вас в браузере.`);
+    console.log('\n   Права у токена меняются на лету: поправьте их на GitHub');
+    console.log('   и запустите проверку снова, новый токен делать не нужно.');
     return;
   }
   if (!repo.body) {
