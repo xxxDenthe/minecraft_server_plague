@@ -5,7 +5,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -27,10 +26,9 @@ public final class GmMarkers {
 
     private static final List<GmNetwork.Mark> marks = new ArrayList<>();
 
-    static int add(CommandSourceStack src, String name) {
-        Vec3 pos = src.getPosition();
+    static int add(CommandSourceStack src, double x, double z, int icon, String name) {
         marks.removeIf(m -> m.name().equalsIgnoreCase(name));
-        marks.add(new GmNetwork.Mark(name, (float) pos.x, (float) pos.z));
+        marks.add(new GmNetwork.Mark(name, (float) x, (float) z, (byte) icon));
         broadcast(src.getServer());
         src.sendSuccess(() -> Component.literal("Метка «" + name + "» поставлена"), true);
         return 1;

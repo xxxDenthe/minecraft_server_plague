@@ -1,5 +1,7 @@
 package dev.denthe.gmtools.net;
 
+import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.denthe.gmtools.GmTools;
 import net.minecraft.commands.Commands;
@@ -31,8 +33,15 @@ public final class GmCommands {
                 .then(Commands.argument("target", EntityArgument.player())
                     .executes(c -> GmInventory.view(c.getSource(), EntityArgument.getPlayer(c, "target")))))
             .then(Commands.literal("mark")
-                .then(Commands.argument("name", StringArgumentType.greedyString())
-                    .executes(c -> GmMarkers.add(c.getSource(), StringArgumentType.getString(c, "name")))))
+                .then(Commands.argument("x", DoubleArgumentType.doubleArg())
+                    .then(Commands.argument("z", DoubleArgumentType.doubleArg())
+                        .then(Commands.argument("icon", IntegerArgumentType.integer(0, 31))
+                            .then(Commands.argument("name", StringArgumentType.greedyString())
+                                .executes(c -> GmMarkers.add(c.getSource(),
+                                    DoubleArgumentType.getDouble(c, "x"),
+                                    DoubleArgumentType.getDouble(c, "z"),
+                                    IntegerArgumentType.getInteger(c, "icon"),
+                                    StringArgumentType.getString(c, "name"))))))))
             .then(Commands.literal("unmark")
                 .then(Commands.argument("name", StringArgumentType.greedyString())
                     .executes(c -> GmMarkers.remove(c.getSource(), StringArgumentType.getString(c, "name")))))

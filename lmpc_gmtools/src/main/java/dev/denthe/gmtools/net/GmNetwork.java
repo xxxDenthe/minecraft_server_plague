@@ -26,7 +26,7 @@ import java.util.UUID;
 public final class GmNetwork {
     private GmNetwork() {}
 
-    private static final String VERSION = "3";
+    private static final String VERSION = "4";
 
     /**
      * dim: 0 — Обычный, 1 — Ад, 2 — Край, 3 — прочее (Ада и Края в игре
@@ -100,8 +100,8 @@ public final class GmNetwork {
         }
     }
 
-    /** Общие метки на карте (видят все операторы). */
-    public record Mark(String name, float x, float z) {}
+    /** Общие метки на карте (видят все операторы). icon — индекс иконки в MarkerIcons. */
+    public record Mark(String name, float x, float z, byte icon) {}
 
     public record Marks(List<Mark> marks) implements CustomPacketPayload {
 
@@ -115,13 +115,16 @@ public final class GmNetwork {
                     buf.writeUtf(m.name(), 48);
                     buf.writeFloat(m.x());
                     buf.writeFloat(m.z());
+                    buf.writeByte(m.icon());
                 }
             },
             buf -> {
                 int n = buf.readVarInt();
                 if (n < 0 || n > 500) throw new IllegalArgumentException("меток: " + n);
                 List<Mark> list = new ArrayList<>(n);
-                for (int i = 0; i < n; i++) list.add(new Mark(buf.readUtf(48), buf.readFloat(), buf.readFloat()));
+                for (int i = 0; i < n; i++) {
+                    list.add(new Mark(buf.readUtf(48), buf.readFloat(), buf.readFloat(), buf.readByte()));
+                }
                 return new Marks(list);
             });
 

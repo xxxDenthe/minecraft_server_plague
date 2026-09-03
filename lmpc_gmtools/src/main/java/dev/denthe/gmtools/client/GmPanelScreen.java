@@ -348,24 +348,20 @@ public class GmPanelScreen extends Screen {
 
     // ── Карта ─────────────────────────────────────────────────────────────
 
-    private EditBox markBox;
-
     private void initMap() {
-        int by = contentY + contentH - 14;
         addRenderableWidget(Button.builder(Component.literal("К себе"),
-            b -> { mapCentered = false; }).bounds(contentX, by, 44, 13).build());
-        markBox = new EditBox(font, contentX + 48, by, contentW - 48 - 72, 13, Component.literal("имя метки"));
-        markBox.setHint(Component.literal("имя метки"));
-        markBox.setMaxLength(40);
-        addRenderableWidget(markBox);
-        addRenderableWidget(Button.builder(Component.literal("Метка здесь"), b -> {
-            String nm = markBox.getValue().trim();
-            if (!nm.isEmpty()) { run("gmtools mark " + nm); markBox.setValue(""); }
-        }).bounds(contentX + contentW - 70, by, 70, 13).build());
+            b -> { mapCentered = false; })
+            .bounds(contentX, contentY + contentH - 14, 46, 13).build());
     }
 
     private int mapH() {
-        return contentH - 18;
+        return contentH - 16;
+    }
+
+    /** Экранная точка в мировые координаты (X, Z). */
+    private double[] screenToWorld(double sx, double sy) {
+        double midX = contentX + contentW / 2.0, midY = contentY + mapH() / 2.0;
+        return new double[] { mapCX + (sx - midX) / mapScale, mapCZ + (sy - midY) / mapScale };
     }
 
     private void renderMap(GuiGraphics g, int mx, int my) {
@@ -407,14 +403,19 @@ public class GmPanelScreen extends Screen {
         String hover = null;
         boolean inMap = mx >= mapX && mx < mapX + mapW && my >= mapY && my < mapY + mapH;
 
-        // метки
+        // метки — иконкой предмета
         for (GmNetwork.Mark m : GmMapData.marks()) {
             int sx = (int) Math.round(midX + (m.x() - mapCX) * mapScale);
             int sy = (int) Math.round(midY + (m.z() - mapCZ) * mapScale);
-            if (sx < mapX - 6 || sx > mapX + mapW + 6 || sy < mapY - 6 || sy > mapY + mapH + 6) continue;
-            g.fill(sx - 3, sy - 3, sx + 3, sy + 3, 0xFFD8A24A);
-            g.fill(sx - 1, sy - 1, sx + 1, sy + 1, 0xFF1A1E1D);
-            if (inMap && mx >= sx - 4 && mx < sx + 4 && my >= sy - 4 && my < sy + 4) hover = "метка: " + m.name();
+            if (sx < mapX - 10 || sx > mapX + mapW + 10 || sy < mapY - 10 || sy > mapY + mapH + 10) continue;
+            g.pose().pushPose();
+            g.pose().translate(sx, sy, 0);
+            g.pose().scale(0.7f, 0.7f, 1f);
+            g.renderItem(MarkerIcons.stack(m.icon()), -8, -8);
+            g.pose().popPose();
+            if (inMap && mx >= sx - 6 && mx < sx + 6 && my >= sy - 6 && my < sy + 6) {
+                hover = "метка: " + m.name();
+            }
         }
 
         for (GmNetwork.Pos p : GmMapData.players()) {
@@ -436,6 +437,8 @@ public class GmPanelScreen extends Screen {
             g.drawString(font, "игроков: " + GmMapData.players().size()
                 + "   меток: " + GmMapData.marks().size(), mapX + 3, mapY + 3, DIM, false);
         }
+        g.drawString(font, "ПКМ — поставить метку   ·   ЛКМ по метке — убрать",
+            mapX + 54, mapY + mapH + 4, DIM, false);
 
         if (hover != null) g.renderTooltip(font, Component.literal(hover), mx, my);
     }
@@ -752,13 +755,18 @@ public class GmPanelScreen extends Screen {
                     fx += w + 4;
                 }
             }
-            // карта: клик по метке — убрать (с подтверждением), иначе перетаскивание
+            // карта: ПКМ — новая метка; ЛКМ по метке — убрать; иначе перетаскивание
             if (section == Section.MAP && in(mx, my, contentX, contentY, contentW, mapH())) {
+                if (btn == 1) {
+                    double[] w = screenToWorld(mx, my);
+                    minecraft.setScreen(new MarkerDialogScreen(this, w[0], w[1]));
+                    return true;
+                }
                 double midX = contentX + contentW / 2.0, midY = contentY + mapH() / 2.0;
                 for (GmNetwork.Mark m : GmMapData.marks()) {
                     int sx = (int) Math.round(midX + (m.x() - mapCX) * mapScale);
                     int sy = (int) Math.round(midY + (m.z() - mapCZ) * mapScale);
-                    if (mx >= sx - 4 && mx < sx + 4 && my >= sy - 4 && my < sy + 4) {
+                    if (mx >= sx - 6 && mx < sx + 6 && my >= sy - 6 && my < sy + 6) {
                         if (arm("unmark:" + m.name())) run("gmtools unmark " + m.name());
                         return true;
                     }
