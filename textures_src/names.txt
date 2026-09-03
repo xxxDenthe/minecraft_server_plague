@@ -5,3 +5,8 @@
 верх_зараженная_трава = rotted_grass_top
 бок_зараженная_трава  = rotted_grass_side
 камень_зараженный     = plague_stone
+
+# лианы_текстура — ковёр поросли, а не одиночная лоза; ждём отдельный исходник
+# test_plague = plague_growth        <- жёлто-зелёный, основной цвет чумы
+# test_plague_violete = plague_core <- под Сердце и логово, подсистема 5
+# more_pale_plague_blue = scar_dirt <- под шрам, мёртвая земля

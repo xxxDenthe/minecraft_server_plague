@@ -38,6 +38,8 @@ import java.util.Map;
  *   --brightness 0.34   целевая средняя яркость, 0..1
  *   --alpha none        выбивание фона: none | auto | #RRGGBB
  *   --alpha-tol 40      порог похожести на фоновый цвет, 0..255
+ *   --alpha-cut 128     порог, выше которого пиксель считается непрозрачным
+ *   --crop x,y,ш,в      вырезать кусок исходника до всей обработки
  *   --seamless          сшить противоположные края, чтобы текстура тайлилась
  *   --names <файл>      карта имён «русское_имя = latin_name», по строке на файл
  *   --preview <файл>    лист превью (по умолчанию <out>/_preview.png)
@@ -80,7 +82,8 @@ public final class TextureBaker {
             }
             Stats before = stats(raw);
 
-            BufferedImage img = downscale(raw, size);
+            BufferedImage cropped = opt.containsKey("crop") ? crop(raw, opt.get("crop")) : raw;
+            BufferedImage img = downscale(cropped, size);
             if (opt.containsKey("seamless")) {
                 img = makeSeamless(img);
             }
@@ -89,6 +92,7 @@ public final class TextureBaker {
                 img = keyOutBackground(img, alpha, alphaTol);
             }
             img = quantize(img, colors);
+            img = cutAlpha(img, Integer.parseInt(opt.getOrDefault("alpha-cut", "128")));
 
             String name = targetName(src, names);
             Path dst = out.resolve(name + ".png");
@@ -116,6 +120,28 @@ public final class TextureBaker {
 
     // ---------- этапы обработки ----------
 
+    /**
+     * Вырезка куска исходника: «x,y,ширина,высота» в пикселях оригинала.
+     * Нужна, когда генератор нарисовал целое поле узора, а блоку нужен
+     * один его фрагмент. Ужимать всё поле до шестнадцати точек бессмысленно —
+     * каждая деталь становится тоньше пикселя и превращается в шум.
+     */
+    private static BufferedImage crop(BufferedImage src, String spec) {
+        String[] parts = spec.split(",");
+        if (parts.length != 4) {
+            throw new IllegalArgumentException("--crop ждёт четыре числа через запятую: x,y,ширина,высота");
+        }
+        int x = Integer.parseInt(parts[0].trim());
+        int y = Integer.parseInt(parts[1].trim());
+        int w = Integer.parseInt(parts[2].trim());
+        int h = Integer.parseInt(parts[3].trim());
+        x = Math.max(0, Math.min(x, src.getWidth() - 1));
+        y = Math.max(0, Math.min(y, src.getHeight() - 1));
+        w = Math.max(1, Math.min(w, src.getWidth() - x));
+        h = Math.max(1, Math.min(h, src.getHeight() - y));
+        return src.getSubimage(x, y, w, h);
+    }
+
     /** Усреднение по площади: каждый пиксель результата — средний цвет своей области оригинала. */
     private static BufferedImage downscale(BufferedImage src, int size) {
         BufferedImage dst = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
@@ -125,19 +151,28 @@ public final class TextureBaker {
             for (int x = 0; x < size; x++) {
                 int x0 = (int) (x * sx), x1 = Math.max(x0 + 1, (int) ((x + 1) * sx));
                 int y0 = (int) (y * sy), y1 = Math.max(y0 + 1, (int) ((y + 1) * sy));
-                long r = 0, g = 0, b = 0, a = 0, n = 0;
+                // Цвет усредняется с весом прозрачности: иначе пустота вокруг лозы
+                // подмешивается в саму лозу и по краям встаёт грязная кайма.
+                long r = 0, g = 0, b = 0, a = 0, n = 0, weight = 0;
                 for (int yy = y0; yy < Math.min(y1, src.getHeight()); yy++) {
                     for (int xx = x0; xx < Math.min(x1, src.getWidth()); xx++) {
                         int p = src.getRGB(xx, yy);
-                        a += (p >>> 24) & 0xFF;
-                        r += (p >> 16) & 0xFF;
-                        g += (p >> 8) & 0xFF;
-                        b += p & 0xFF;
+                        int pa = (p >>> 24) & 0xFF;
+                        a += pa;
+                        r += ((p >> 16) & 0xFF) * pa;
+                        g += ((p >> 8) & 0xFF) * pa;
+                        b += (p & 0xFF) * pa;
+                        weight += pa;
                         n++;
                     }
                 }
                 if (n == 0) n = 1;
-                dst.setRGB(x, y, argb((int) (a / n), (int) (r / n), (int) (g / n), (int) (b / n)));
+                if (weight == 0) {
+                    dst.setRGB(x, y, 0);
+                } else {
+                    dst.setRGB(x, y, argb((int) (a / n),
+                            (int) (r / weight), (int) (g / weight), (int) (b / weight)));
+                }
             }
         }
         return dst;
@@ -296,6 +331,23 @@ public final class TextureBaker {
                     }
                 }
                 dst.setRGB(x, y, argb(a, best[0], best[1], best[2]));
+            }
+        }
+        return dst;
+    }
+
+    /**
+     * Приводит прозрачность к двум состояниям: либо блок есть, либо его нет.
+     * Minecraft для лоз и цветов рисует по порогу, полупрозрачные пиксели
+     * всё равно отсекутся — лучше решить это здесь и увидеть настоящий вид.
+     */
+    private static BufferedImage cutAlpha(BufferedImage img, int threshold) {
+        BufferedImage dst = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < img.getHeight(); y++) {
+            for (int x = 0; x < img.getWidth(); x++) {
+                int p = img.getRGB(x, y);
+                int a = (p >>> 24) & 0xFF;
+                dst.setRGB(x, y, a >= threshold ? (p | 0xFF000000) : 0);
             }
         }
         return dst;
