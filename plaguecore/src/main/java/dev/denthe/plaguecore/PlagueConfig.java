@@ -62,6 +62,10 @@ public final class PlagueConfig {
     // ── подземелье ────────────────────────────────────────────────────
     private static final ModConfigSpec.IntValue БЛОКОВ_ЗА_ТИК_ПОД_ЗЕМЛЁЙ;
     private static final ModConfigSpec.IntValue СТОЛБЦОВ_ЗА_ТИК;
+
+    // ── животные ──────────────────────────────────────────────────────
+    private static final ModConfigSpec.IntValue ПРОВЕРКА_ЖИВОТНЫХ;
+    private static final ModConfigSpec.DoubleValue ШАНС_ЗАРАЖЕНИЯ;
     private static final ModConfigSpec.DoubleValue СТЕНЫ_РЕДКО;
     private static final ModConfigSpec.DoubleValue СТЕНЫ_ГУСТО;
     private static final ModConfigSpec.DoubleValue ЛОЗЫ;
@@ -178,6 +182,20 @@ public final class PlagueConfig {
             .comment("Доля пола под споровые мешки. Входит в долю гнилого пола.")
             .defineInRange("sporeSacs", окр(PlagueConstants.CAVE_SPORE_SAC), 0.0, 1.0);
 
+        СТРОИТЕЛЬ.pop().comment(
+            "Превращение мирных животных в заражённых.",
+            "Свинья и корова, оказавшиеся в заражённом чанке, со временем",
+            "мутируют и становятся враждебными."
+        ).push("animals");
+
+        ПРОВЕРКА_ЖИВОТНЫХ = СТРОИТЕЛЬ
+            .comment("Раз во сколько тиков животное проверяется на превращение.")
+            .defineInRange("checkTicks", PlagueConstants.ANIMAL_CHECK_TICKS, 20, 1200);
+        ШАНС_ЗАРАЖЕНИЯ = СТРОИТЕЛЬ
+            .comment("Шанс за проверку на уровне 1. На уровне N умножается на N.",
+                     "0 полностью отключает превращение.")
+            .defineInRange("infectChance", окр(PlagueConstants.ANIMAL_INFECT_CHANCE), 0.0, 1.0);
+
         SPEC = СТРОИТЕЛЬ.pop().build();
     }
 
@@ -223,6 +241,9 @@ public final class PlagueConfig {
         PlagueConstants.CAVE_CEILING_VINES = ЛОЗЫ.get().floatValue();
         PlagueConstants.CAVE_FLOOR_ROT = ПОЛ.get().floatValue();
         PlagueConstants.CAVE_SPORE_SAC = МЕШКИ.get().floatValue();
+
+        PlagueConstants.ANIMAL_CHECK_TICKS = ПРОВЕРКА_ЖИВОТНЫХ.get();
+        PlagueConstants.ANIMAL_INFECT_CHANCE = ШАНС_ЗАРАЖЕНИЯ.get().floatValue();
 
         float[] доли = new float[MaterializationMask.НАСТРАИВАЕМЫХ_УРОВНЕЙ];
         for (int i = 0; i < доли.length; i++) доли[i] = ДОЛЯ_УРОВНЯ[i].get().floatValue();

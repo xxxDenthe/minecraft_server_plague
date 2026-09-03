@@ -8,5 +8,7 @@
   "block.plaguecore.rotted_grass": "Rotted Grass",
   "block.plaguecore.rotted_log": "Rotted Log",
   "block.plaguecore.rotted_stone": "Rotted Stone",
-  "block.plaguecore.spore_sac": "Spore Sac"
+  "block.plaguecore.spore_sac": "Spore Sac",
+  "entity.plaguecore.infected_cow": "Infected Cow",
+  "entity.plaguecore.infected_pig": "Infected Pig"
 }
