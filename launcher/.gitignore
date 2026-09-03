@@ -2,4 +2,6 @@ node_modules/
 dist/
 out/
 pack-build/
+src/main/distribution.json
+pack.json
 *.log

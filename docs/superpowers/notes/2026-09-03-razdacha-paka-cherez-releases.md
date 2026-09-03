@@ -112,11 +112,15 @@ cd launcher && node tools/publish-pack.js \
 
 ```bash
 cd launcher
-set PLAGUE_REPO=xxxDenthe/minecraft_server_plague
-set PLAGUE_RELEASE_TAG=pack
-set PLAGUE_MANIFEST_TOKEN=<токен только на чтение>
+npm run configure -- --repo xxxDenthe/minecraft_server_plague --tag pack --token <токен только на чтение>
 npm run dist
 ```
+
+`configure` пишет `src/main/distribution.json` — файл не
+версионируется, в нём токен. Переменными окружения это делать нельзя:
+они читаются на машине игрока, где их никто не задавал, и установщик
+молча вышел бы без пака. Переменные оставлены только для отладки
+из терминала.
 
 ## Что здесь честно неидеально
 

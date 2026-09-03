@@ -9,6 +9,7 @@ import * as paths from './paths.js';
 import { readConfig, writeConfig } from './config.js';
 import { fetchManifest, parseManifest } from './manifest.js';
 import { fetchPackManifestText, apiHeaders } from './github.js';
+import { distribution } from './distribution.js';
 import { ensureJava } from './java.js';
 import { ensureVanilla, ensureVersionJson } from './minecraft.js';
 import { ensureNeoForge, readProfile } from './neoforge.js';
@@ -16,30 +17,24 @@ import { planSync, applySync } from './sync.js';
 import { launchGame } from './launch.js';
 import { progressEvent, STAGES } from './progress.js';
 
-// Откуда берётся пак. Подставляется при сборке (спек, раздел 12):
-// приватный релиз GitHub плюс токен только на чтение. Пока релиза нет,
-// лаунчер обязан оставаться работоспособным — без манифеста он ставит
-// чистый клиент с NeoForge и честно об этом пишет.
-export const REPO = process.env.PLAGUE_REPO ?? '';
-export const RELEASE_TAG = process.env.PLAGUE_RELEASE_TAG ?? 'pack';
-export const MANIFEST_TOKEN = process.env.PLAGUE_MANIFEST_TOKEN ?? '';
-
-// Запасной путь: манифест по прямому адресу, без GitHub. Нужен для
-// отладки и на случай, если раздачу однажды переедет на свой сервер.
-export const MANIFEST_URL = process.env.PLAGUE_MANIFEST_URL ?? '';
+// Откуда берётся пак: приватный релиз GitHub плюс токен только
+// на чтение (спек, раздел 12). Значения кладёт в сборку
+// `npm run configure`. Пока раздачи нет, лаунчер обязан оставаться
+// работоспособным — без манифеста он ставит чистый клиент с NeoForge
+// и честно об этом пишет.
 
 // Ассеты приватного релиза отдаются только по API и только с этим
 // Accept: с обычным придёт JSON с описанием, а не файл.
-export function manifestHeaders(token = MANIFEST_TOKEN) {
+export function manifestHeaders(token = distribution().token) {
   return apiHeaders(token, 'application/octet-stream');
 }
 
-export function packSource() {
-  if (REPO) {
-    const [owner, repo] = REPO.split('/');
-    return { kind: 'github', owner, repo, tag: RELEASE_TAG };
+export function packSource(config = distribution()) {
+  if (config.repo?.includes('/')) {
+    const [owner, repo] = config.repo.split('/');
+    return { kind: 'github', owner, repo, tag: config.tag, token: config.token };
   }
-  if (MANIFEST_URL) return { kind: 'url', url: MANIFEST_URL };
+  if (config.manifestUrl) return { kind: 'url', url: config.manifestUrl, token: config.token };
   return { kind: 'none' };
 }
 
@@ -47,11 +42,11 @@ export async function loadManifest({ source = packSource(), fetchImpl = fetch } 
   if (source.kind === 'none') return null;
 
   if (source.kind === 'github') {
-    const text = await fetchPackManifestText({ ...source, token: MANIFEST_TOKEN, fetchImpl });
+    const text = await fetchPackManifestText({ ...source, fetchImpl });
     return parseManifest(text);
   }
 
-  return fetchManifest(source.url, { fetchImpl, headers: manifestHeaders() });
+  return fetchManifest(source.url, { fetchImpl, headers: manifestHeaders(source.token) });
 }
 
 // Файлы пака ставятся при каждом запуске, всё остальное — один раз.
