@@ -8,7 +8,9 @@ import * as paths from './paths.js';
 
 export const DEFAULTS = Object.freeze({
   nickname: '',
+  minRamMb: 1024,
   maxRamMb: 6144,
+  jvmArgs: '',
   packVersion: 0,
   lastPlayed: null,
 });
@@ -40,9 +42,17 @@ export function readConfig({ onWarn = console.warn } = {}) {
     return { ...DEFAULTS };
   }
 
+  const maxRamMb = Number.isInteger(raw.maxRamMb) && raw.maxRamMb > 0 ? raw.maxRamMb : DEFAULTS.maxRamMb;
+
   return {
     nickname: typeof raw.nickname === 'string' ? raw.nickname : DEFAULTS.nickname,
-    maxRamMb: Number.isInteger(raw.maxRamMb) && raw.maxRamMb > 0 ? raw.maxRamMb : DEFAULTS.maxRamMb,
+    // Нижний порог не может быть больше верхнего: битую пару чиним молча.
+    minRamMb:
+      Number.isInteger(raw.minRamMb) && raw.minRamMb > 0 && raw.minRamMb <= maxRamMb
+        ? raw.minRamMb
+        : Math.min(DEFAULTS.minRamMb, maxRamMb),
+    maxRamMb,
+    jvmArgs: typeof raw.jvmArgs === 'string' ? raw.jvmArgs : DEFAULTS.jvmArgs,
     packVersion: Number.isInteger(raw.packVersion) && raw.packVersion >= 0 ? raw.packVersion : DEFAULTS.packVersion,
     lastPlayed: typeof raw.lastPlayed === 'string' ? raw.lastPlayed : DEFAULTS.lastPlayed,
   };

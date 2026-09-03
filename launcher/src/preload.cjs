@@ -16,9 +16,13 @@ contextBridge.exposeInMainWorld('launcher', {
   play: (options) => ipcRenderer.invoke('game:play', options),
   openLog: () => ipcRenderer.invoke('log:open'),
   openFolder: () => ipcRenderer.invoke('folder:open'),
+  openDiscord: () => ipcRenderer.invoke('discord:open'),
+  toggleFullscreen: () => ipcRenderer.invoke('window:toggle-fullscreen'),
+  isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen'),
 
   onProgress: on('progress'),
   onLog: on('log'),
   onUpdateAvailable: on('update-available'),
   onGameClosed: on('game-closed'),
+  onFullscreen: on('window:fullscreen'),
 });

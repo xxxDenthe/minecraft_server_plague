@@ -34,7 +34,7 @@ export function apiHeaders(token, accept = 'application/vnd.github+json') {
   const headers = {
     Accept: accept,
     'X-GitHub-Api-Version': '2022-11-28',
-    'User-Agent': 'PlagueLauncher',
+    'User-Agent': 'LMPCLauncher',
   };
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;

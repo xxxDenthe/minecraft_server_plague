@@ -1,5 +1,5 @@
-appId: net.denthe.plague.launcher
-productName: Plague Launcher
+appId: gg.lmpc.launcher
+productName: LMPC Launcher
 directories:
   output: dist
 files:
@@ -7,7 +7,7 @@ files:
   - package.json
 win:
   target: nsis
-  artifactName: PlagueLauncher-${version}.${ext}
+  artifactName: LMPC-Launcher-${version}.${ext}
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

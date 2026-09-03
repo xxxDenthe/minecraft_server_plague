@@ -15,15 +15,15 @@ const warnings = [];
 const onWarn = (m) => warnings.push(m);
 
 beforeEach(() => {
-  savedRoot = process.env.PLAGUE_LAUNCHER_ROOT;
+  savedRoot = process.env.LMPC_LAUNCHER_ROOT;
   temp = fs.mkdtempSync(path.join(os.tmpdir(), 'plague-config-'));
-  process.env.PLAGUE_LAUNCHER_ROOT = temp;
+  process.env.LMPC_LAUNCHER_ROOT = temp;
   warnings.length = 0;
 });
 
 afterEach(() => {
-  if (savedRoot === undefined) delete process.env.PLAGUE_LAUNCHER_ROOT;
-  else process.env.PLAGUE_LAUNCHER_ROOT = savedRoot;
+  if (savedRoot === undefined) delete process.env.LMPC_LAUNCHER_ROOT;
+  else process.env.LMPC_LAUNCHER_ROOT = savedRoot;
   fs.rmSync(temp, { recursive: true, force: true });
 });
 
@@ -52,13 +52,31 @@ describe('конфиг', () => {
   });
 
   it('записанное читается обратно', () => {
-    writeConfig({ nickname: 'Denthe', maxRamMb: 8192, packVersion: 3, lastPlayed: '2026-09-03T12:00:00Z' });
-    expect(readConfig({ onWarn })).toEqual({
+    writeConfig({
       nickname: 'Denthe',
+      minRamMb: 2048,
       maxRamMb: 8192,
+      jvmArgs: '-XX:+UseZGC',
       packVersion: 3,
       lastPlayed: '2026-09-03T12:00:00Z',
     });
+    expect(readConfig({ onWarn })).toEqual({
+      nickname: 'Denthe',
+      minRamMb: 2048,
+      maxRamMb: 8192,
+      jvmArgs: '-XX:+UseZGC',
+      packVersion: 3,
+      lastPlayed: '2026-09-03T12:00:00Z',
+    });
+  });
+
+  it('нижний порог памяти не может быть больше верхнего', () => {
+    fs.writeFileSync(
+      paths.configFile(),
+      JSON.stringify({ minRamMb: 8192, maxRamMb: 4096 }),
+      'utf8'
+    );
+    expect(readConfig({ onWarn }).minRamMb).toBe(1024);
   });
 
   it('запись создаёт корень, если его ещё нет', () => {

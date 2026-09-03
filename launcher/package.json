@@ -1,8 +1,8 @@
 {
-  "name": "plague-launcher",
+  "name": "lmpc-launcher",
   "version": "0.1.0",
   "private": true,
-  "description": "Лаунчер сессионного сервера «Чума»",
+  "description": "Лаунчер приватного сервера LMPC",
   "main": "src/main/index.js",
   "type": "module",
   "scripts": {

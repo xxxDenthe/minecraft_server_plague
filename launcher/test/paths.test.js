@@ -13,14 +13,14 @@ let temp;
 let savedRoot;
 
 beforeEach(() => {
-  savedRoot = process.env.PLAGUE_LAUNCHER_ROOT;
+  savedRoot = process.env.LMPC_LAUNCHER_ROOT;
   temp = fs.mkdtempSync(path.join(os.tmpdir(), 'plague-paths-'));
-  process.env.PLAGUE_LAUNCHER_ROOT = temp;
+  process.env.LMPC_LAUNCHER_ROOT = temp;
 });
 
 afterEach(() => {
-  if (savedRoot === undefined) delete process.env.PLAGUE_LAUNCHER_ROOT;
-  else process.env.PLAGUE_LAUNCHER_ROOT = savedRoot;
+  if (savedRoot === undefined) delete process.env.LMPC_LAUNCHER_ROOT;
+  else process.env.LMPC_LAUNCHER_ROOT = savedRoot;
   fs.rmSync(temp, { recursive: true, force: true });
 });
 
@@ -35,7 +35,7 @@ const allPaths = () => [
 ];
 
 describe('пути лаунчера', () => {
-  it('корень берётся из PLAGUE_LAUNCHER_ROOT', () => {
+  it('корень берётся из LMPC_LAUNCHER_ROOT', () => {
     expect(paths.root()).toBe(path.resolve(temp));
   });
 
@@ -63,9 +63,9 @@ describe('пути лаунчера', () => {
     }
   });
 
-  it('корень по умолчанию — %APPDATA%\PlagueLauncher', () => {
-    delete process.env.PLAGUE_LAUNCHER_ROOT;
-    expect(path.basename(paths.root())).toBe('PlagueLauncher');
+  it('корень по умолчанию — %APPDATA%\LMPC', () => {
+    delete process.env.LMPC_LAUNCHER_ROOT;
+    expect(path.basename(paths.root())).toBe('LMPC');
   });
 
   it('inInstance не выпускает за пределы инстанса', () => {

@@ -10,12 +10,12 @@ import fs from 'node:fs';
 // Переопределение корня нужно тестам и ручной отладке: топтать настоящую
 // папку игрока ради проверки гипотезы не стоит.
 export function root() {
-  const override = process.env.PLAGUE_LAUNCHER_ROOT;
+  const override = process.env.LMPC_LAUNCHER_ROOT;
   if (override) return path.resolve(override);
 
   const appData =
     process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming');
-  return path.join(path.resolve(appData), 'PlagueLauncher');
+  return path.join(path.resolve(appData), 'LMPC');
 }
 
 export const instance = () => path.join(root(), 'instance');

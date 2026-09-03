@@ -120,13 +120,21 @@ export async function prepare({
   };
 }
 
-export async function play({ nickname, maxRamMb = null, onProgress = null, onLine = null, ...rest } = {}) {
+export async function play({ nickname, maxRamMb = null, minRamMb = null, onProgress = null, onLine = null, ...rest } = {}) {
   if (!nickname?.trim()) throw new Error('без ника запускать нечего');
 
   const prepared = await prepare({ ...rest, nickname, onProgress });
   const config = readConfig();
 
   const ram = maxRamMb ?? prepared.manifest?.launch?.maxRamMb ?? config.maxRamMb;
+  const ramMin = minRamMb ?? config.minRamMb;
+
+  // Аргументы игрока идут после манифестных: если игрок и пак задали
+  // одно и то же, побеждает выбор игрока (JVM берёт последнее значение).
+  const jvmArgs = [
+    ...(prepared.manifest?.launch?.jvmArgs ?? []),
+    ...String(config.jvmArgs ?? '').split(/\s+/).filter(Boolean),
+  ];
 
   onProgress?.(progressEvent({ stage: STAGES.LAUNCH, message: 'запускаю игру' }));
 
@@ -137,12 +145,13 @@ export async function play({ nickname, maxRamMb = null, onProgress = null, onLin
     clientJar: prepared.clientJar,
     nickname: nickname.trim(),
     maxRamMb: ram,
-    extraJvmArgs: prepared.manifest?.launch?.jvmArgs ?? [],
+    minRamMb: ramMin,
+    extraJvmArgs: jvmArgs,
     server: prepared.manifest?.server ?? null,
     onLine,
   });
 
-  writeConfig({ ...config, nickname: nickname.trim(), maxRamMb: ram, lastPlayed: new Date().toISOString() });
+  writeConfig({ ...config, nickname: nickname.trim(), maxRamMb: ram, minRamMb: ramMin, lastPlayed: new Date().toISOString() });
 
   return { ...started, prepared };
 }

@@ -13,14 +13,14 @@ let temp;
 let savedRoot;
 
 beforeEach(() => {
-  savedRoot = process.env.PLAGUE_LAUNCHER_ROOT;
+  savedRoot = process.env.LMPC_LAUNCHER_ROOT;
   temp = fs.mkdtempSync(path.join(os.tmpdir(), 'plague-launch-'));
-  process.env.PLAGUE_LAUNCHER_ROOT = temp;
+  process.env.LMPC_LAUNCHER_ROOT = temp;
 });
 
 afterEach(() => {
-  if (savedRoot === undefined) delete process.env.PLAGUE_LAUNCHER_ROOT;
-  else process.env.PLAGUE_LAUNCHER_ROOT = savedRoot;
+  if (savedRoot === undefined) delete process.env.LMPC_LAUNCHER_ROOT;
+  else process.env.LMPC_LAUNCHER_ROOT = savedRoot;
   fs.rmSync(temp, { recursive: true, force: true });
 });
 

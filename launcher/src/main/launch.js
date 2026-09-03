@@ -11,7 +11,7 @@ import * as paths from './paths.js';
 import { ruleAllows, windowsLibraries } from './minecraft.js';
 import { offlineUuid } from './offline.js';
 
-export const LAUNCHER_NAME = 'PlagueLauncher';
+export const LAUNCHER_NAME = 'LMPCLauncher';
 export const LAUNCHER_VERSION = '0.1.0';
 
 // Аргумент может быть строкой или объектом с правилами. Правила по
@@ -79,10 +79,14 @@ export function buildCommand({
   clientJar,
   nickname,
   maxRamMb = 6144,
+  minRamMb = null,
   extraJvmArgs = [],
   server = null,
   nativesDir = path.join(paths.root(), 'natives'),
 }) {
+  // По умолчанию — прежнее поведение: гигабайт или меньше, если
+  // потолок ниже. Игрок может задать своё значение в настройках.
+  const xms = Math.min(minRamMb ?? Math.min(1024, maxRamMb), maxRamMb);
   const classpath = buildClasspath(vanillaJson, forgeProfile, clientJar);
 
   const values = {
@@ -119,7 +123,7 @@ export function buildCommand({
 
   const args = [
     `-Xmx${maxRamMb}M`,
-    `-Xms${Math.min(1024, maxRamMb)}M`,
+    `-Xms${xms}M`,
     ...extraJvmArgs,
     ...substitute(jvm, values),
     forgeProfile.mainClass ?? vanillaJson.mainClass,
@@ -138,6 +142,7 @@ export async function launchGame({
   clientJar,
   nickname,
   maxRamMb = 6144,
+  minRamMb = null,
   extraJvmArgs = [],
   server = null,
   onLine = null,
@@ -148,6 +153,7 @@ export async function launchGame({
     clientJar,
     nickname,
     maxRamMb,
+    minRamMb,
     extraJvmArgs,
     server,
   });
