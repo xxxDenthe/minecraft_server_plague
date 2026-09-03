@@ -46,6 +46,7 @@ public final class BlockTransforms {
             case ROTTED_GRASS  -> PlagueBlocks.ROTTED_GRASS.get().defaultBlockState();
             case ROTTED_DIRT   -> PlagueBlocks.ROTTED_DIRT.get().defaultBlockState();
             case ROTTED_STONE  -> PlagueBlocks.ROTTED_STONE.get().defaultBlockState();
+            case BLIGHTED_GRASS -> PlagueBlocks.BLIGHTED_GRASS.get().defaultBlockState();
             case BLIGHTED_LEAVES -> PlagueBlocks.BLIGHTED_LEAVES.get().defaultBlockState()
                                        .setValue(LeavesBlock.PERSISTENT, Boolean.TRUE);
             case DESTROY_CROP  -> Blocks.AIR.defaultBlockState();
@@ -81,6 +82,11 @@ public final class BlockTransforms {
         if (state.isAir()) return BlockKind.OTHER;
         if (block == Blocks.GRASS_BLOCK) return BlockKind.GRASS;
         if (state.is(BlockTags.CROPS)) return BlockKind.CROP;
+        // Только одноблочная мелочь. Высокая трава и большой папоротник
+        // состоят из двух половин, и подмена нижней оставила бы верхнюю
+        // висеть в воздухе: мы ставим блоки без обновления соседей.
+        if (block == Blocks.SHORT_GRASS || block == Blocks.FERN
+            || block == PlagueBlocks.BLIGHTED_GRASS.get()) return BlockKind.PLANT;
         if (state.is(BlockTags.LEAVES) || block == PlagueBlocks.BLIGHTED_LEAVES.get()) {
             return BlockKind.LEAVES;
         }
@@ -97,6 +103,7 @@ public final class BlockTransforms {
         return state.is(PlagueBlocks.ROTTED_DIRT.get())
             || state.is(PlagueBlocks.ROTTED_GRASS.get())
             || state.is(PlagueBlocks.ROTTED_STONE.get())
+            || state.is(PlagueBlocks.BLIGHTED_GRASS.get())
             || state.is(PlagueBlocks.PLAGUE_GROWTH.get())
             || state.is(PlagueBlocks.BLIGHT_VINE.get())
             || state.is(PlagueBlocks.SPORE_SAC.get());

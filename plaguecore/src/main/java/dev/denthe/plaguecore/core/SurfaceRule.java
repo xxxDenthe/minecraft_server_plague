@@ -22,6 +22,7 @@ public final class SurfaceRule {
         LOG,     // стволы и доски
         STONE,   // камень и руда
         CROP,    // посевы
+        PLANT,   // пучок травы, папоротник — мелочь, растущая на земле
         WATER,   // вода
         OTHER    // всё прочее — не трогаем
     }
@@ -33,6 +34,7 @@ public final class SurfaceRule {
         ROTTED_GRASS,
         ROTTED_DIRT,
         ROTTED_STONE,
+        BLIGHTED_GRASS,
         BLIGHTED_LEAVES,
         TRAMPLE_CROP,
         DESTROY_CROP,
@@ -63,6 +65,10 @@ public final class SurfaceRule {
             case STONE  -> гниль ? PlagueAction.ROTTED_STONE : PlagueAction.NONE;
             case LOG    -> гниль ? PlagueAction.COAT_GROWTH : PlagueAction.NONE;
             case CROP   -> гниль ? PlagueAction.DESTROY_CROP : PlagueAction.TRAMPLE_CROP;
+            // Трава заражается с первого же уровня и дальше не меняется:
+            // зелёные кустики посреди Гнили выдавали, что чума прошлась
+            // только по кубам.
+            case PLANT  -> PlagueAction.BLIGHTED_GRASS;
             // Вода в спеке становится «стоячей и тёмной», но своей жидкости
             // у нас нет, а ванильной такой не существует. Пока не трогаем.
             case WATER,

@@ -74,6 +74,19 @@ class SurfaceRuleTest {
         assertEquals(PlagueAction.DESTROY_CROP, SurfaceRule.actionFor(BlockKind.CROP, 4));
     }
 
+    /**
+     * Пучок травы заражается с первого же уровня: зелёные кустики посреди
+     * Гнили выдавали, что чума прошлась только по кубам.
+     */
+    @Test
+    void траваЗаражаетсяСразуИДальшеНеМеняется() {
+        for (int уровень = 1; уровень <= 5; уровень++) {
+            assertEquals(PlagueAction.BLIGHTED_GRASS,
+                SurfaceRule.actionFor(BlockKind.PLANT, уровень), "уровень " + уровень);
+        }
+        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.PLANT, 0));
+    }
+
     @Test
     void прочиеБлокиНеТрогаемНикогда() {
         for (int уровень = 0; уровень <= 5; уровень++) {
