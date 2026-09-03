@@ -59,6 +59,14 @@ public class GmPanelScreen extends Screen {
 
     private static Tab tab = Tab.ACTIONS;
 
+    /**
+     * Открыли /plague gui из этой панели — после закрытия того экрана
+     * панель должна вернуться. Флаги читает GmClientEvents (тот же пакет).
+     */
+    public static boolean returnAfterPlagueGui = false;
+    static boolean sawPlagueGui = false;
+    static int plagueGuiWait = 0;
+
     private int px, py, pw, ph;
     private int contentX, contentY, contentW, contentH;
 
@@ -155,7 +163,14 @@ public class GmPanelScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("Состояние чумы  (/plague info)"),
             b -> { run("plague info"); onClose(); }).bounds(contentX, contentY + 22, contentW, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Карта чумы  (/plague gui)"),
-            b -> run("plague gui")).bounds(contentX, contentY + 46, contentW, 20).build());
+            b -> {
+                // Не закрываемся: /plague gui сам подменит экран своей картой.
+                // Флаг велит GmClientEvents вернуть панель, когда ту карту закроют.
+                returnAfterPlagueGui = true;
+                sawPlagueGui = false;
+                plagueGuiWait = 0;
+                run("plague gui");
+            }).bounds(contentX, contentY + 46, contentW, 20).build());
     }
 
     // ──────────────────────────────────────────────────────────── render ──
@@ -231,9 +246,9 @@ public class GmPanelScreen extends Screen {
 
     private void renderActions(GuiGraphics g) {
         g.drawString(font, "Режим игры", contentX, contentY, DIM, false);
-        g.drawString(font, "Сейчас: " + currentModeRu(), contentX, contentY + 46, TEXT, false);
-        g.drawString(font, "Позиция запоминается — возврат ставит вас на прежнее место.",
-            contentX, contentY + 62, DIM, false);
+        g.drawString(font, "Сейчас: " + currentModeRu(), contentX, contentY + 48, TEXT, false);
+        drawWrapped(g, "Позиция и режим запоминаются — возврат ставит вас на прежнее место.",
+            contentX, contentY + 62, contentW, DIM);
     }
 
     private void renderPlayers(GuiGraphics g, int mx, int my) {
@@ -289,7 +304,16 @@ public class GmPanelScreen extends Screen {
 
     private void renderPlague(GuiGraphics g) {
         g.drawString(font, "Мод plague core", contentX, contentY, DIM, false);
-        g.drawString(font, "Вывод команд уходит в чат.", contentX, contentY + 72, DIM, false);
+        drawWrapped(g, "«Состояние» пишет сводку в чат. «Карта» открывает экран чумы — "
+            + "по Esc вернётесь сюда.", contentX, contentY + 74, contentW, DIM);
+    }
+
+    /** Перенос длинного текста по ширине области. */
+    private void drawWrapped(GuiGraphics g, String text, int x, int y, int maxWidth, int color) {
+        for (FormattedCharSequence line : font.split(Component.literal(text), maxWidth)) {
+            g.drawString(font, line, x, y, color, false);
+            y += font.lineHeight + 1;
+        }
     }
 
     // ───────────────────────────────────────────────────────────── mouse ──
