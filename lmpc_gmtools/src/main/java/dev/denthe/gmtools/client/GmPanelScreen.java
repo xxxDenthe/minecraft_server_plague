@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.Level;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Comparator;
@@ -352,13 +351,15 @@ public class GmPanelScreen extends Screen {
             mapCZ = me.getZ();
             mapCentered = true;
         }
-        byte myDim = me != null ? localDim(me) : 0;
 
         g.fill(mapX, mapY, mapX + mapW, mapY + mapH, 0xFF0E1110);
         outline(g, mapX, mapY, mapW, mapH, BORDER);
         g.enableScissor(mapX + 1, mapY + 1, mapX + mapW - 1, mapY + mapH - 1);
 
         double midX = mapX + mapW / 2.0, midY = mapY + mapH / 2.0;
+
+        // фон: рельеф прогруженных чанков, как на карте-предмете
+        renderMapTerrain(g, mapX, mapY, mapW, mapH, midX, midY);
 
         // сетка через каждые 100 блоков
         double gridPx = 100 * mapScale;
@@ -379,10 +380,7 @@ public class GmPanelScreen extends Screen {
         if (zeroY >= mapY && zeroY <= mapY + mapH) g.fill(mapX, zeroY, mapX + mapW, zeroY + 1, 0x40FFFFFF);
 
         String hover = null;
-        int shownHere = 0, elsewhere = 0;
         for (GmNetwork.Pos p : GmMapData.players()) {
-            if (p.dim() != myDim) { elsewhere++; continue; }
-            shownHere++;
             int sx = (int) Math.round(midX + (p.x() - mapCX) * mapScale);
             int sy = (int) Math.round(midY + (p.z() - mapCZ) * mapScale);
             if (sx < mapX - 10 || sx > mapX + mapW + 10 || sy < mapY - 10 || sy > mapY + mapH + 10) continue;
@@ -399,11 +397,46 @@ public class GmPanelScreen extends Screen {
         long age = GmMapData.ageMs();
         String status = age == Long.MAX_VALUE
             ? "нет данных с сервера — нужны права оператора и мод на сервере"
-            : "обновлено " + (age / 1000) + " с назад   ·   тут: " + shownHere
-              + (elsewhere > 0 ? "   ·   в других измерениях: " + elsewhere : "");
+            : "обновлено " + (age / 1000) + " с назад   ·   игроков: " + GmMapData.players().size();
         g.drawString(font, font.plainSubstrByWidth(status, mapW - 64), mapX + 62, mapY + mapH + 4, DIM, false);
 
         if (hover != null) g.renderTooltip(font, Component.literal(hover), mx, my);
+    }
+
+    private static final MapTerrainCache mapTerrain = new MapTerrainCache();
+
+    private void renderMapTerrain(GuiGraphics g, int mapX, int mapY, int mapW, int mapH,
+                                  double midX, double midY) {
+        var level = minecraft != null ? minecraft.level : null;
+        if (level == null) return;
+
+        mapTerrain.beginFrame();
+        double halfW = (mapW / 2.0) / mapScale, halfH = (mapH / 2.0) / mapScale;
+        int minCX = net.minecraft.util.Mth.floor(mapCX - halfW) >> 4;
+        int maxCX = net.minecraft.util.Mth.floor(mapCX + halfW) >> 4;
+        int minCZ = net.minecraft.util.Mth.floor(mapCZ - halfH) >> 4;
+        int maxCZ = net.minecraft.util.Mth.floor(mapCZ + halfH) >> 4;
+        if (maxCX - minCX > 80 || maxCZ - minCZ > 80) return;   // слишком отдалено — рельеф не рисуем
+
+        int step = mapScale >= 0.45 ? 1 : (mapScale >= 0.18 ? 2 : 4);
+        int cell = Math.max(1, (int) Math.ceil(mapScale * step));
+
+        for (int cx = minCX; cx <= maxCX; cx++) {
+            for (int cz = minCZ; cz <= maxCZ; cz++) {
+                int[] cols = mapTerrain.chunk(level, cx, cz);
+                if (cols == null) continue;
+                for (int x = 0; x < 16; x += step) {
+                    for (int z = 0; z < 16; z += step) {
+                        int col = cols[x * 16 + z];
+                        if (col == 0) continue;
+                        int sx = (int) Math.round(midX + ((cx << 4) + x - mapCX) * mapScale);
+                        int sy = (int) Math.round(midY + ((cz << 4) + z - mapCZ) * mapScale);
+                        if (sx < mapX - cell || sx > mapX + mapW || sy < mapY - cell || sy > mapY + mapH) continue;
+                        g.fill(sx, sy, sx + cell, sy + cell, col);
+                    }
+                }
+            }
+        }
     }
 
     private void drawHead(GuiGraphics g, UUID id, int x, int y) {
@@ -411,14 +444,6 @@ public class GmPanelScreen extends Screen {
             ? minecraft.getConnection().getPlayerInfo(id) : null;
         var skin = info != null ? info.getSkin() : DefaultPlayerSkin.get(id);
         PlayerFaceRenderer.draw(g, skin, x, y, 8);
-    }
-
-    private static byte localDim(net.minecraft.client.player.LocalPlayer p) {
-        var d = p.level().dimension();
-        if (d == Level.OVERWORLD) return 0;
-        if (d == Level.NETHER) return 1;
-        if (d == Level.END) return 2;
-        return 3;
     }
 
     // ───────────────────────────────────────────────────────────── render ──
