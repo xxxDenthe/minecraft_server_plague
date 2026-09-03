@@ -18,15 +18,15 @@ launcher/                  лаунчер на Electron: раздача пака
 
 **Начинать с этого файла:**
 
-- `docs/superpowers/notes/2026-09-03-peredacha-sessii-2.md` — **передача
+- `docs/superpowers/notes/2026-09-04-peredacha-sessii-3.md` — **передача
   между сессиями:** состояние, открытые вопросы, долг, следующий шаг
 
 Дальше по надобности:
 
 - `docs/superpowers/specs/2026-09-03-plague-core-design.md` — дизайн ядра чумы, ревизия 2
 - `docs/superpowers/plans/2026-09-03-plague-core-foundation.md` — план на 10 задач
-- `docs/superpowers/notes/2026-09-03-krivaya-rasprostraneniya.md` — **открытый вопрос:**
-  кривая заражения даёт 30% к ночи 30 вместо 75–85% из спека, решение за владельцем
+- `docs/superpowers/notes/2026-09-03-krivaya-rasprostraneniya.md` — кривая
+  заражения; числа фаз теперь правятся в конфиге, `2026-09-03-konfig.md`
 - `docs/superpowers/notes/2026-09-03-materializaciya-probely.md` — материализация
   поверхности: решения и открытый вопрос тёмной воды
 - `docs/superpowers/notes/2026-09-03-podzemelye.md` — подземелье, все правки
