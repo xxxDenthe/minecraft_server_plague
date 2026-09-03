@@ -111,3 +111,14 @@ button:disabled {
   color: var(--muted);
   white-space: pre-wrap;
 }
+
+/* Уведомление об обновлении пака: появляется прямо во время игры,
+   поэтому должно быть заметным, но не мигающим. */
+.notice {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-left: 3px solid #c8a24a;
+  background: #241d15;
+  color: #e8d9b5;
+  font-size: 13px;
+}
