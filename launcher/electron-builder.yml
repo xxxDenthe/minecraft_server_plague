@@ -1,0 +1,14 @@
+appId: net.denthe.plague.launcher
+productName: Plague Launcher
+directories:
+  output: dist
+files:
+  - src/**/*
+  - package.json
+win:
+  target: nsis
+  artifactName: PlagueLauncher-${version}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false

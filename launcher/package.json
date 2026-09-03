@@ -1,0 +1,22 @@
+{
+  "name": "plague-launcher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Лаунчер сессионного сервера «Чума»",
+  "main": "src/main/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "test": "vitest run",
+    "dist": "electron-builder --win",
+    "manifest": "node tools/build-manifest.js"
+  },
+  "devDependencies": {
+    "electron": "^44.1.1",
+    "electron-builder": "^26.15.3",
+    "vitest": "^4.1.11"
+  },
+  "allowScripts": {
+    "electron@44.1.1": true
+  }
+}
