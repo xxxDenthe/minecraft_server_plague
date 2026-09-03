@@ -14,11 +14,16 @@ java {
 neoForge {
     version = project.neoforge_version
 
-    // Мод только клиентский — серверный run не нужен.
+    // С 0.8.0 у мода есть серверная часть (карта, заморозка, метки, журнал).
     runs {
         client {
             client()
             gameDirectory = file('run/client')
+        }
+        server {
+            server()
+            gameDirectory = file('run/server')
+            programArgument '--nogui'
         }
     }
 
