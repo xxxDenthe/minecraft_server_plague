@@ -7,6 +7,8 @@
 камень_зараженный     = plague_stone
 
 # лианы_текстура — ковёр поросли, а не одиночная лоза; ждём отдельный исходник
-# test_plague = plague_growth        <- жёлто-зелёный, основной цвет чумы
+# test_plague = plague_growth        <- НЕ БЕРЁМ: жёлто-зелёный отменён
 # test_plague_violete = plague_core <- под Сердце и логово, подсистема 5
+#   Палитра чумы теперь тёмно-серая с редким фиолетовым акцентом:
+#   docs/superpowers/notes/2026-09-03-palitra-chumy.md
 # more_pale_plague_blue = scar_dirt <- под шрам, мёртвая земля

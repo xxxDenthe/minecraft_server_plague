@@ -20,6 +20,9 @@ import net.minecraft.world.item.BlockItem;
  * Регистрируются на мод-шине, не на игровой. Свойства копируются
  * с ванильных родственников, чтобы не выдумывать прочность и звук
  * с нуля: гнилая земля ведёт себя как земля, нарост — как лишайник.
+ *
+ * Цвета на карте держат палитру чумы: тёмная и серая, фиолетовый —
+ * только там, где по замыслу видна сама зараза (нарост, споровый мешок).
  */
 public final class PlagueBlocks {
     private PlagueBlocks() {}
@@ -34,7 +37,7 @@ public final class PlagueBlocks {
     public static final DeferredBlock<Block> ROTTED_DIRT = БЛОКИ.registerSimpleBlock(
         "rotted_dirt",
         BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT)
-            .mapColor(MapColor.TERRACOTTA_BROWN)
+            .mapColor(MapColor.COLOR_GRAY)
             .sound(SoundType.ROOTED_DIRT));
 
     /**
@@ -45,7 +48,7 @@ public final class PlagueBlocks {
     public static final DeferredBlock<Block> ROTTED_GRASS = БЛОКИ.registerSimpleBlock(
         "rotted_grass",
         BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT)
-            .mapColor(MapColor.COLOR_GREEN)
+            .mapColor(MapColor.STONE)
             .sound(SoundType.ROOTED_DIRT));
 
     /**
@@ -61,14 +64,14 @@ public final class PlagueBlocks {
         "blighted_leaves",
         LeavesBlock::new,
         BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_LEAVES)
-            .mapColor(MapColor.COLOR_YELLOW));
+            .mapColor(MapColor.COLOR_GRAY));
 
     /** Плёнка на любой грани: наросты на камне, дереве и руде. */
     public static final DeferredBlock<PlagueGrowthBlock> PLAGUE_GROWTH = БЛОКИ.registerBlock(
         "plague_growth",
         PlagueGrowthBlock::new,
         BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_YELLOW)
+            .mapColor(MapColor.TERRACOTTA_PURPLE)
             .replaceable()
             .noCollission()
             .strength(0.2f)
@@ -80,7 +83,7 @@ public final class PlagueBlocks {
         "blight_vine",
         BlightVineBlock::new,
         BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_GREEN)
+            .mapColor(MapColor.COLOR_GRAY)
             .noCollission()
             .instabreak()
             .sound(SoundType.WEEPING_VINES)
@@ -91,7 +94,7 @@ public final class PlagueBlocks {
     public static final DeferredBlock<Block> SPORE_SAC = БЛОКИ.registerSimpleBlock(
         "spore_sac",
         BlockBehaviour.Properties.of()
-            .mapColor(MapColor.COLOR_YELLOW)
+            .mapColor(MapColor.TERRACOTTA_PURPLE)
             .strength(0.5f)
             .sound(SoundType.SLIME_BLOCK));
 
