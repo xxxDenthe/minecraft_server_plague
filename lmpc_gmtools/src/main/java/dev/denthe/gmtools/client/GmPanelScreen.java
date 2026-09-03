@@ -38,11 +38,16 @@ public class GmPanelScreen extends Screen {
     static int plagueGuiWait = 0;
 
     private enum Section {
-        SELF("Себе"), PLAYERS("Игроки"), WORLD("Мир"),
+        SELF("Себе"), PLAYERS("Игроки"),
+        WORLD("Мир", "Погода", "Правила"),
+        BROADCAST("Вещание", "Заголовок", "Чат", "Звук"),
         PLAGUE("Чума"), EXPERIMENTAL("Опыты");
         final String label;
-        Section(String l) { this.label = l; }
+        final String[] folders;
+        Section(String l, String... f) { this.label = l; this.folders = f; }
     }
+
+    private static final int[] folderIdx = new int[Section.values().length];
 
     /**
      * Правило и его id для команды /gamerule. Клиенту сервер синхронизирует
@@ -63,8 +68,6 @@ public class GmPanelScreen extends Screen {
         new Rule("naturalRegeneration",  "Регенерация от сытости"),
         new Rule("showDeathMessages",    "Сообщения о смерти"),
     };
-
-    private static final String[] WORLD_FOLDERS = { "Погода", "Правила" };
 
     // ── палитра ───────────────────────────────────────────────────────────
     private static final int SHADOW = 0x90000000;
@@ -88,7 +91,10 @@ public class GmPanelScreen extends Screen {
     private static final int BTN_H  = 15;
 
     private static Section section = Section.SELF;
-    private static int worldFolder = 0;
+
+    private static int folder() {
+        return folderIdx[section.ordinal()];
+    }
 
     private int px, py, pw, ph;
     private int contentX, contentY, contentW, contentH;
@@ -131,6 +137,7 @@ public class GmPanelScreen extends Screen {
             case SELF -> initSelf();
             case PLAYERS -> initPlayers();
             case WORLD -> initWorld();
+            case BROADCAST -> initBroadcast();
             case PLAGUE -> initPlague();
             case EXPERIMENTAL -> initExperimental();
         }
@@ -150,7 +157,7 @@ public class GmPanelScreen extends Screen {
     }
 
     private boolean hasFolders() {
-        return section == Section.WORLD;
+        return section.folders.length > 0;
     }
 
     private void initLogin() {
@@ -258,7 +265,7 @@ public class GmPanelScreen extends Screen {
     // ── Мир ───────────────────────────────────────────────────────────────
 
     private void initWorld() {
-        if (worldFolder == 0) {
+        if (folder() == 0) {
             int y = contentY + 12, w = (contentW - 8) / 3;
             addRenderableWidget(Button.builder(Component.literal("Ясно"),
                 b -> run("weather clear")).bounds(contentX, y, w, BTN_H).build());
@@ -268,6 +275,20 @@ public class GmPanelScreen extends Screen {
                 b -> run("weather thunder")).bounds(contentX + (w + 4) * 2, y, contentW - (w + 4) * 2, BTN_H).build());
         }
         // «Правила» рисуются и кликаются вручную — компактные строки-тумблеры
+    }
+
+    // ── Вещание ───────────────────────────────────────────────────────────
+
+    private void initBroadcast() {
+        int y = contentY + 16;
+        switch (folder()) {
+            case 0 -> add(contentX, y, contentW, "Открыть редактор заголовка",
+                () -> minecraft.setScreen(new BroadcastEditorScreen(this, BroadcastEditorScreen.Mode.TITLE)));
+            case 1 -> add(contentX, y, contentW, "Открыть редактор сообщения",
+                () -> minecraft.setScreen(new BroadcastEditorScreen(this, BroadcastEditorScreen.Mode.CHAT)));
+            case 2 -> add(contentX, y, contentW, "Открыть выбор звука",
+                () -> minecraft.setScreen(new SoundPickerScreen(this)));
+        }
     }
 
     // ── Чума ──────────────────────────────────────────────────────────────
@@ -331,6 +352,7 @@ public class GmPanelScreen extends Screen {
             case SELF -> g.drawString(font, "Быстрые действия для себя", contentX, contentY, DIM, false);
             case PLAYERS -> renderPlayers(g, mx, my);
             case WORLD -> renderWorld(g, mx, my);
+            case BROADCAST -> renderBroadcast(g);
             case PLAGUE -> renderPlague(g);
             case EXPERIMENTAL -> renderExperimental(g);
         }
@@ -369,10 +391,10 @@ public class GmPanelScreen extends Screen {
 
     private void renderFolders(GuiGraphics g, int mx, int my) {
         int fx = px + NAV_W + 8, fy = py + HEADER + 8;
-        for (int i = 0; i < WORLD_FOLDERS.length; i++) {
-            String label = WORLD_FOLDERS[i];
+        for (int i = 0; i < section.folders.length; i++) {
+            String label = section.folders[i];
             int w = font.width(label) + 14;
-            boolean active = i == worldFolder;
+            boolean active = i == folder();
             boolean hover = in(mx, my, fx, fy, w, 14);
             g.fill(fx, fy, fx + w, fy + 14, active ? SELECT : (hover ? HOVER : TRACK));
             if (active) g.fill(fx, fy + 13, fx + w, fy + 14, ACCENT);
@@ -456,7 +478,7 @@ public class GmPanelScreen extends Screen {
     private static final int RULE_BW = 30;
 
     private void renderWorld(GuiGraphics g, int mx, int my) {
-        if (worldFolder == 0) {
+        if (folder() == 0) {
             drawWrapped(g, "Смена погоды сейчас. Автосмену отключает правило «Смена погоды».",
                 contentX, contentY + 34, contentW, DIM);
             return;
@@ -492,6 +514,17 @@ public class GmPanelScreen extends Screen {
             contentX, contentY + 12, contentW, DIM);
     }
 
+    private void renderBroadcast(GuiGraphics g) {
+        String hint = switch (folder()) {
+            case 0 -> "Крупный текст в центре экрана всем игрокам (/title). "
+                + "В редакторе — цвет, начертание, подзаголовок, предпросмотр.";
+            case 1 -> "Строка в чат всем от лица сервера (/tellraw). "
+                + "В редакторе — цвет и начертание.";
+            default -> "Любой звук игры всем или одному игроку, с громкостью и тоном.";
+        };
+        drawWrapped(g, hint, contentX, contentY + 34, contentW, DIM);
+    }
+
     // ────────────────────────────────────────────────────────────── mouse ──
 
     @Override
@@ -515,10 +548,12 @@ public class GmPanelScreen extends Screen {
             // папки
             if (hasFolders()) {
                 int fx = px + NAV_W + 8, fy = py + HEADER + 8;
-                for (int i = 0; i < WORLD_FOLDERS.length; i++) {
-                    int w = font.width(WORLD_FOLDERS[i]) + 14;
+                for (int i = 0; i < section.folders.length; i++) {
+                    int w = font.width(section.folders[i]) + 14;
                     if (in(mx, my, fx, fy, w, 14)) {
-                        worldFolder = i;
+                        folderIdx[section.ordinal()] = i;
+                        pickingTpTarget = false;
+                        armed = null;
                         rebuildWidgets();
                         return true;
                     }
@@ -526,7 +561,7 @@ public class GmPanelScreen extends Screen {
                 }
             }
             // правила: две кнопки на строку
-            if (section == Section.WORLD && worldFolder == 1) {
+            if (section == Section.WORLD && folder() == 1) {
                 int y = contentY + 2;
                 int onX = contentX + contentW - RULE_ON_X;
                 int offX = contentX + contentW - RULE_OFF_X;
