@@ -1,1 +1,6 @@
-{ "variants": { "": { "model": "plaguecore:block/rotted_grass" } } }
+{ "variants": { "": [
+  { "model": "plaguecore:block/rotted_grass" },
+  { "model": "plaguecore:block/rotted_grass", "y":  90 },
+  { "model": "plaguecore:block/rotted_grass", "y": 180 },
+  { "model": "plaguecore:block/rotted_grass", "y": 270 }
+] } }

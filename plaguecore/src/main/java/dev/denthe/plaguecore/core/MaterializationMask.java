@@ -17,8 +17,14 @@ package dev.denthe.plaguecore.core;
 public final class MaterializationMask {
     private MaterializationMask() {}
 
-    /** Доля поражённой поверхности по уровням 0..5. Ядро, раздел 5. */
-    private static final float[] ДОЛИ = { 0.00f, 0.10f, 0.35f, 0.70f, 0.95f, 1.00f };
+    /**
+     * Доля поражённой поверхности по уровням 0..5. Ядро, раздел 5.
+     *
+     * Четвёртый уровень — сплошной по решению владельца: полностью
+     * заражённый чанк заражён целиком, а не на девяносто пять процентов.
+     * Оспины внутри сплошной Гнили читались как недоделка.
+     */
+    private static final float[] ДОЛИ = { 0.00f, 0.10f, 0.35f, 0.70f, 1.00f, 1.00f };
 
     public static float fractionFor(int level) {
         if (level <= 0) return 0f;
@@ -44,6 +50,49 @@ public final class MaterializationMask {
         h = перемешать(h);
         // старшие 24 бита: их хватает на точность и они самые «перемешанные»
         return (h >>> 40) / (float) (1 << 24);
+    }
+
+    /** Поражён ли столбец при уже посчитанной доле. */
+    public static boolean isAffected(long seed, int blockX, int blockZ, float fraction) {
+        if (fraction <= 0f) return false;
+        if (fraction >= 1f) return true;
+        return columnWeight(seed, blockX, blockZ) < fraction;
+    }
+
+    /**
+     * Доля для точки мира, сглаженная между центрами четырёх ближайших
+     * чанков. Ключ ко всей картине заражения на глаз.
+     *
+     * Без сглаживания сплошь заражённый чанк упирается в чистого соседа
+     * ровной линией по границе чанка, и мир выглядит расчерченным
+     * на квадраты. Со сглаживанием в середине сплошной области доля
+     * остаётся единицей — заражено всё, — а у фронта плавно съезжает
+     * к нулю, и хэш столбцов превращает съезд в рваную кайму шириной
+     * примерно в чанк.
+     *
+     * Свойство монотонности сохраняется: доля растёт вместе с любым
+     * из четырёх уровней, поэтому перерисовка только добавляет блоки
+     * и никогда не отменяет уже поставленные.
+     */
+    public static float fractionAt(PlagueGrid grid, int blockX, int blockZ) {
+        // Единица измерения — чанк, начало отсчёта — его центр.
+        float fx = (blockX - 8) / 16.0f;
+        float fz = (blockZ - 8) / 16.0f;
+        int cx = (int) Math.floor(fx);
+        int cz = (int) Math.floor(fz);
+        float tx = fx - cx;
+        float tz = fz - cz;
+
+        float f00 = fractionFor(grid.getLevel(cx,     cz));
+        float f10 = fractionFor(grid.getLevel(cx + 1, cz));
+        float f01 = fractionFor(grid.getLevel(cx,     cz + 1));
+        float f11 = fractionFor(grid.getLevel(cx + 1, cz + 1));
+
+        return смешать(смешать(f00, f10, tx), смешать(f01, f11, tx), tz);
+    }
+
+    private static float смешать(float a, float b, float t) {
+        return a + (b - a) * t;
     }
 
     /**

@@ -33,7 +33,6 @@ public final class SurfaceRule {
         ROTTED_GRASS,
         ROTTED_DIRT,
         BLIGHTED_LEAVES,
-        BLIGHT_VINE,
         TRAMPLE_CROP,
         DESTROY_CROP,
         COAT_GROWTH;
@@ -54,7 +53,9 @@ public final class SurfaceRule {
         return switch (kind) {
             case GRASS  -> гниль ? PlagueAction.ROTTED_GRASS : PlagueAction.PODZOL;
             case DIRT   -> PlagueAction.ROTTED_DIRT;
-            case LEAVES -> гниль ? PlagueAction.BLIGHT_VINE : PlagueAction.BLIGHTED_LEAVES;
+            // Лоза на поверхности отменена решением владельца: она осталась
+            // только в пещерах. Листва гниёт и на этом останавливается.
+            case LEAVES -> PlagueAction.BLIGHTED_LEAVES;
             case LOG,
                  STONE  -> гниль ? PlagueAction.COAT_GROWTH : PlagueAction.NONE;
             case CROP   -> гниль ? PlagueAction.DESTROY_CROP : PlagueAction.TRAMPLE_CROP;

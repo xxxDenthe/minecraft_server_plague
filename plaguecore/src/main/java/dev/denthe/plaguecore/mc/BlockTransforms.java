@@ -34,9 +34,9 @@ public final class BlockTransforms {
         if (действие.isNothing() || действие.isCoating()) return null;
 
         BlockState стало = поДействию(действие, было);
-        // Заражённая листва остаётся в игре как листва: на уровне 3 ей ещё
-        // предстоит стать лозой. Чтобы не переставлять её каждый проход,
-        // гасим замену блока самим собой.
+        // Заражённая листва возвращает вид LEAVES и потому приходит сюда
+        // каждый проход. Чтобы не переставлять её впустую, гасим замену
+        // блока самим собой.
         return (стало == null || стало.equals(было)) ? null : стало;
     }
 
@@ -47,7 +47,6 @@ public final class BlockTransforms {
             case ROTTED_DIRT   -> PlagueBlocks.ROTTED_DIRT.get().defaultBlockState();
             case BLIGHTED_LEAVES -> PlagueBlocks.BLIGHTED_LEAVES.get().defaultBlockState()
                                        .setValue(LeavesBlock.PERSISTENT, Boolean.TRUE);
-            case BLIGHT_VINE   -> PlagueBlocks.BLIGHT_VINE.get().defaultBlockState();
             case DESTROY_CROP  -> Blocks.AIR.defaultBlockState();
             case TRAMPLE_CROP  -> вытоптать(было);
             default            -> null;

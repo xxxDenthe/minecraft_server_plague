@@ -41,8 +41,8 @@ public class SporeSacBlock extends Block {
         Block.box(1.0,  3.0, 2.0, 14.0, 13.0, 15.0),   // бугор
         Block.box(4.0, 11.0, 4.0, 10.0, 16.0, 10.0));  // шляпка
 
-    /** Раз в сколько тиков в среднем срывается одна пылинка. */
-    private static final int РЕДКОСТЬ_ПАРТИКЛОВ = 12;
+    /** Раз в сколько тиков в среднем поднимается одна струйка. */
+    private static final int РЕДКОСТЬ_ПАРТИКЛОВ = 4;
 
     public SporeSacBlock(BlockBehaviour.Properties props) {
         super(props);
@@ -74,23 +74,24 @@ public class SporeSacBlock extends Block {
     }
 
     /**
-     * Мешок тихо пылит. Метод чисто клиентский и вызывается только для
+     * Мешок курится вверх. Метод чисто клиентский и вызывается только для
      * блоков рядом с камерой, поэтому цена нулевая.
      *
-     * Пепел выбран вместо споровых частиц ванили намеренно: он тёмно-серый
-     * и держит палитру чумы, а варпово-багровые споры цветные.
+     * Пепел пробовали и отвергли: он падает вниз и тонет в самом мешке,
+     * так что струйки не видно вовсе. Дым всплывает сам, остаётся серым
+     * и потому держит палитру чумы не хуже.
      */
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         if (random.nextInt(РЕДКОСТЬ_ПАРТИКЛОВ) != 0) return;
 
-        double x = pos.getX() + 0.25 + random.nextDouble() * 0.5;
-        double y = pos.getY() + 0.6 + random.nextDouble() * 0.5;
-        double z = pos.getZ() + 0.25 + random.nextDouble() * 0.5;
+        // Бьёт из шляпки, а не из основания: снизу струйку закрывал бы
+        // сам бугор.
+        double x = pos.getX() + 0.35 + random.nextDouble() * 0.3;
+        double y = pos.getY() + 0.95;
+        double z = pos.getZ() + 0.35 + random.nextDouble() * 0.3;
 
-        // Пылинка почти стоит на месте и медленно оседает: споры не бьют
-        // фонтаном, а висят в воздухе.
-        level.addParticle(ParticleTypes.ASH, x, y, z,
-            (random.nextDouble() - 0.5) * 0.01, -0.005, (random.nextDouble() - 0.5) * 0.01);
+        level.addParticle(ParticleTypes.SMOKE, x, y, z,
+            (random.nextDouble() - 0.5) * 0.01, 0.04, (random.nextDouble() - 0.5) * 0.01);
     }
 }

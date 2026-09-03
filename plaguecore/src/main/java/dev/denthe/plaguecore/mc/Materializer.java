@@ -81,14 +81,20 @@ public final class Materializer {
 
     // ── очередь ───────────────────────────────────────────────────────
 
-    /** Поставить чанк в очередь, если картинка в нём отстала от расчёта. */
+    /**
+     * Поставить чанк в очередь, если картинка в нём отстала от расчёта.
+     *
+     * Сравниваем не с уровнем чанка, а с наибольшим уровнем вокруг: доля
+     * поражённых столбцов сглажена между соседями, поэтому чанк отстаёт
+     * и когда заразился не он сам, а сосед — тогда у него сдвинулась кайма.
+     */
     public static boolean поставить(PlagueState state, int cx, int cz) {
         PlagueGrid grid = state.grid();
         int i = grid.index(cx, cz);
         if (i < 0) return false;
         // Обратный проход при очистке — забота подсистемы очистителей,
         // здесь только рост.
-        if (grid.getLevelAt(i) <= grid.getAppliedSurfaceAt(i)) return false;
+        if (grid.maxLevelAround(i) <= grid.getAppliedSurfaceAt(i)) return false;
         return ОЧЕРЕДЬ.enqueue(i);
     }
 
@@ -100,7 +106,7 @@ public final class Materializer {
         PlagueGrid grid = state.grid();
         int поставлено = 0;
         for (int i = 0; i < grid.cellCount(); i++) {
-            if (grid.getLevelAt(i) <= grid.getAppliedSurfaceAt(i)) continue;
+            if (grid.maxLevelAround(i) <= grid.getAppliedSurfaceAt(i)) continue;
             int cx = grid.chunkXOf(i);
             int cz = grid.chunkZOf(i);
             if (level.getChunkSource().getChunkNow(cx, cz) == null) continue;
@@ -134,8 +140,11 @@ public final class Materializer {
                 continue;
             }
 
+            // Уровень чанка решает, во что превращать блок; наибольший
+            // уровень вокруг — до чего чанк надо дорисовать.
             int уровень = grid.getLevelAt(i);
-            if (уровень <= grid.getAppliedSurfaceAt(i)) {   // кто-то успел раньше
+            int цель = grid.maxLevelAround(i);
+            if (цель <= grid.getAppliedSurfaceAt(i)) {   // кто-то успел раньше
                 ОЧЕРЕДЬ.finishHead();
                 continue;
             }
@@ -147,8 +156,13 @@ public final class Materializer {
             while (столбец < СТОЛБЦОВ && бюджет > 0) {
                 int wx = (cx << 4) + (столбец & 15);
                 int wz = (cz << 4) + (столбец >> 4);
-                if (MaterializationMask.isAffected(seed, wx, wz, уровень)) {
-                    int сделано = поразитьСтолбец(level, chunk, seed, wx, wz, уровень);
+                float доля = MaterializationMask.fractionAt(grid, wx, wz);
+                if (MaterializationMask.isAffected(seed, wx, wz, доля)) {
+                    // Уровень своего чанка задаёт силу: подзол или гниль.
+                    // Если чанк чист, а кайма соседа сюда дотянулась, берём
+                    // силу соседа — иначе гниль обрывалась бы подзолом.
+                    int сила = Math.max(уровень, силаПоДоле(доля));
+                    int сделано = поразитьСтолбец(level, chunk, seed, wx, wz, сила);
                     бюджет -= сделано;
                     изменено += сделано;
                 }
@@ -156,7 +170,7 @@ public final class Materializer {
             }
 
             if (столбец >= СТОЛБЦОВ) {
-                grid.setAppliedSurfaceAt(i, уровень);
+                grid.setAppliedSurfaceAt(i, цель);
                 грязно = true;
                 ОЧЕРЕДЬ.finishHead();
             } else {
@@ -199,6 +213,18 @@ public final class Materializer {
             }
         }
         return изменено;
+    }
+
+    /**
+     * Наименьший уровень, которому положена такая доля. Нужен только
+     * в кайме, вылезшей за пределы своего чанка: там уровень чанка нулевой,
+     * а блоки менять уже надо.
+     */
+    private static int силаПоДоле(float доля) {
+        for (int уровень = 1; уровень <= PlagueConstants.MAX_NATURAL_LEVEL; уровень++) {
+            if (доля <= MaterializationMask.fractionFor(уровень)) return уровень;
+        }
+        return PlagueConstants.MAX_NATURAL_LEVEL;
     }
 
     /**

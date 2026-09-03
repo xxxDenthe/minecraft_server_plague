@@ -1,1 +1,6 @@
-{ "variants": { "": { "model": "plaguecore:block/blighted_leaves" } } }
+{ "variants": { "": [
+  { "model": "plaguecore:block/blighted_leaves" },
+  { "model": "plaguecore:block/blighted_leaves", "y":  90 },
+  { "model": "plaguecore:block/blighted_leaves", "y": 180 },
+  { "model": "plaguecore:block/blighted_leaves", "y": 270 }
+] } }

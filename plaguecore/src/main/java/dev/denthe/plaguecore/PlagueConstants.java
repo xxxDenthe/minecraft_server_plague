@@ -75,7 +75,7 @@ public final class PlagueConstants {
     public static final float CAVE_FLOOR_ROT = 0.45f;
 
     /** Доля пола под споровые мешки. Входит в долю гнилого пола. */
-    public static final float CAVE_SPORE_SAC = 0.04f;
+    public static final float CAVE_SPORE_SAC = 0.03f;
 
     /**
      * Сколько столбцов чанка просматривается за тик под землёй.

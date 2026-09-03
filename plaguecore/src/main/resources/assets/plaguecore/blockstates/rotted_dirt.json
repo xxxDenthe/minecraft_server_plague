@@ -1,1 +1,6 @@
-{ "variants": { "": { "model": "plaguecore:block/rotted_dirt" } } }
+{ "variants": { "": [
+  { "model": "plaguecore:block/rotted_dirt" },
+  { "model": "plaguecore:block/rotted_dirt", "y":  90 },
+  { "model": "plaguecore:block/rotted_dirt", "y": 180 },
+  { "model": "plaguecore:block/rotted_dirt", "y": 270 }
+] } }

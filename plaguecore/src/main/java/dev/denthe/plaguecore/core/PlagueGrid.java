@@ -100,6 +100,26 @@ public final class PlagueGrid {
 
     public int getLevelAt(int index) { return level[index]; }
 
+    /**
+     * Наибольший уровень в квадрате три на три вокруг чанка, считая его сам.
+     *
+     * Нужен материализации: доля поражённых столбцов сглажена между
+     * центрами соседних чанков, поэтому картинка чанка зависит не только
+     * от него. Это число и есть «до чего чанк надо дорисовать», и по нему
+     * же видно, что он отстал.
+     */
+    public int maxLevelAround(int index) {
+        int cx = chunkXOf(index);
+        int cz = chunkZOf(index);
+        int max = 0;
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                max = Math.max(max, getLevel(cx + dx, cz + dz));
+            }
+        }
+        return max;
+    }
+
     public void setLevelAt(int index, int value) {
         level[index] = (byte) clamp(value, 0, PlagueConstants.MAX_LEVEL);
     }

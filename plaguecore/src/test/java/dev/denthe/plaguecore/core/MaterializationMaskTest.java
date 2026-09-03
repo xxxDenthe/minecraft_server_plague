@@ -17,7 +17,7 @@ class MaterializationMaskTest {
         assertEquals(0.10f, MaterializationMask.fractionFor(1), 0.001f);
         assertEquals(0.35f, MaterializationMask.fractionFor(2), 0.001f);
         assertEquals(0.70f, MaterializationMask.fractionFor(3), 0.001f);
-        assertEquals(0.95f, MaterializationMask.fractionFor(4), 0.001f);
+        assertEquals(1.00f, MaterializationMask.fractionFor(4), 0.001f);
         assertEquals(1.00f, MaterializationMask.fractionFor(5), 0.001f);
     }
 
@@ -154,6 +154,70 @@ class MaterializationMaskTest {
         }
         float доля = ниже / (float) всего;
         assertTrue(доля > 0.22f && доля < 0.28f, "ждём около четверти, получено " + доля);
+    }
+
+    /**
+     * Полностью заражённый чанк заражён целиком. Владелец: «если чанк
+     * заражён полностью, значит и блоки в нём полностью заражены».
+     */
+    @Test
+    void наЧетвёртомУровнеПораженыВсеСтолбцы() {
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                assertTrue(MaterializationMask.isAffected(СИД, x, z, 4), x + "," + z);
+            }
+        }
+    }
+
+    // ── сглаженная доля между чанками ─────────────────────────────────
+
+    private static PlagueGrid сеткаСОднимЗаражённымЧанком() {
+        PlagueGrid g = new PlagueGrid(9, -4, -4);
+        g.setLevel(0, 0, 4);
+        return g;
+    }
+
+    @Test
+    void вСерединеСплошьЗаражённойОбластиДоляЕдиница() {
+        PlagueGrid g = new PlagueGrid(9, -4, -4);
+        for (int cx = -2; cx <= 2; cx++) {
+            for (int cz = -2; cz <= 2; cz++) g.setLevel(cx, cz, 4);
+        }
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                assertEquals(1.0f, MaterializationMask.fractionAt(g, x, z), 0.001f, x + "," + z);
+            }
+        }
+    }
+
+    @Test
+    void уКраяОдинокогоЧанкаДоляПадает() {
+        PlagueGrid g = сеткаСОднимЗаражённымЧанком();
+        float центр = MaterializationMask.fractionAt(g, 8, 8);
+        float кромка = MaterializationMask.fractionAt(g, 0, 8);
+        assertEquals(1.0f, центр, 0.001f, "в центре чанка должно быть сплошь");
+        assertTrue(кромка < центр, "у кромки " + кромка + " должно быть меньше центра " + центр);
+        assertTrue(кромка > 0f, "кромка не должна обнуляться совсем");
+    }
+
+    /** Кайма выходит за чанк: иначе граница осталась бы прямой линией. */
+    @Test
+    void заражениеПротекаетВЧистогоСоседа() {
+        PlagueGrid g = сеткаСОднимЗаражённымЧанком();
+        float всоседе = MaterializationMask.fractionAt(g, -1, 8);
+        assertTrue(всоседе > 0f, "в чистом соседе у самой границы ждём остатки, получено " + всоседе);
+        assertTrue(всоседе < 1f);
+    }
+
+    @Test
+    void доляНиГдеНеВыходитЗаНольЕдиницу() {
+        PlagueGrid g = сеткаСОднимЗаражённымЧанком();
+        for (int x = -40; x <= 40; x++) {
+            for (int z = -40; z <= 40; z++) {
+                float d = MaterializationMask.fractionAt(g, x, z);
+                assertTrue(d >= 0f && d <= 1f, "доля " + d + " в " + x + "," + z);
+            }
+        }
     }
 
     @Test

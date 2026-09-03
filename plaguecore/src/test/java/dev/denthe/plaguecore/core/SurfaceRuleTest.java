@@ -37,11 +37,12 @@ class SurfaceRuleTest {
     }
 
     @Test
-    void листваСначалаЗаражаетсяПотомОсыпаетсяЛозами() {
-        assertEquals(PlagueAction.BLIGHTED_LEAVES, SurfaceRule.actionFor(BlockKind.LEAVES, 1));
-        assertEquals(PlagueAction.BLIGHTED_LEAVES, SurfaceRule.actionFor(BlockKind.LEAVES, 2));
-        assertEquals(PlagueAction.BLIGHT_VINE, SurfaceRule.actionFor(BlockKind.LEAVES, 3));
-        assertEquals(PlagueAction.BLIGHT_VINE, SurfaceRule.actionFor(BlockKind.LEAVES, 4));
+    void листваГниётИНаЭтомОстанавливается() {
+        // Лоза на поверхности отменена: она осталась только в пещерах.
+        for (int уровень = 1; уровень <= 4; уровень++) {
+            assertEquals(PlagueAction.BLIGHTED_LEAVES,
+                SurfaceRule.actionFor(BlockKind.LEAVES, уровень), "уровень " + уровень);
+        }
     }
 
     @Test
