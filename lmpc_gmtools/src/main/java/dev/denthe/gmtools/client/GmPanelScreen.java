@@ -101,6 +101,7 @@ public class GmPanelScreen extends Screen {
     private String selectedPlayer;
     private int listScroll;
     private boolean pickingTpTarget;
+    private int hdrTp, hdrState, hdrMod;   // Y заголовков групп в карточке, ставит initPlayers
 
     private String armed;      // id действия, ждущего подтверждения
     private long armedAt;
@@ -192,20 +193,29 @@ public class GmPanelScreen extends Screen {
 
         int dx = detailX();
         int dw = detailW();
-        int y = contentY + 26;
+        int half = (dw - 4) / 2;
+        int third = (dw - 4) / 3;
+        int y = contentY + 24;
         String n = selectedPlayer;
 
+        // верхняя строка: выдача и наблюдение
+        addRenderableWidget(Button.builder(Component.literal("Выдать предмет…"),
+            b -> minecraft.setScreen(new ItemGiveScreen(this, n)))
+            .bounds(dx, y, half, BTN_H).build());
+        addRenderableWidget(Button.builder(Component.literal("Наблюдать"),
+            b -> { SpectatorToggle.enterSpectator(minecraft); run("spectate " + n); })
+            .bounds(dx + half + 4, y, dw - half - 4, BTN_H).build());
+        y += BTN_H + 12;
+
         // Телепорт
-        y += 11;
+        hdrTp = y - 10;
         y = add(dx, y, dw, "Телепорт к нему", () -> { run("tp @s " + n); onClose(); });
         y = add(dx, y, dw, "Призвать к себе", () -> run("tp " + n + " @s"));
-        y = add(dx, y, dw, "Наблюдать за ним",
-            () -> { SpectatorToggle.enterSpectator(minecraft); run("spectate " + n); });
         y = add(dx, y, dw, "К другому игроку…", () -> { pickingTpTarget = true; rebuildWidgets(); });
 
         // Состояние
-        y += 13;
-        int third = (dw - 4) / 3;
+        y += 12;
+        hdrState = y - 10;
         addRenderableWidget(Button.builder(Component.literal("Лечить"),
             b -> run("effect give " + n + " minecraft:regeneration 3 4 true"))
             .bounds(dx, y, third, BTN_H).build());
@@ -220,7 +230,8 @@ public class GmPanelScreen extends Screen {
         y = add(dx, y, dw, "Снять все эффекты", () -> run("effect clear " + n));
 
         // Модерация
-        y += 13;
+        y += 12;
+        hdrMod = y - 10;
         reasonBox = new EditBox(font, dx, y, dw, 14, Component.literal("причина"));
         reasonBox.setHint(Component.literal("причина"));
         reasonBox.setMaxLength(80);
@@ -228,7 +239,6 @@ public class GmPanelScreen extends Screen {
         reasonBox.setResponder(s -> reasonText = s);
         addRenderableWidget(reasonBox);
         y += 18;
-        int half = (dw - 4) / 2;
         addRenderableWidget(Button.builder(Component.literal("Кик"),
             b -> run("kick " + n + reason())).bounds(dx, y, half, BTN_H).build());
         addRenderableWidget(Button.builder(Component.literal(armedLabel("ban", "Бан")),
@@ -436,12 +446,9 @@ public class GmPanelScreen extends Screen {
             g.drawString(font, gameModeRu(pi.getGameMode()) + "  ·  " + pi.getLatency() + " мс",
                 dx + 10, listY + 15, DIM, false);
         }
-        int gy = contentY + 26;
-        g.drawString(font, "ТЕЛЕПОРТ", dx, gy, ACCENT, false);
-        gy += 11 + (BTN_H + 1) * 4 + 13;
-        g.drawString(font, "СОСТОЯНИЕ", dx, gy - 11, ACCENT, false);
-        gy += (BTN_H + 2) + (BTN_H + 1) + 13;
-        g.drawString(font, "МОДЕРАЦИЯ", dx, gy - 11, ACCENT, false);
+        g.drawString(font, "ТЕЛЕПОРТ", dx, hdrTp, ACCENT, false);
+        g.drawString(font, "СОСТОЯНИЕ", dx, hdrState, ACCENT, false);
+        g.drawString(font, "МОДЕРАЦИЯ", dx, hdrMod, ACCENT, false);
     }
 
     private static final int RULE_ON_X  = 62;   // отступ кнопки «Вкл» от правого края области
