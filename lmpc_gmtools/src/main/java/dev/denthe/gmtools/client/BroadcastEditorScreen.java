@@ -40,12 +40,14 @@ public class BroadcastEditorScreen extends Screen {
     private static final int TEXT = 0xFFE6E8E6;
     private static final int DIM = 0xFF8A9490;
     private static final int TRACK = 0x40000000;
+    private static final int ON = 0x807C97A6;
 
     private final Screen parent;
     private final Mode mode;
     private final Draft d;
 
     private int px, py, pw, ph;
+    private int styleY, colorY, prevY;   // считаются в init, чтобы ничего не наезжало
     private EditBox mainBox;
     private EditBox subBox;
 
@@ -68,49 +70,46 @@ public class BroadcastEditorScreen extends Screen {
 
     @Override
     protected void init() {
-        pw = Math.min(width - 60, 420);
-        ph = Math.min(height - 60, 280);
+        pw = Math.min(width - 40, 430);
+        ph = Math.min(height - 40, 300);
         px = (width - pw) / 2;
         py = (height - ph) / 2;
 
         int pad = 14, w = pw - pad * 2;
 
-        mainBox = new EditBox(font, px + pad, py + 40, w, 18,
+        mainBox = new EditBox(font, px + pad, py + 34, w, 16,
             Component.literal(mode == Mode.TITLE ? "заголовок" : "текст"));
+        mainBox.setHint(Component.literal(mode == Mode.TITLE ? "заголовок" : "текст сообщения"));
         mainBox.setMaxLength(200);
         mainBox.setValue(d.main);
         mainBox.setResponder(s -> d.main = s);
         addRenderableWidget(mainBox);
         setInitialFocus(mainBox);
 
+        int cursor = py + 34 + 16 + 8;
         if (mode == Mode.TITLE) {
-            subBox = new EditBox(font, px + pad, py + 62, w, 18, Component.literal("подзаголовок"));
+            subBox = new EditBox(font, px + pad, cursor, w, 16, Component.literal("подзаголовок"));
+            subBox.setHint(Component.literal("подзаголовок (необязательно)"));
             subBox.setMaxLength(200);
             subBox.setValue(d.sub);
             subBox.setResponder(s -> d.sub = s);
             addRenderableWidget(subBox);
+            cursor += 16 + 8;
         }
 
-        int by = py + ph - 26;
+        styleY = cursor + 12;               // под полями, с местом под подпись «Начертание:»
+        colorY = styleY + 14 + 14;          // под тумблерами
+        prevY  = colorY + 32 + 14;          // под двумя рядами образцов цвета
+
+        int by = py + ph - 24;
         addRenderableWidget(Button.builder(Component.literal("Отправить"), b -> send())
             .bounds(px + pw - pad - 96, by, 96, 18).build());
         addRenderableWidget(Button.builder(Component.literal("Назад"), b -> minecraft.setScreen(parent))
-            .bounds(px + pad, by, 80, 18).build());
+            .bounds(px + pad, by, 76, 18).build());
         addRenderableWidget(Button.builder(Component.literal("Сброс стиля"), b -> {
-            d.color = null; d.bold = d.italic = d.underline = d.strike = d.obf = false;
-        }).bounds(px + pad + 88, by, 90, 18).build());
-    }
-
-    private int styleRowY() {
-        return (mode == Mode.TITLE ? py + 86 : py + 64);
-    }
-
-    private int colorRowY() {
-        return styleRowY() + 22;
-    }
-
-    private int previewY() {
-        return colorRowY() + 46;
+            d.color = null;
+            d.bold = d.italic = d.underline = d.strike = d.obf = false;
+        }).bounds(px + pad + 84, by, 92, 18).build());
     }
 
     private void send() {
@@ -159,35 +158,35 @@ public class BroadcastEditorScreen extends Screen {
         g.fill(px, py + 24, px + pw, py + 25, ACCENT);
 
         // начертание
-        int sx = px + 14, sy = styleRowY();
-        g.drawString(font, "Начертание:", sx, sy - 10, DIM, false);
-        sx = toggle(g, sx, sy, "Ж", d.bold, mx, my);
-        sx = toggle(g, sx, sy, "К", d.italic, mx, my);
-        sx = toggle(g, sx, sy, "П", d.underline, mx, my);
-        sx = toggle(g, sx, sy, "З", d.strike, mx, my);
-        toggle(g, sx, sy, "О", d.obf, mx, my);
+        int sx = px + 14;
+        g.drawString(font, "Начертание", sx, styleY - 11, DIM, false);
+        sx = toggle(g, sx, styleY, "Ж", d.bold, mx, my);
+        sx = toggle(g, sx, styleY, "К", d.italic, mx, my);
+        sx = toggle(g, sx, styleY, "П", d.underline, mx, my);
+        sx = toggle(g, sx, styleY, "З", d.strike, mx, my);
+        toggle(g, sx, styleY, "О", d.obf, mx, my);
 
         // цвет
-        int cx = px + 14, cy = colorRowY();
-        g.drawString(font, "Цвет:", cx, cy - 10, DIM, false);
+        int cx = px + 14;
+        g.drawString(font, "Цвет", cx, colorY - 11, DIM, false);
         for (int i = 0; i < colors.size(); i++) {
             int qx = cx + (i % 8) * 16;
-            int qy = cy + (i / 8) * 16;
-            ChatFormatting c = colors.get(i);
-            Integer col = c.getColor();
+            int qy = colorY + (i / 8) * 16;
+            Integer col = colors.get(i).getColor();
             g.fill(qx, qy, qx + 14, qy + 14, 0xFF000000 | (col == null ? 0xFFFFFF : col));
-            if (c == d.color) outline(g, qx - 1, qy - 1, 16, 16, 0xFFFFFFFF);
+            if (colors.get(i) == d.color) outline(g, qx - 1, qy - 1, 16, 16, 0xFFFFFFFF);
         }
 
         // предпросмотр
-        int wy = previewY();
-        g.drawString(font, "Предпросмотр:", px + 14, wy - 10, DIM, false);
-        g.fill(px + 14, wy, px + pw - 14, wy + 20, TRACK);
-        MutableComponent prev = Component.literal(d.main.isEmpty() ? "(пусто)" : d.main).withStyle(previewStyle());
-        g.drawCenteredString(font, prev, px + pw / 2, wy + 6, 0xFFFFFFFF);
+        g.drawString(font, "Предпросмотр", px + 14, prevY - 11, DIM, false);
+        int boxH = mode == Mode.TITLE ? 34 : 20;
+        g.fill(px + 14, prevY, px + pw - 14, prevY + boxH, TRACK);
+        MutableComponent prev = Component.literal(d.main.isEmpty() ? "(пусто)" : d.main)
+            .withStyle(previewStyle());
+        g.drawCenteredString(font, prev, px + pw / 2, prevY + 5, 0xFFFFFFFF);
         if (mode == Mode.TITLE && !d.sub.isEmpty()) {
             g.drawCenteredString(font, Component.literal(d.sub).withStyle(previewStyle().withBold(false)),
-                px + pw / 2, wy + 26, 0xFFCCCCCC);
+                px + pw / 2, prevY + 20, 0xFFCCCCCC);
         }
 
         super.render(g, mx, my, pt);
@@ -195,7 +194,7 @@ public class BroadcastEditorScreen extends Screen {
 
     private int toggle(GuiGraphics g, int x, int y, String label, boolean on, int mx, int my) {
         boolean hov = mx >= x && mx < x + 16 && my >= y && my < y + 14;
-        g.fill(x, y, x + 16, y + 14, on ? 0x807C97A6 : (hov ? 0x30FFFFFF : TRACK));
+        g.fill(x, y, x + 16, y + 14, on ? ON : (hov ? 0x30FFFFFF : TRACK));
         outline(g, x, y, 16, 14, BORDER);
         g.drawString(font, label, x + 5, y + 3, on ? 0xFFFFFFFF : DIM, false);
         return x + 20;
@@ -203,11 +202,11 @@ public class BroadcastEditorScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int btn) {
-        int sx = px + 14, sy = styleRowY();
+        int sx = px + 14;
         String[] keys = { "b", "i", "u", "s", "o" };
         for (int k = 0; k < 5; k++) {
             int bx = sx + k * 20;
-            if (mx >= bx && mx < bx + 16 && my >= sy && my < sy + 14) {
+            if (mx >= bx && mx < bx + 16 && my >= styleY && my < styleY + 14) {
                 switch (keys[k]) {
                     case "b" -> d.bold = !d.bold;
                     case "i" -> d.italic = !d.italic;
@@ -218,9 +217,9 @@ public class BroadcastEditorScreen extends Screen {
                 return true;
             }
         }
-        int cx = px + 14, cy = colorRowY();
+        int cx = px + 14;
         for (int i = 0; i < colors.size(); i++) {
-            int qx = cx + (i % 8) * 16, qy = cy + (i / 8) * 16;
+            int qx = cx + (i % 8) * 16, qy = colorY + (i / 8) * 16;
             if (mx >= qx && mx < qx + 14 && my >= qy && my < qy + 14) {
                 d.color = (colors.get(i) == d.color) ? null : colors.get(i);
                 return true;

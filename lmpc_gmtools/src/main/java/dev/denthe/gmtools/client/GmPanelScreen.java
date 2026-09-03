@@ -308,16 +308,18 @@ public class GmPanelScreen extends Screen {
     // ── Опыты ─────────────────────────────────────────────────────────────
 
     private void initExperimental() {
-        int y = contentY + 44, w = (contentW - 8) / 2;
-        addRenderableWidget(Button.builder(Component.literal("Заморозить мир"),
-            b -> run("tick freeze")).bounds(contentX, y, w, BTN_H).build());
-        addRenderableWidget(Button.builder(Component.literal("Разморозить"),
-            b -> run("tick unfreeze")).bounds(contentX + w + 4, y, contentW - w - 4, BTN_H).build());
+        int y = contentY + 50, w = (contentW - 8) / 2;
+        expBtn(contentX, y, w, "exp:freeze", "Заморозить мир", "tick freeze");
+        expBtn(contentX + w + 4, y, contentW - w - 4, "exp:unfreeze", "Разморозить", "tick unfreeze");
         y += BTN_H + 4;
-        addRenderableWidget(Button.builder(Component.literal("Шаг ×1"),
-            b -> run("tick step 1")).bounds(contentX, y, w, BTN_H).build());
-        addRenderableWidget(Button.builder(Component.literal("Шаг ×20"),
-            b -> run("tick step 20")).bounds(contentX + w + 4, y, contentW - w - 4, BTN_H).build());
+        expBtn(contentX, y, w, "exp:step1", "Шаг ×1", "tick step 1");
+        expBtn(contentX + w + 4, y, contentW - w - 4, "exp:step20", "Шаг ×20", "tick step 20");
+    }
+
+    /** Кнопка опыта: любое нажатие требует подтверждения вторым кликом. */
+    private void expBtn(int x, int y, int w, String id, String label, String cmd) {
+        addRenderableWidget(Button.builder(Component.literal(armedLabel(id, label)),
+            b -> { if (arm(id)) run(cmd); }).bounds(x, y, w, BTN_H).build());
     }
 
     // ───────────────────────────────────────────────────────────── render ──
@@ -508,7 +510,7 @@ public class GmPanelScreen extends Screen {
     }
 
     private void renderExperimental(GuiGraphics g) {
-        g.drawString(font, "Опасные функции", contentX, contentY, WARN, false);
+        g.drawString(font, "⚠ Опасные функции — каждая по двойному клику", contentX, contentY, WARN, false);
         drawWrapped(g, "Стоп-кадр останавливает весь мир: мобов, рост, физику. "
             + "«Шаг» проматывает мир на N тактов замороженным. Не забудьте разморозить.",
             contentX, contentY + 12, contentW, DIM);
