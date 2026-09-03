@@ -25,10 +25,15 @@ import java.util.UUID;
 public final class GmNetwork {
     private GmNetwork() {}
 
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";
 
-    /** dim: 0 — Обычный, 1 — Ад, 2 — Край, 3 — прочее. */
-    public record Pos(UUID id, String name, float x, float z, byte dim) {}
+    /**
+     * dim: 0 — Обычный, 1 — Ад, 2 — Край, 3 — прочее (Ада и Края в игре
+     * не будет, поле оставлено на будущее).
+     * mode: id режима игры (0 выживание … 3 наблюдатель).
+     */
+    public record Pos(UUID id, String name, float x, float z, byte dim,
+                      float health, byte food, byte mode) {}
 
     public record Positions(List<Pos> players) implements CustomPacketPayload {
 
@@ -44,6 +49,9 @@ public final class GmNetwork {
                     buf.writeFloat(pos.x());
                     buf.writeFloat(pos.z());
                     buf.writeByte(pos.dim());
+                    buf.writeFloat(pos.health());
+                    buf.writeByte(pos.food());
+                    buf.writeByte(pos.mode());
                 }
             },
             buf -> {
@@ -52,7 +60,8 @@ public final class GmNetwork {
                 List<Pos> list = new ArrayList<>(n);
                 for (int i = 0; i < n; i++) {
                     list.add(new Pos(buf.readUUID(), buf.readUtf(48),
-                        buf.readFloat(), buf.readFloat(), buf.readByte()));
+                        buf.readFloat(), buf.readFloat(), buf.readByte(),
+                        buf.readFloat(), buf.readByte(), buf.readByte()));
                 }
                 return new Positions(list);
             });

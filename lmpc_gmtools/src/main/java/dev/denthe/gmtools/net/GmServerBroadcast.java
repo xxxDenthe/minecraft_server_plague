@@ -35,7 +35,9 @@ public final class GmServerBroadcast {
         List<GmNetwork.Pos> all = new ArrayList<>(online.size());
         for (ServerPlayer p : online) {
             all.add(new GmNetwork.Pos(p.getUUID(), p.getGameProfile().getName(),
-                (float) p.getX(), (float) p.getZ(), dimByte(p.level().dimension())));
+                (float) p.getX(), (float) p.getZ(), dimByte(p.level().dimension()),
+                p.getHealth(), (byte) p.getFoodData().getFoodLevel(),
+                (byte) p.gameMode.getGameModeForPlayer().getId()));
         }
 
         GmNetwork.Positions payload = new GmNetwork.Positions(all);

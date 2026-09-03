@@ -215,6 +215,10 @@ public class GmPanelScreen extends Screen {
         int y = contentY + 24;
         String n = selectedPlayer;
 
+        addRenderableWidget(Button.builder(Component.literal("◀ Таблица"),
+            b -> { selectedPlayer = null; rebuildWidgets(); })
+            .bounds(contentX, contentY + contentH - 14, 76, 13).build());
+
         // верхняя строка: выдача и наблюдение
         addRenderableWidget(Button.builder(Component.literal("Выдать предмет…"),
             b -> minecraft.setScreen(new ItemGiveScreen(this, n)))
@@ -537,12 +541,17 @@ public class GmPanelScreen extends Screen {
     }
 
     private void renderPlayers(GuiGraphics g, int mx, int my) {
+        if (selectedPlayer == null && !pickingTpTarget) {
+            renderPlayerTable(g, mx, my);
+            return;
+        }
+
         List<PlayerInfo> players = onlinePlayers();
 
         int listX = contentX;
         int listW = Math.round(contentW * 0.40f);
         int listY = contentY;
-        int listH = contentH;
+        int listH = contentH - 16;
 
         String title = pickingTpTarget
             ? "Кому телепортировать " + selectedPlayer + "?"
@@ -598,6 +607,83 @@ public class GmPanelScreen extends Screen {
         g.drawString(font, "ТЕЛЕПОРТ", dx, hdrTp, ACCENT, false);
         g.drawString(font, "СОСТОЯНИЕ", dx, hdrState, ACCENT, false);
         g.drawString(font, "МОДЕРАЦИЯ", dx, hdrMod, ACCENT, false);
+    }
+
+    /** Живая таблица: ник, HP, еда, режим, расстояние. Клик по строке — карточка игрока. */
+    private void renderPlayerTable(GuiGraphics g, int mx, int my) {
+        List<PlayerInfo> players = onlinePlayers();
+        java.util.Map<UUID, GmNetwork.Pos> pos = new java.util.HashMap<>();
+        for (GmNetwork.Pos p : GmMapData.players()) pos.put(p.id(), p);
+        var me = mePlayer();
+
+        int x = contentX, w = contentW, top = contentY;
+        int cName = x + 2;
+        int cHp = x + w - 190;
+        int cFood = x + w - 128;
+        int cMode = x + w - 96;
+        int cDist = x + w - 34;
+
+        g.drawString(font, "Игроки: " + players.size()
+            + (GmMapData.ageMs() == Long.MAX_VALUE ? "   (HP/еда — оператору при моде на сервере)" : ""),
+            x, top - 12, DIM, false);
+        g.drawString(font, "ник", cName, top, DIM, false);
+        g.drawString(font, "HP", cHp, top, DIM, false);
+        g.drawString(font, "еда", cFood, top, DIM, false);
+        g.drawString(font, "реж.", cMode, top, DIM, false);
+        g.drawString(font, "дист", cDist, top, DIM, false);
+        g.fill(x, top + 10, x + w, top + 11, BORDER);
+
+        int listY = top + 14, listH = contentH - 14;
+        int maxScroll = Math.max(0, players.size() * ROW_H - listH);
+        listScroll = Math.max(0, Math.min(listScroll, maxScroll));
+
+        g.enableScissor(x, listY, x + w, listY + listH);
+        int y = listY - listScroll;
+        for (PlayerInfo pi : players) {
+            String name = nameOf(pi);
+            GmNetwork.Pos p = pos.get(pi.getProfile().getId());
+            boolean hover = in(mx, my, x, Math.max(y, listY), w, ROW_H) && my >= y && my < listY + listH;
+            if (hover) g.fill(x, y, x + w, y + ROW_H, HOVER);
+
+            g.drawString(font, font.plainSubstrByWidth(name, cHp - cName - 6), cName, y + 4, TEXT, false);
+            if (p != null) {
+                int bar = 30;
+                g.fill(cHp, y + 5, cHp + bar, y + 11, 0x40000000);
+                g.fill(cHp, y + 5, cHp + Math.round(bar * Math.min(1f, p.health() / 20f)), y + 11, hpColor(p.health()));
+                g.drawString(font, String.valueOf(Math.round(p.health())), cHp + bar + 3, y + 4, TEXT, false);
+                g.drawString(font, String.valueOf(p.food()), cFood, y + 4, TEXT, false);
+            } else {
+                g.drawString(font, "—", cHp, y + 4, DIM, false);
+                g.drawString(font, "—", cFood, y + 4, DIM, false);
+            }
+            GameType gm = p != null ? GameType.byId(p.mode()) : pi.getGameMode();
+            g.drawString(font, gameModeShort(gm), cMode, y + 4, DIM, false);
+
+            String dist = "—";
+            if (p != null && me != null) {
+                double ddx = p.x() - me.getX(), ddz = p.z() - me.getZ();
+                dist = String.valueOf((int) Math.sqrt(ddx * ddx + ddz * ddz));
+            }
+            g.drawString(font, dist, cDist, y + 4, DIM, false);
+            y += ROW_H;
+        }
+        g.disableScissor();
+    }
+
+    private static int hpColor(float hp) {
+        if (hp > 14) return 0xFF6FB06F;
+        if (hp > 7) return 0xFFC8B45E;
+        return 0xFFC86A5E;
+    }
+
+    private static String gameModeShort(GameType t) {
+        if (t == null) return "?";
+        return switch (t) {
+            case SURVIVAL -> "выж";
+            case CREATIVE -> "твор";
+            case ADVENTURE -> "прикл";
+            case SPECTATOR -> "набл";
+        };
     }
 
     private static final int RULE_ON_X  = 62;   // отступ кнопки «Вкл» от правого края области
@@ -709,11 +795,25 @@ public class GmPanelScreen extends Screen {
                     y += ROW_H;
                 }
             }
-            // список игроков
-            if (section == Section.PLAYERS) {
+            // таблица игроков: клик по строке — карточка
+            if (section == Section.PLAYERS && selectedPlayer == null && !pickingTpTarget) {
+                int listY = contentY + 14, listH = contentH - 14;
+                if (in(mx, my, contentX, listY, contentW, listH)) {
+                    List<PlayerInfo> players = onlinePlayers();
+                    int idx = (int) ((my - listY + listScroll) / ROW_H);
+                    if (idx >= 0 && idx < players.size()) {
+                        selectedPlayer = nameOf(players.get(idx));
+                        listScroll = 0;
+                        rebuildWidgets();
+                    }
+                    return true;
+                }
+            }
+            // узкий список игроков (когда карточка открыта)
+            if (section == Section.PLAYERS && (selectedPlayer != null || pickingTpTarget)) {
                 int listX = contentX;
                 int listW = Math.round(contentW * 0.40f);
-                int listY = contentY, listH = contentH;
+                int listY = contentY, listH = contentH - 16;
                 if (in(mx, my, listX, listY, listW, listH)) {
                     List<PlayerInfo> players = onlinePlayers();
                     int idx = (int) ((my - listY + listScroll) / ROW_H);
