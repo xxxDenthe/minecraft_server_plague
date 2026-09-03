@@ -32,6 +32,7 @@ public final class SurfaceRule {
         PODZOL,
         ROTTED_GRASS,
         ROTTED_DIRT,
+        BLIGHTED_LEAVES,
         BLIGHT_VINE,
         TRAMPLE_CROP,
         DESTROY_CROP,
@@ -53,7 +54,7 @@ public final class SurfaceRule {
         return switch (kind) {
             case GRASS  -> гниль ? PlagueAction.ROTTED_GRASS : PlagueAction.PODZOL;
             case DIRT   -> PlagueAction.ROTTED_DIRT;
-            case LEAVES -> гниль ? PlagueAction.BLIGHT_VINE : PlagueAction.NONE;
+            case LEAVES -> гниль ? PlagueAction.BLIGHT_VINE : PlagueAction.BLIGHTED_LEAVES;
             case LOG,
                  STONE  -> гниль ? PlagueAction.COAT_GROWTH : PlagueAction.NONE;
             case CROP   -> гниль ? PlagueAction.DESTROY_CROP : PlagueAction.TRAMPLE_CROP;

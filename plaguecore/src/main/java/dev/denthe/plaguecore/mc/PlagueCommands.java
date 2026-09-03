@@ -61,6 +61,12 @@ public final class PlagueCommands {
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
                 .executes(c -> очаг(c, true))));
 
+        корень.then(Commands.literal("setlevel")
+            .then(Commands.argument("pos", ColumnPosArgument.columnPos())
+                .then(Commands.argument("level",
+                        IntegerArgumentType.integer(0, PlagueConstants.MAX_LEVEL))
+                    .executes(PlagueCommands::выставитьУровень))));
+
         корень.then(Commands.literal("render")
             .then(Commands.argument("radius", IntegerArgumentType.integer(0, 16))
                 .executes(PlagueCommands::перерисовать))
@@ -120,6 +126,31 @@ public final class PlagueCommands {
         s.sendSuccess(() -> Component.literal(
             String.format("Не отрисовано чанков: %d, в очереди сейчас: %d",
                 ждёт, Materializer.длинаОчереди())), false);
+        return 1;
+    }
+
+    /**
+     * Выставить уровень заражения одному чанку. Нужно для живой проверки
+     * материализации: без этого уровень 2 не получить иначе как ждать,
+     * пока эпидемия сама доползёт до нужной стадии.
+     */
+    private static int выставитьУровень(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        var pos = ColumnPosArgument.getColumnPos(ctx, "pos");
+        int cx = pos.x() >> 4;
+        int cz = pos.z() >> 4;
+        int уровень = IntegerArgumentType.getInteger(ctx, "level");
+
+        PlagueState st = PlagueState.get(мир(ctx.getSource()));
+        if (!st.grid().contains(cx, cz)) {
+            ctx.getSource().sendFailure(Component.literal(
+                "Чанк " + cx + ", " + cz + " вне сетки мира"));
+            return 0;
+        }
+        st.grid().setLevel(cx, cz, уровень);
+        st.setDirty();
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Чанк " + cx + ", " + cz + ": уровень " + уровень), true);
         return 1;
     }
 

@@ -37,11 +37,20 @@ class SurfaceRuleTest {
     }
 
     @Test
-    void листваДержитсяДоГнили() {
-        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.LEAVES, 1));
-        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.LEAVES, 2));
+    void листваСначалаЗаражаетсяПотомОсыпаетсяЛозами() {
+        assertEquals(PlagueAction.BLIGHTED_LEAVES, SurfaceRule.actionFor(BlockKind.LEAVES, 1));
+        assertEquals(PlagueAction.BLIGHTED_LEAVES, SurfaceRule.actionFor(BlockKind.LEAVES, 2));
         assertEquals(PlagueAction.BLIGHT_VINE, SurfaceRule.actionFor(BlockKind.LEAVES, 3));
         assertEquals(PlagueAction.BLIGHT_VINE, SurfaceRule.actionFor(BlockKind.LEAVES, 4));
+    }
+
+    @Test
+    void заражённаяЛистваОдинаковаДляЛюбогоДерева() {
+        // Вид блока один — LEAVES. Дуб, берёза и вишня приходят сюда
+        // одним и тем же видом, значит и уходят одним и тем же блоком.
+        assertEquals(SurfaceRule.actionFor(BlockKind.LEAVES, 2),
+                     SurfaceRule.actionFor(BlockKind.LEAVES, 1),
+                     "порода дерева на результат не влияет");
     }
 
     @Test

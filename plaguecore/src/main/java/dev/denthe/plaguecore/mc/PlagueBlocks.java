@@ -3,6 +3,7 @@ package dev.denthe.plaguecore.mc;
 import dev.denthe.plaguecore.PlagueCore;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -14,7 +15,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.world.item.BlockItem;
 
 /**
- * Пять блоков материализации. Дизайн материализации, раздел 7.
+ * Шесть блоков материализации. Дизайн материализации, раздел 7.
  *
  * Регистрируются на мод-шине, не на игровой. Свойства копируются
  * с ванильных родственников, чтобы не выдумывать прочность и звук
@@ -46,6 +47,21 @@ public final class PlagueBlocks {
         BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT)
             .mapColor(MapColor.COLOR_GREEN)
             .sound(SoundType.ROOTED_DIRT));
+
+    /**
+     * Заражённая листва. Одна на все породы: дуб, берёза, вишня и всё
+     * прочее приходят в правило одним видом LEAVES и уходят этим блоком.
+     * Так чума читается издалека одним цветом, а не палитрой леса.
+     *
+     * Ванильный LeavesBlock взят целиком ради шелеста, ножниц и прозрачности.
+     * Ставим его всегда с PERSISTENT: осыпаться от потери ствола он
+     * не должен, за его жизнь отвечает уровень чумы, а не дерево.
+     */
+    public static final DeferredBlock<LeavesBlock> BLIGHTED_LEAVES = БЛОКИ.registerBlock(
+        "blighted_leaves",
+        LeavesBlock::new,
+        BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_LEAVES)
+            .mapColor(MapColor.COLOR_YELLOW));
 
     /** Плёнка на любой грани: наросты на камне, дереве и руде. */
     public static final DeferredBlock<PlagueGrowthBlock> PLAGUE_GROWTH = БЛОКИ.registerBlock(
@@ -83,6 +99,8 @@ public final class PlagueBlocks {
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_DIRT);
     public static final DeferredItem<BlockItem> ROTTED_GRASS_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_GRASS);
+    public static final DeferredItem<BlockItem> BLIGHTED_LEAVES_ITEM =
+        ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHTED_LEAVES);
     public static final DeferredItem<BlockItem> PLAGUE_GROWTH_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(PLAGUE_GROWTH);
     public static final DeferredItem<BlockItem> BLIGHT_VINE_ITEM =

@@ -7,6 +7,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
@@ -32,10 +33,20 @@ public final class BlockTransforms {
         PlagueAction действие = SurfaceRule.actionFor(kindOf(было), level);
         if (действие.isNothing() || действие.isCoating()) return null;
 
+        BlockState стало = поДействию(действие, было);
+        // Заражённая листва остаётся в игре как листва: на уровне 3 ей ещё
+        // предстоит стать лозой. Чтобы не переставлять её каждый проход,
+        // гасим замену блока самим собой.
+        return (стало == null || стало.equals(было)) ? null : стало;
+    }
+
+    private static BlockState поДействию(PlagueAction действие, BlockState было) {
         return switch (действие) {
             case PODZOL        -> Blocks.PODZOL.defaultBlockState();
             case ROTTED_GRASS  -> PlagueBlocks.ROTTED_GRASS.get().defaultBlockState();
             case ROTTED_DIRT   -> PlagueBlocks.ROTTED_DIRT.get().defaultBlockState();
+            case BLIGHTED_LEAVES -> PlagueBlocks.BLIGHTED_LEAVES.get().defaultBlockState()
+                                       .setValue(LeavesBlock.PERSISTENT, Boolean.TRUE);
             case BLIGHT_VINE   -> PlagueBlocks.BLIGHT_VINE.get().defaultBlockState();
             case DESTROY_CROP  -> Blocks.AIR.defaultBlockState();
             case TRAMPLE_CROP  -> вытоптать(было);
@@ -70,7 +81,9 @@ public final class BlockTransforms {
         if (state.isAir()) return BlockKind.OTHER;
         if (block == Blocks.GRASS_BLOCK) return BlockKind.GRASS;
         if (state.is(BlockTags.CROPS)) return BlockKind.CROP;
-        if (state.is(BlockTags.LEAVES)) return BlockKind.LEAVES;
+        if (state.is(BlockTags.LEAVES) || block == PlagueBlocks.BLIGHTED_LEAVES.get()) {
+            return BlockKind.LEAVES;
+        }
         if (state.is(BlockTags.LOGS) || state.is(BlockTags.PLANKS)) return BlockKind.LOG;
         if (state.is(BlockTags.DIRT) || block == Blocks.FARMLAND) return BlockKind.DIRT;
         if (state.is(Tags.Blocks.STONES) || state.is(Tags.Blocks.ORES)
