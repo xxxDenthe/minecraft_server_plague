@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { apiHeaders, assetUrl, findAsset, releaseByTag, fetchPackManifestText } from '../src/main/github.js';
+import { apiHeaders, assetUrl, findAsset, releaseByTag, fetchPackManifestText, checkToken } from '../src/main/github.js';
 
 const release = {
   tag_name: 'pack',
@@ -79,5 +79,26 @@ describe('чтение манифеста из релиза', () => {
     expect(asked[0][0]).toContain('/releases/tags/pack');
     expect(asked[1][0]).toBe('https://api.github.com/repos/o/r/releases/assets/101');
     expect(asked[1][1]).toBe('application/octet-stream');
+  });
+});
+
+describe('проверка токена перед запросом', () => {
+  it('пустой токен — понятная ошибка', () => {
+    expect(() => checkToken('')).toThrow(/пустой/);
+  });
+
+  it('обычный токен проходит', () => {
+    expect(checkToken('github_pat_11AAAAA_bbbCCC')).toBe('github_pat_11AAAAA_bbbCCC');
+  });
+
+  // Без этой проверки fetch падает сообщением про ByteString и индекс
+  // символа — по нему не догадаться, что виноват буфер обмена.
+  it('кириллица в токене ловится до запроса, с указанием места', () => {
+    expect(() => checkToken('github_pat_РУССКИЕ')).toThrow(/позиции 12/);
+  });
+
+  it('пробел и перевод строки в конце тоже ловятся', () => {
+    expect(() => checkToken('github_pat_11AAA ')).toThrow(/посторонний символ/);
+    expect(() => checkToken('github_pat_11AAA\n')).toThrow(/посторонний символ/);
   });
 });

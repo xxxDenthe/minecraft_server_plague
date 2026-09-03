@@ -21,7 +21,7 @@ import { createHash } from 'node:crypto';
 
 import { parseManifest } from '../src/main/manifest.js';
 import { PROTECTED } from '../src/main/sync.js';
-import { apiHeaders, assetUrl, releaseByTag } from '../src/main/github.js';
+import { apiHeaders, assetUrl, releaseByTag, checkToken } from '../src/main/github.js';
 
 const API = 'https://api.github.com';
 
@@ -56,6 +56,7 @@ function parseArgs(argv) {
 
   if (!args.repo?.includes('/')) throw new Error('нужен --repo вида владелец/репозиторий');
   if (!args.token && !args['dry-run']) throw new Error('нужен --token с правом Contents: read and write');
+  if (args.token) checkToken(args.token);
 
   return args;
 }

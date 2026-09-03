@@ -13,6 +13,23 @@
 
 const API = 'https://api.github.com';
 
+// Токен, скопированный с лишним символом, роняет fetch на попытке
+// собрать заголовок — сообщение получается про ByteString и индекс,
+// по нему не догадаться, что виноват буфер обмена.
+export function checkToken(token) {
+  if (!token) throw new Error('токен пустой');
+
+  const bad = [...token].findIndex((ch) => ch.charCodeAt(0) > 127 || ch.charCodeAt(0) < 33);
+  if (bad >= 0) {
+    throw new Error(
+      `в токене есть посторонний символ на позиции ${bad + 1} — похоже, ` +
+        'при копировании прихватились лишние знаки. Скопируйте токен заново.'
+    );
+  }
+
+  return token;
+}
+
 export function apiHeaders(token, accept = 'application/vnd.github+json') {
   const headers = {
     Accept: accept,
@@ -33,7 +50,16 @@ export async function releaseByTag({ owner, repo, tag, token = '', fetchImpl = f
   const response = await fetchImpl(url, { headers: apiHeaders(token), redirect: 'follow' });
 
   if (response.status === 404) {
-    throw new Error(`релиза с тегом «${tag}» нет в ${owner}/${repo} (или токен его не видит)`);
+    // Четыре причины, и по коду ответа они неразличимы. Самая частая —
+    // релиз сохранён черновиком: тега у черновика ещё нет, по тегу он
+    // не ищется, и лаунчеру игрока он тоже не виден.
+    throw new Error(
+      `релиза с тегом «${tag}» нет в ${owner}/${repo}.\n` +
+        '  Причина — одна из четырёх: релиз не создан; сохранён черновиком,\n' +
+        '  а не опубликован; тег написан иначе; токен не видит репозиторий.\n' +
+        '  Что именно — покажет: node tools/check-access.js --repo ' +
+        `${owner}/${repo} --tag ${tag} --token <токен>`
+    );
   }
   if (!response.ok) {
     throw new Error(`GitHub ответил ${response.status} на запрос релиза «${tag}»`);

@@ -11,7 +11,8 @@
     "dist": "electron-builder --win",
     "manifest": "node tools/build-manifest.js",
     "publish": "node tools/publish-pack.js",
-    "configure": "node tools/configure.js"
+    "configure": "node tools/configure.js",
+    "check-access": "node tools/check-access.js"
   },
   "devDependencies": {
     "electron": "^44.1.1",
