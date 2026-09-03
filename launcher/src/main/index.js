@@ -23,11 +23,11 @@ function send(channel, payload) {
 
 function createWindow() {
   window = new BrowserWindow({
-    width: 900,
-    height: 600,
-    minWidth: 700,
-    minHeight: 500,
-    backgroundColor: '#14100f',
+    width: 960,
+    height: 640,
+    minWidth: 720,
+    minHeight: 540,
+    backgroundColor: '#1b1a1f',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(here, '..', 'preload.cjs'),

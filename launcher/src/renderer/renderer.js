@@ -8,8 +8,10 @@ const viewMain = el('view-main');
 const viewSettings = el('view-settings');
 const nickname = el('nickname');
 const play = el('play');
+const playLabel = el('play-label');
 const barFill = el('bar-fill');
-const stage = el('stage');
+const stageMsg = el('stage-msg');
+const stageCount = el('stage-count');
 const log = el('log');
 const notice = el('notice');
 const details = el('details');
@@ -38,38 +40,43 @@ function addLine(text) {
 }
 
 // --- прогресс ---
-// Штуки понятнее процентов: «1240 из 4100» лучше застывших 30%. Когда
-// счётчика нет (распаковка, установщик NeoForge) — полоса «дышит», чтобы
-// окно не выглядело зависшим.
+// Штуки понятнее процентов: «1240 / 4100» лучше застывших 30%. Когда
+// счётчика нет (распаковка, установщик NeoForge) — чумная линия ползёт
+// сама, чтобы окно не выглядело зависшим.
+function setStage(message, count = '') {
+  stageMsg.textContent = message || 'Готов к запуску';
+  stageCount.textContent = count;
+}
+
 function setProgress({ current = 0, total = 0, bytesDone = 0, bytesTotal = 0, message = '' }) {
   let fraction = 0;
-  let counter = '';
+  let count = '';
   let determinate = false;
 
   if (total > 0) {
     fraction = current / total;
-    counter = ` — ${current} из ${total}`;
+    count = `${current} / ${total}`;
     determinate = true;
   } else if (bytesTotal > 0) {
     fraction = bytesDone / bytesTotal;
-    counter = ` — ${(bytesDone / 1048576).toFixed(0)} из ${(bytesTotal / 1048576).toFixed(0)} МБ`;
+    count = `${(bytesDone / 1048576).toFixed(0)} / ${(bytesTotal / 1048576).toFixed(0)} МБ`;
     determinate = true;
   }
 
-  barFill.classList.toggle('pulse', !determinate);
-  barFill.style.width = determinate ? Math.round(Math.min(1, fraction) * 100) + '%' : '100%';
-  stage.textContent = (message || 'Готов к запуску') + counter;
+  barFill.classList.toggle('creep', !determinate);
+  barFill.style.width = determinate ? Math.round(Math.min(1, fraction) * 100) + '%' : '';
+  setStage(message, count);
 }
 
 function setBusy(busy) {
   play.disabled = busy;
   nickname.disabled = busy;
-  play.textContent = busy ? 'Идёт установка' : 'Играть';
-  stage.classList.toggle('working', busy);
+  playLabel.textContent = busy ? 'Идёт установка' : 'Играть';
   if (busy) {
     details.open = true;
+    barFill.classList.add('creep');
   } else {
-    barFill.classList.remove('pulse');
+    barFill.classList.remove('creep');
   }
 }
 
@@ -101,7 +108,7 @@ window.launcher.onUpdateAvailable((v) => {
 
 window.launcher.onGameClosed((code) => {
   setBusy(false);
-  stage.textContent = code === 0 ? 'Игра закрыта' : `Игра закрылась с кодом ${code}`;
+  setStage(code === 0 ? 'Игра закрыта' : `Игра закрылась с кодом ${code}`);
   addLine('— игра завершилась —');
 });
 
@@ -141,7 +148,7 @@ play.addEventListener('click', async () => {
     window.launcher.writeConfig({ nickname: name, maxRamMb, lastPlayed: new Date().toISOString() });
   } else {
     setBusy(false);
-    stage.textContent = 'Запустить не удалось';
+    setStage('Запустить не удалось');
     addLine(result.reason ?? 'причина неизвестна');
   }
 });

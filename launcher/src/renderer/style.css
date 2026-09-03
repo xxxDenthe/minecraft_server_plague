@@ -1,269 +1,423 @@
+/* Палитра — канон мода (docs/superpowers/notes/2026-09-03-palitra-chumy.md):
+   обесцвеченный, холодный, серые уходят в лиловое. Фиолет — только акцент,
+   одно живое пятно на всё окно: чумная линия и фокус. */
 :root {
-  --bg: #14100f;
-  --panel: #1e1917;
-  --panel-glass: rgba(30, 25, 23, 0.72);
-  --ink: #e8e0d8;
-  --muted: #8b7f76;
-  --accent: #7d9b5a;
-  --accent-dim: #5f7844;
-  --line: #2e2724;
-  --warn: #c8a24a;
+  --void: #1b1a1f;        /* небо, самое тёмное */
+  --void-2: #232128;      /* к горизонту светлеет, чтобы читались силуэты */
+  --ash: #26252a;
+  --ash-2: #2f2d34;       /* поля ввода */
+  --ash-3: #3a383e;       /* хайрлайны */
+  --stone: #6f6c76;       /* вторичный текст */
+  --stone-hi: #8b8892;
+  --bone: #cbc8d0;        /* основной текст, костяной с лиловым */
+  --bone-hi: #e7e4ec;
+  --blight: #7a5682;      /* акцент */
+  --blight-lo: #4e3654;   /* акцент в тени / трек */
+
+  --edge: 2px;
 }
 
 * { box-sizing: border-box; }
-
-/* hidden — это всего лишь display:none в стилях браузера, и любое
-   правило display в нашем CSS его перебивает. Возвращаем силой. */
 [hidden] { display: none !important; }
+
+html, body { height: 100%; }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
+  background: var(--void);
+  color: var(--bone);
+  font: 15px/1.55 "Segoe UI", system-ui, sans-serif;
   overflow: hidden;
+  user-select: none;
 }
 
-/* Фон живёт за всем окном и не мешает кликам. */
-.backdrop {
+/* ---------- Сцена ---------- */
+.scene {
   position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(150% 95% at 50% 100%, #35313c 0%, #2a2732 26%, var(--void) 66%);
+}
+
+.skyline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 82%;
+  display: block;
+}
+
+/* Воздушная перспектива: дальше — бледнее (дымка рассеивает свет),
+   ближе — тёмный ломаный силуэт. */
+.layer-far  { fill: #35323d; filter: blur(0.7px); }
+.layer-mid  { fill: #262330; }
+.layer-near { fill: #141218; }
+.lights     { fill: #7a5682; }
+
+/* Заражённая дымка стелется понизу. Дул violet, скупо. */
+.haze {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 46%;
+  background: linear-gradient(
+    to top,
+    rgba(122, 86, 130, 0.16) 0%,
+    rgba(122, 86, 130, 0.06) 38%,
+    transparent 100%);
+  animation: drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  from { opacity: 0.7; transform: translateY(6px); }
+  to   { opacity: 1;   transform: translateY(-4px); }
+}
+
+/* Свет умирает в левом нижнем углу — там и стоит пульт, текст читается. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(75% 85% at 2% 100%, rgba(0, 0, 0, 0.62) 0%, transparent 58%);
+}
+
+.grain {
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
+  opacity: 0.1;
+  mix-blend-mode: overlay;
   pointer-events: none;
 }
 
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(130% 110% at 50% 42%, transparent 46%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* ---------- Пульт ---------- */
 main {
   position: relative;
   z-index: 1;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 40px 28px;
-  height: 100vh;
-}
-
-/* Экраны занимают одно место; переключение — атрибутом hidden. */
-.view {
-  position: relative;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  height: 100%;
-  background: var(--panel-glass);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 28px;
-  backdrop-filter: blur(2px);
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 44px 48px 76px;
 }
 
-h1 {
-  margin: 0;
-  font-size: 30px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  width: min(400px, 100%);
 }
 
-.subtitle {
-  margin: 6px 0 0;
-  color: var(--muted);
+.console {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-left: 16px;
+  border-left: var(--edge) solid var(--ash-3);
 }
 
-/* Угловая кнопка: шестерёнка на первом экране, стрелка назад на втором. */
-.icon-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+.corner {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
   width: 34px;
   height: 34px;
-  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
   background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 1;
+  border: var(--edge) solid transparent;
+  border-radius: 0;
+  color: var(--stone);
   cursor: pointer;
-  transition: color 120ms, border-color 120ms;
+  transition: color 160ms ease, border-color 160ms ease;
 }
 
-.icon-btn:hover {
-  color: var(--ink);
-  border-color: var(--accent);
+.corner:hover { color: var(--bone-hi); }
+.corner:focus-visible {
+  outline: none;
+  border-color: var(--blight);
+  color: var(--bone-hi);
 }
 
-.controls {
+/* ---------- Марка ---------- */
+.brand { margin-left: -3px; }
+
+.brand h1 {
+  margin: 0;
+  font-family: "Bahnschrift", "Segoe UI Semibold", "Segoe UI", sans-serif;
+  font-stretch: 75%;
+  font-weight: 600;
+  font-size: 84px;
+  line-height: 0.86;
+  letter-spacing: 0.015em;
+  color: var(--bone-hi);
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.7);
+}
+
+.build {
+  margin: 12px 0 0 3px;
+  color: var(--stone);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- Поля ---------- */
+.row {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: baseline;
+  gap: 14px;
 }
 
-.controls label {
-  color: var(--muted);
+.row label,
+.field-head label {
+  color: var(--stone-hi);
+  font-size: 13px;
+  flex: none;
 }
 
 input[type="text"] {
   flex: 1;
-  padding: 10px 12px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  color: var(--ink);
+  min-width: 0;
+  padding: 7px 2px;
+  background: transparent;
+  border: none;
+  border-bottom: var(--edge) solid var(--ash-3);
+  border-radius: 0;
+  color: var(--bone-hi);
   font: inherit;
 }
 
+input[type="text"]::placeholder { color: var(--stone); }
 input[type="text"]:focus {
   outline: none;
-  border-color: var(--accent);
+  border-bottom-color: var(--blight);
 }
 
 #play {
-  padding: 10px 28px;
-  background: var(--accent);
-  border: none;
-  border-radius: 4px;
-  color: #14100f;
-  font: inherit;
-  font-weight: 600;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  background: transparent;
+  border: var(--edge) solid var(--stone);
+  border-radius: 0;
+  color: var(--bone-hi);
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-stretch: 87.5%;
+  font-size: 16px;
+  letter-spacing: 0.09em;
   cursor: pointer;
-  transition: background 120ms;
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
-#play:hover:not(:disabled) { background: #8fae68; }
-#play:active:not(:disabled) { background: var(--accent-dim); }
+#play svg { flex: none; color: var(--blight); transition: color 180ms ease; }
+
+#play:hover:not(:disabled) {
+  background: var(--blight-lo);
+  border-color: var(--blight);
+}
+#play:hover:not(:disabled) svg { color: var(--bone-hi); }
+#play:active:not(:disabled) { background: var(--blight); border-color: var(--blight); }
+#play:focus-visible { outline: none; border-color: var(--blight); }
 
 #play:disabled {
-  background: var(--line);
-  color: var(--muted);
+  border-color: var(--ash-3);
+  color: var(--stone);
   cursor: default;
 }
+#play:disabled svg { color: var(--stone); }
 
-.bar {
-  height: 6px;
-  background: #0f0c0b;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  overflow: hidden;
+/* ---------- Лог ---------- */
+#details { margin: 0; }
+
+summary {
+  color: var(--stone);
+  font-size: 13px;
+  cursor: pointer;
+  list-style: none;
+  padding: 2px 0;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "+ "; color: var(--blight); }
+#details[open] summary::before { content: "\2212 "; }
+summary:hover { color: var(--bone); }
+
+#log {
+  margin: 10px 0 0;
+  padding: 12px;
+  max-height: 168px;
+  overflow-y: auto;
+  background: rgba(12, 11, 14, 0.72);
+  border-left: var(--edge) solid var(--ash-3);
+  font: 12px/1.6 Consolas, "Cascadia Mono", monospace;
+  color: var(--stone-hi);
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+/* ---------- Уведомление ---------- */
+.notice {
+  margin: 0;
+  padding: 10px 13px;
+  border-left: var(--edge) solid var(--blight);
+  background: rgba(122, 86, 130, 0.12);
+  color: var(--bone);
+  font-size: 13px;
+}
+
+/* ---------- Настройки ---------- */
+.console .field { gap: 14px; padding-top: 4px; }
+.field { display: flex; flex-direction: column; }
+
+.field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+#ram-value {
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-stretch: 75%;
+  font-size: 20px;
+  color: var(--bone-hi);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--ash-3);
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--blight);
+  border: none;
+  border-radius: 0;
+  transform: translateY(-1px);
+}
+input[type="range"]:focus-visible { outline: 1px solid var(--blight); outline-offset: 6px; }
+
+.hint {
+  margin: 0;
+  color: var(--stone);
+  font-size: 12.5px;
+}
+
+.links {
+  display: flex;
+  gap: 24px;
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ash-3);
+}
+
+.links button {
+  padding: 4px 0;
+  background: none;
+  border: none;
+  border-bottom: var(--edge) solid transparent;
+  border-radius: 0;
+  color: var(--bone);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+.links button:hover { border-color: var(--blight); }
+.links button:focus-visible { outline: none; border-color: var(--blight); color: var(--bone-hi); }
+
+.version {
+  margin: 0;
+  color: var(--stone);
+  font-size: 12px;
+}
+
+/* ---------- Чумная линия (прогресс) ---------- */
+.plague-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  height: 4px;
+  background: rgba(78, 54, 84, 0.7);
+  border-top: 1px solid rgba(122, 86, 130, 0.5);
 }
 
 #bar-fill {
   height: 100%;
   width: 0;
-  background: var(--accent);
-  transition: width 160ms linear;
+  background: var(--blight);
+  box-shadow: 0 0 12px 1px rgba(122, 86, 130, 0.85);
+  transition: width 220ms linear;
 }
 
-/* Полоса «дышит», пока идёт работа без счётчика (распаковка, установка). */
-#bar-fill.pulse {
-  background: linear-gradient(90deg, var(--accent-dim), var(--accent), var(--accent-dim));
-  background-size: 200% 100%;
-  animation: pulse 1.4s linear infinite;
+/* Неровный, «живой» край, когда счётчика нет (распаковка, установщик). */
+#bar-fill.creep {
+  width: 100%;
+  background: linear-gradient(90deg,
+    var(--blight) 0%, var(--blight) 78%, var(--blight-lo) 92%, transparent 100%);
+  background-size: 260% 100%;
+  animation: creep 1.8s linear infinite;
 }
 
-@keyframes pulse {
-  from { background-position: 200% 0; }
-  to { background-position: 0 0; }
+@keyframes creep {
+  from { background-position: 210% 0; }
+  to   { background-position: -60% 0; }
 }
 
 #stage {
-  margin: 8px 0 0;
-  color: var(--muted);
-}
-
-/* Точки после «Идёт установка» — чтобы окно не выглядело зависшим. */
-#stage.working::after {
-  content: "";
-  animation: dots 1.2s steps(4, end) infinite;
-}
-
-@keyframes dots {
-  0% { content: ""; }
-  25% { content: "."; }
-  50% { content: ".."; }
-  75% { content: "..."; }
-}
-
-details {
-  margin-top: auto;
-}
-
-summary {
-  color: var(--muted);
-  cursor: pointer;
-  user-select: none;
-  padding: 4px 0;
-}
-
-summary:hover { color: var(--ink); }
-
-#log {
-  margin: 8px 0 0;
-  padding: 12px;
-  height: 160px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  overflow-y: auto;
-  font: 12px/1.6 Consolas, "Cascadia Mono", monospace;
-  color: var(--muted);
-  white-space: pre-wrap;
-}
-
-/* Уведомление об обновлении пака: появляется прямо во время игры,
-   поэтому должно быть заметным, но не мигающим. */
-.notice {
+  position: fixed;
+  left: 48px;
+  bottom: 22px;
+  z-index: 2;
   margin: 0;
-  padding: 10px 14px;
-  border-left: 3px solid var(--warn);
-  background: #241d15;
-  color: #e8d9b5;
-  font-size: 13px;
+  color: var(--stone-hi);
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
 }
 
-/* --- Настройки --- */
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.field label { color: var(--ink); }
-
-#ram-value {
-  color: var(--accent);
+#stage .count {
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  font-stretch: 75%;
+  color: var(--bone-hi);
   font-variant-numeric: tabular-nums;
 }
 
-input[type="range"] {
-  width: 100%;
-  accent-color: var(--accent);
+/* ---------- Узкое окно ---------- */
+@media (max-width: 760px) {
+  main { padding: 32px 28px 64px; }
+  .brand h1 { font-size: 58px; }
+  #stage { left: 28px; }
 }
 
-.hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.link-btn {
-  align-self: flex-start;
-  padding: 8px 0;
-  background: none;
-  border: none;
-  color: var(--accent);
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.link-btn:hover { color: #8fae68; text-decoration: underline; }
-
-.version {
-  margin-top: auto;
-  color: var(--muted);
-  font-size: 12px;
+/* ---------- Меньше движения ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .haze { animation: none; }
+  #bar-fill.creep { animation: none; background-position: 0 0; }
+  #bar-fill { transition: none; }
 }
