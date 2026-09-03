@@ -12,6 +12,7 @@ public class PlagueCore {
     public static final Logger LOG = LogUtils.getLogger();
 
     public PlagueCore(IEventBus modEventBus, ModContainer container) {
+        dev.denthe.plaguecore.mc.PlagueBlocks.register(modEventBus);
         LOG.info("Plague Core загружается");
     }
 }

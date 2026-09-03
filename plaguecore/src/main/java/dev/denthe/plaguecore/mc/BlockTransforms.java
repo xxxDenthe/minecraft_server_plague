@@ -1,0 +1,90 @@
+package dev.denthe.plaguecore.mc;
+
+import dev.denthe.plaguecore.core.SurfaceRule;
+import dev.denthe.plaguecore.core.SurfaceRule.BlockKind;
+import dev.denthe.plaguecore.core.SurfaceRule.PlagueAction;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.neoforged.neoforge.common.Tags;
+
+/**
+ * Переводчик между чистым правилом и блоками Minecraft. Дизайн
+ * материализации, раздел 4.2.
+ *
+ * Вся таблица «было → стало» живёт в core/SurfaceRule и тестируется без
+ * игры. Здесь только два перевода: BlockState → вид блока и действие →
+ * новый BlockState.
+ *
+ * Различаем два рода изменений:
+ *   замена  — блок становится другим блоком на том же месте;
+ *   нарост  — плёнка кладётся на соседний воздух, сам блок цел.
+ */
+public final class BlockTransforms {
+    private BlockTransforms() {}
+
+    /** Чем стал блок, или null — если менять нечего. */
+    public static BlockState replacement(BlockState было, int level) {
+        PlagueAction действие = SurfaceRule.actionFor(kindOf(было), level);
+        if (действие.isNothing() || действие.isCoating()) return null;
+
+        return switch (действие) {
+            case PODZOL        -> Blocks.PODZOL.defaultBlockState();
+            case ROTTED_GRASS  -> PlagueBlocks.ROTTED_GRASS.get().defaultBlockState();
+            case ROTTED_DIRT   -> PlagueBlocks.ROTTED_DIRT.get().defaultBlockState();
+            case BLIGHT_VINE   -> PlagueBlocks.BLIGHT_VINE.get().defaultBlockState();
+            case DESTROY_CROP  -> Blocks.AIR.defaultBlockState();
+            case TRAMPLE_CROP  -> вытоптать(было);
+            default            -> null;
+        };
+    }
+
+    /** Нужно ли обрастить этот блок наростом на соседнем воздухе. */
+    public static boolean needsCoating(BlockState было, int level) {
+        return SurfaceRule.actionFor(kindOf(было), level).isCoating();
+    }
+
+    public static BlockState coating() {
+        return PlagueBlocks.PLAGUE_GROWTH.get().defaultBlockState();
+    }
+
+    /**
+     * Вытоптанные посевы — это посевы, отброшенные в нулевой возраст.
+     * Урожай не пропадает совсем, но и не поспевает.
+     */
+    private static BlockState вытоптать(BlockState было) {
+        if (!(было.getBlock() instanceof CropBlock crop)) return null;
+        IntegerProperty возраст = BlockStateProperties.AGE_7;
+        if (!было.hasProperty(возраст)) return null;
+        if (было.getValue(возраст) == 0) return null; // и так вытоптаны
+        return было.setValue(возраст, 0);
+    }
+
+    /** Во что чума ставит блок. Порядок проверок важен: тег земли ловит грядку. */
+    public static BlockKind kindOf(BlockState state) {
+        Block block = state.getBlock();
+        if (state.isAir()) return BlockKind.OTHER;
+        if (block == Blocks.GRASS_BLOCK) return BlockKind.GRASS;
+        if (state.is(BlockTags.CROPS)) return BlockKind.CROP;
+        if (state.is(BlockTags.LEAVES)) return BlockKind.LEAVES;
+        if (state.is(BlockTags.LOGS) || state.is(BlockTags.PLANKS)) return BlockKind.LOG;
+        if (state.is(BlockTags.DIRT) || block == Blocks.FARMLAND) return BlockKind.DIRT;
+        if (state.is(Tags.Blocks.STONES) || state.is(Tags.Blocks.ORES)
+            || state.is(BlockTags.BASE_STONE_OVERWORLD)) return BlockKind.STONE;
+        if (!state.getFluidState().isEmpty()) return BlockKind.WATER;
+        return BlockKind.OTHER;
+    }
+
+    /** Наш ли это блок — чтобы не перерисовывать уже сгнившее. */
+    public static boolean isPlagueBlock(BlockState state) {
+        return state.is(PlagueBlocks.ROTTED_DIRT.get())
+            || state.is(PlagueBlocks.ROTTED_GRASS.get())
+            || state.is(PlagueBlocks.PLAGUE_GROWTH.get())
+            || state.is(PlagueBlocks.BLIGHT_VINE.get())
+            || state.is(PlagueBlocks.SPORE_SAC.get());
+    }
+}

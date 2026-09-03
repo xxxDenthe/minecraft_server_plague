@@ -12,9 +12,15 @@ import java.util.Arrays;
  *   resistance 0..100 → 0.0..1.0  сопротивление от очистителей
  *   scar       0..7   сколько ночей ещё держится шрам
  *   terrain    0..255 → делённое на 100  множитель местности
+ *   appliedSurface     0..5  до какого уровня чанк уже отрисован сверху
+ *   appliedUnderground 0..5  то же под землёй
  *
- * Четыре массива по 3 969 байт — около 16 КБ на весь мир. Влезает в кэш
+ * Шесть массивов по 3 969 байт — около 24 КБ на весь мир. Влезает в кэш
  * процессора целиком, поэтому ночной проход стоит доли миллисекунды.
+ *
+ * Отрисованные уровни лежат здесь, а не в данных чанка, потому что очередь
+ * материализации строится в том числе из незагруженных чанков, а про них
+ * иначе ничего не узнать. Дизайн материализации, раздел 3.1.
  */
 public final class PlagueGrid {
 
@@ -26,6 +32,8 @@ public final class PlagueGrid {
     private final byte[] resistance;
     private final byte[] scar;
     private final byte[] terrain;
+    private final byte[] appliedSurface;
+    private final byte[] appliedUnderground;
 
     public PlagueGrid(int size, int originChunkX, int originChunkZ) {
         if (size <= 0) throw new IllegalArgumentException("size должен быть положительным");
@@ -37,12 +45,15 @@ public final class PlagueGrid {
         this.resistance = new byte[n];
         this.scar = new byte[n];
         this.terrain = new byte[n];
+        this.appliedSurface = new byte[n];
+        this.appliedUnderground = new byte[n];
         Arrays.fill(this.terrain, (byte) 100); // множитель 1.0 по умолчанию
     }
 
     /** Конструктор для кодека: массивы принимаются как есть, без копирования. */
     PlagueGrid(int size, int originChunkX, int originChunkZ,
-               byte[] level, byte[] resistance, byte[] scar, byte[] terrain) {
+               byte[] level, byte[] resistance, byte[] scar, byte[] terrain,
+               byte[] appliedSurface, byte[] appliedUnderground) {
         this.size = size;
         this.originX = originChunkX;
         this.originZ = originChunkZ;
@@ -50,6 +61,8 @@ public final class PlagueGrid {
         this.resistance = resistance;
         this.scar = scar;
         this.terrain = terrain;
+        this.appliedSurface = appliedSurface;
+        this.appliedUnderground = appliedUnderground;
     }
 
     public int size() { return size; }
@@ -132,6 +145,63 @@ public final class PlagueGrid {
 
     public float getTerrainAt(int index) { return (terrain[index] & 0xFF) / 100f; }
 
+    public int getAppliedSurface(int cx, int cz) {
+        int i = index(cx, cz);
+        return i < 0 ? 0 : appliedSurface[i];
+    }
+
+    public void setAppliedSurface(int cx, int cz, int value) {
+        int i = index(cx, cz);
+        if (i < 0) return;
+        appliedSurface[i] = (byte) clamp(value, 0, PlagueConstants.MAX_LEVEL);
+    }
+
+    public int getAppliedSurfaceAt(int index) { return appliedSurface[index]; }
+
+    public void setAppliedSurfaceAt(int index, int value) {
+        appliedSurface[index] = (byte) clamp(value, 0, PlagueConstants.MAX_LEVEL);
+    }
+
+    public int getAppliedUnderground(int cx, int cz) {
+        int i = index(cx, cz);
+        return i < 0 ? 0 : appliedUnderground[i];
+    }
+
+    public void setAppliedUnderground(int cx, int cz, int value) {
+        int i = index(cx, cz);
+        if (i < 0) return;
+        appliedUnderground[i] = (byte) clamp(value, 0, PlagueConstants.MAX_LEVEL);
+    }
+
+    public int getAppliedUndergroundAt(int index) { return appliedUnderground[index]; }
+
+    public void setAppliedUndergroundAt(int index, int value) {
+        appliedUnderground[index] = (byte) clamp(value, 0, PlagueConstants.MAX_LEVEL);
+    }
+
+    /**
+     * Отстала ли картинка мира от расчёта. Неравенство в обе стороны:
+     * уровень вырос — надо догнивать, уровень упал при очистке — надо
+     * отыгрывать назад.
+     */
+    public boolean surfaceOutOfDate(int cx, int cz) {
+        int i = index(cx, cz);
+        return i >= 0 && surfaceOutOfDateAt(i);
+    }
+
+    public boolean surfaceOutOfDateAt(int index) {
+        return level[index] != appliedSurface[index];
+    }
+
+    public boolean undergroundOutOfDate(int cx, int cz) {
+        int i = index(cx, cz);
+        return i >= 0 && undergroundOutOfDateAt(i);
+    }
+
+    public boolean undergroundOutOfDateAt(int index) {
+        return level[index] != appliedUnderground[index];
+    }
+
     public int countInfected() {
         int n = 0;
         for (byte b : level) if (b > 0) n++;
@@ -148,6 +218,8 @@ public final class PlagueGrid {
     byte[] rawResistance() { return resistance; }
     byte[] rawScar() { return scar; }
     byte[] rawTerrain() { return terrain; }
+    byte[] rawAppliedSurface() { return appliedSurface; }
+    byte[] rawAppliedUnderground() { return appliedUnderground; }
 
     private static int clamp(int v, int lo, int hi) { return v < lo ? lo : Math.min(v, hi); }
     private static float clampF(float v, float lo, float hi) { return v < lo ? lo : Math.min(v, hi); }

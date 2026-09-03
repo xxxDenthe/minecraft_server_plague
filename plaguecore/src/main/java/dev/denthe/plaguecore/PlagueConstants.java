@@ -40,4 +40,20 @@ public final class PlagueConstants {
      * Разбор: docs/superpowers/notes/2026-09-03-krivaya-rasprostraneniya.md
      */
     public static final int START_EPICENTERS = 32;
+
+    // ── Материализация ────────────────────────────────────────────────
+    // Дизайн материализации, раздел 8. Числа временно живут здесь;
+    // по правилу проекта им положено переехать в конфиг.
+
+    /** Изменений блоков за тик на поверхности. Настоящая защита TPS. */
+    public static final int BLOCKS_PER_TICK = 24;
+
+    /** Отдельный, более жёсткий лимит для подземелья. */
+    public static final int BLOCKS_PER_TICK_CAVE = 12;
+
+    /** Потолок очереди чанков на перерисовку. */
+    public static final int MAX_QUEUE_LENGTH = 512;
+
+    /** На сколько блоков вглубь от поверхности идёт материализация. */
+    public static final int SURFACE_DEPTH = 3;
 }

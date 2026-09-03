@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": { "cross": "plaguecore:block/blight_vine" }
+}

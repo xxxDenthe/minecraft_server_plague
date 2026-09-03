@@ -66,8 +66,9 @@ public final class NightHook {
             state.setLastProcessedDay(сутки);
             state.advanceNight();
             SpreadEngine.NightResult r = runNight(overworld, state, false);
-            PlagueCore.LOG.info("Ночь {} (фаза {}): заражено {}, выросло {}, зажило шрамов {}",
-                state.night(), r.phase(), r.newlyInfected(), r.grown(), r.scarsHealed());
+            int вОчередь = Materializer.поставитьЗагруженные(overworld, state);
+            PlagueCore.LOG.info("Ночь {} (фаза {}): заражено {}, выросло {}, зажило шрамов {}, в очередь на перерисовку {}",
+                state.night(), r.phase(), r.newlyInfected(), r.grown(), r.scarsHealed(), вОчередь);
         }
     }
 
@@ -80,6 +81,7 @@ public final class NightHook {
         if (state.isPaused()) return;
 
         SpreadEngine.NightResult r = догнатьЗаСон(level, state);
+        Materializer.поставитьЗагруженные(level, state);
         PlagueCore.LOG.info("Игроки спали — чума ускорилась: дополнительно заражено {}",
             r.newlyInfected());
     }

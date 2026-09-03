@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "plaguecore:block/rotted_grass_top",
+    "side": "plaguecore:block/rotted_grass_side",
+    "bottom": "plaguecore:block/rotted_dirt"
+  }
+}

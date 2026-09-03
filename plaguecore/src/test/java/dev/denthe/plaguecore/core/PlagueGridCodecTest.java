@@ -46,10 +46,10 @@ class PlagueGridCodecTest {
     void размерБлобаПредсказуем() {
         PlagueGrid g = заполненная();
         byte[] blob = PlagueGridCodec.encode(g);
-        int ожидаемо = 1 + 4 + 4 + 4 + 4 * (63 * 63);
+        int ожидаемо = 1 + 4 + 4 + 4 + 6 * (63 * 63);
         assertEquals(ожидаемо, blob.length,
-            "версия + размер + originX + originZ + четыре массива");
-        assertTrue(blob.length < 20_000, "весь мир должен весить меньше 20 КБ");
+            "версия + размер + originX + originZ + шесть массивов");
+        assertTrue(blob.length < 30_000, "весь мир должен весить меньше 30 КБ");
     }
 
     @Test

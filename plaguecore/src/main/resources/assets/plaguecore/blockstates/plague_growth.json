@@ -1,0 +1,33 @@
+{
+  "multipart": [
+    { "when": { "north": "true" },
+      "apply": { "model": "plaguecore:block/plague_growth" } },
+    { "when": { "down": "false", "east": "false", "north": "false", "south": "false", "up": "false", "west": "false" },
+      "apply": { "model": "plaguecore:block/plague_growth" } },
+
+    { "when": { "east": "true" },
+      "apply": { "model": "plaguecore:block/plague_growth", "y": 90, "uvlock": true } },
+    { "when": { "down": "false", "east": "false", "north": "false", "south": "false", "up": "false", "west": "false" },
+      "apply": { "model": "plaguecore:block/plague_growth", "y": 90, "uvlock": true } },
+
+    { "when": { "south": "true" },
+      "apply": { "model": "plaguecore:block/plague_growth", "y": 180, "uvlock": true } },
+    { "when": { "down": "false", "east": "false", "north": "false", "south": "false", "up": "false", "west": "false" },
+      "apply": { "model": "plaguecore:block/plague_growth", "y": 180, "uvlock": true } },
+
+    { "when": { "west": "true" },
+      "apply": { "model": "plaguecore:block/plague_growth", "y": 270, "uvlock": true } },
+    { "when": { "down": "false", "east": "false", "north": "false", "south": "false", "up": "false", "west": "false" },
+      "apply": { "model": "plaguecore:block/plague_growth", "y": 270, "uvlock": true } },
+
+    { "when": { "up": "true" },
+      "apply": { "model": "plaguecore:block/plague_growth", "x": 270, "uvlock": true } },
+    { "when": { "down": "false", "east": "false", "north": "false", "south": "false", "up": "false", "west": "false" },
+      "apply": { "model": "plaguecore:block/plague_growth", "x": 270, "uvlock": true } },
+
+    { "when": { "down": "true" },
+      "apply": { "model": "plaguecore:block/plague_growth", "x": 90, "uvlock": true } },
+    { "when": { "down": "false", "east": "false", "north": "false", "south": "false", "up": "false", "west": "false" },
+      "apply": { "model": "plaguecore:block/plague_growth", "x": 90, "uvlock": true } }
+  ]
+}

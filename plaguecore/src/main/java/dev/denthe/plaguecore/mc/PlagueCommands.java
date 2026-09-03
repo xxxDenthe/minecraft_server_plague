@@ -61,6 +61,11 @@ public final class PlagueCommands {
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
                 .executes(c -> очаг(c, true))));
 
+        корень.then(Commands.literal("render")
+            .then(Commands.argument("radius", IntegerArgumentType.integer(0, 16))
+                .executes(PlagueCommands::перерисовать))
+            .executes(c -> перерисоватьВокруг(c, 4)));
+
         корень.then(Commands.literal("remove")
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
                 .executes(c -> очаг(c, false))));
@@ -106,7 +111,44 @@ public final class PlagueCommands {
         s.sendSuccess(() -> Component.literal("Очагов: " + st.epicenters().size()), false);
         s.sendSuccess(() -> Component.literal(
             "Местность размечена: " + (st.isTerrainInitialized() ? "да" : "нет")), false);
+
+        int отстаёт = 0;
+        for (int i = 0; i < g.cellCount(); i++) {
+            if (g.getLevelAt(i) > g.getAppliedSurfaceAt(i)) отстаёт++;
+        }
+        final int ждёт = отстаёт;
+        s.sendSuccess(() -> Component.literal(
+            String.format("Не отрисовано чанков: %d, в очереди сейчас: %d",
+                ждёт, Materializer.длинаОчереди())), false);
         return 1;
+    }
+
+    /**
+     * Поставить чанки вокруг вызывающего в очередь на перерисовку.
+     * Нужно, чтобы не ждать ночного тика при живой проверке.
+     */
+    private static int перерисовать(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        return перерисоватьВокруг(ctx, IntegerArgumentType.getInteger(ctx, "radius"));
+    }
+
+    private static int перерисоватьВокруг(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, int радиус) {
+        ServerLevel level = мир(ctx.getSource());
+        PlagueState st = PlagueState.get(level);
+        net.minecraft.world.level.ChunkPos центр =
+            new net.minecraft.world.level.ChunkPos(
+                net.minecraft.core.BlockPos.containing(ctx.getSource().getPosition()));
+
+        int поставлено = 0;
+        for (int dz = -радиус; dz <= радиус; dz++) {
+            for (int dx = -радиус; dx <= радиус; dx++) {
+                if (Materializer.поставить(st, центр.x + dx, центр.z + dz)) поставлено++;
+            }
+        }
+        final int n = поставлено;
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "В очередь на перерисовку поставлено чанков: " + n), true);
+        return n;
     }
 
     private static int ночь(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
