@@ -49,6 +49,12 @@ public final class Materializer {
     /** Столбцов в чанке: 16 на 16. */
     private static final int СТОЛБЦОВ = 256;
 
+    /**
+     * Насколько глубоко проход спускается сквозь крону в поисках земли.
+     * Джунглевое дерево — самое высокое в ваниле, около тридцати блоков.
+     */
+    private static final int ВЫСОТА_ДЕРЕВА = 32;
+
     /** Доля обрастаемых наростом мест: камень должен просвечивать. */
     private static final float ДОЛЯ_НАРОСТА = 0.35f;
 
@@ -183,8 +189,14 @@ public final class Materializer {
     }
 
     /**
-     * Верхний блок столбца и три под ним. Максимум заметности при
-     * минимуме цены: глубже никто не смотрит.
+     * Дерево целиком, потом земля под ним и несколько блоков вглубь.
+     *
+     * Раньше проход брал верхний блок столбца и шесть под ним, и этого
+     * хватало только на голом месте. Под деревом верхний блок — макушка
+     * кроны: нижняя листва оставалась зелёной, ствол не трогался вовсе,
+     * а трава под кроной — единственное, что оставалось чистым в замере
+     * заражённого чанка. Поэтому дерево сначала проходится насквозь,
+     * и лишь от земли начинает считаться глубина.
      */
     private static int поразитьСтолбец(ServerLevel level, LevelChunk chunk, long seed,
                                        int wx, int wz, int уровень) {
@@ -193,26 +205,47 @@ public final class Materializer {
         int изменено = 0;
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        // Сквозь крону вниз. Просветы между листвой проходим тоже: столбец
+        // рядом со стволом — это лист, воздух, и только потом земля.
+        int земля = верх;
+        int запас = ВЫСОТА_ДЕРЕВА;
+        while (земля >= дно && запас > 0) {
+            pos.set(wx, земля, wz);
+            BlockState было = chunk.getBlockState(pos);
+            if (!было.isAir() && !BlockTransforms.isWood(было)) break;
+            изменено += поразить(level, pos, было, seed, уровень);
+            земля--;
+            запас--;
+        }
+        // Столбец, где земли под кроной так и не нашлось: край обрыва,
+        // висячий остров. Копать наугад в пустоту не станем.
+        if (запас == 0 || земля < дно) return изменено;
+
         for (int глубина = 0; глубина <= PlagueConstants.SURFACE_DEPTH; глубина++) {
-            int y = верх - глубина;
+            int y = земля - глубина;
             if (y < дно) break;
             pos.set(wx, y, wz);
-
-            BlockState было = chunk.getBlockState(pos);
-            if (было.isAir() || BlockTransforms.isPlagueBlock(было)) continue;
-
-            BlockState стало = BlockTransforms.replacement(было, уровень);
-            if (стало != null) {
-                level.setBlock(pos.immutable(), стало, ФЛАГИ);
-                изменено++;
-                continue;
-            }
-
-            if (BlockTransforms.needsCoating(было, уровень) && пятноЗдесь(seed, wx, y, wz)) {
-                изменено += обрастить(level, pos.immutable());
-            }
+            изменено += поразить(level, pos, chunk.getBlockState(pos), seed, уровень);
         }
         return изменено;
+    }
+
+    /** Один блок: подмена или нарост. Возвращает, сколько блоков изменено. */
+    private static int поразить(ServerLevel level, BlockPos.MutableBlockPos pos,
+                                BlockState было, long seed, int уровень) {
+        if (было.isAir() || BlockTransforms.isPlagueBlock(было)) return 0;
+
+        BlockState стало = BlockTransforms.replacement(было, уровень);
+        if (стало != null) {
+            level.setBlock(pos.immutable(), стало, ФЛАГИ);
+            return 1;
+        }
+        if (BlockTransforms.needsCoating(было, уровень)
+            && пятноЗдесь(seed, pos.getX(), pos.getY(), pos.getZ())) {
+            return обрастить(level, pos.immutable());
+        }
+        return 0;
     }
 
     /**

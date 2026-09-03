@@ -4,6 +4,7 @@ import dev.denthe.plaguecore.PlagueCore;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -15,7 +16,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.world.item.BlockItem;
 
 /**
- * Восемь блоков материализации. Дизайн материализации, раздел 7.
+ * Девять блоков материализации. Дизайн материализации, раздел 7.
  *
  * Регистрируются на мод-шине, не на игровой. Свойства копируются
  * с ванильных родственников, чтобы не выдумывать прочность и звук
@@ -61,6 +62,20 @@ public final class PlagueBlocks {
         "rotted_stone",
         BlockBehaviour.Properties.ofFullCopy(Blocks.STONE)
             .mapColor(MapColor.COLOR_BLACK));
+
+    /**
+     * Гнилое бревно. Одно на все породы, как и листва: дуб, берёза и вишня
+     * приходят в правило одним видом LOG и уходят этим блоком, чтобы
+     * мёртвый лес читался одним цветом.
+     *
+     * Столб, а не куб: ось сохраняется при подмене, иначе лежачие брёвна
+     * в развалинах встали бы торчком.
+     */
+    public static final DeferredBlock<RotatedPillarBlock> ROTTED_LOG = БЛОКИ.registerBlock(
+        "rotted_log",
+        RotatedPillarBlock::new,
+        BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_LOG)
+            .mapColor(MapColor.COLOR_GRAY));
 
     /**
      * Заражённая листва. Одна на все породы: дуб, берёза, вишня и всё
@@ -139,6 +154,8 @@ public final class PlagueBlocks {
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_GRASS);
     public static final DeferredItem<BlockItem> ROTTED_STONE_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_STONE);
+    public static final DeferredItem<BlockItem> ROTTED_LOG_ITEM =
+        ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_LOG);
     public static final DeferredItem<BlockItem> BLIGHTED_GRASS_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHTED_GRASS);
     public static final DeferredItem<BlockItem> BLIGHTED_LEAVES_ITEM =

@@ -46,6 +46,7 @@ public final class BlockTransforms {
             case ROTTED_GRASS  -> PlagueBlocks.ROTTED_GRASS.get().defaultBlockState();
             case ROTTED_DIRT   -> PlagueBlocks.ROTTED_DIRT.get().defaultBlockState();
             case ROTTED_STONE  -> PlagueBlocks.ROTTED_STONE.get().defaultBlockState();
+            case ROTTED_LOG    -> сгнитьСтвол(было);
             case BLIGHTED_GRASS -> PlagueBlocks.BLIGHTED_GRASS.get().defaultBlockState();
             case BLIGHTED_LEAVES -> PlagueBlocks.BLIGHTED_LEAVES.get().defaultBlockState()
                                        .setValue(LeavesBlock.PERSISTENT, Boolean.TRUE);
@@ -62,6 +63,14 @@ public final class BlockTransforms {
 
     public static BlockState coating() {
         return PlagueBlocks.PLAGUE_GROWTH.get().defaultBlockState();
+    }
+
+    /** Ось бревна сохраняем: лежачие брёвны иначе встали бы торчком. */
+    private static BlockState сгнитьСтвол(BlockState было) {
+        BlockState стало = PlagueBlocks.ROTTED_LOG.get().defaultBlockState();
+        return было.hasProperty(BlockStateProperties.AXIS)
+            ? стало.setValue(BlockStateProperties.AXIS, было.getValue(BlockStateProperties.AXIS))
+            : стало;
     }
 
     /**
@@ -90,7 +99,12 @@ public final class BlockTransforms {
         if (state.is(BlockTags.LEAVES) || block == PlagueBlocks.BLIGHTED_LEAVES.get()) {
             return BlockKind.LEAVES;
         }
-        if (state.is(BlockTags.LOGS) || state.is(BlockTags.PLANKS)) return BlockKind.LOG;
+        // Ствол и доска разошлись: живое дерево гниёт целиком, а доска
+        // почти всегда чья-то постройка и только обрастает.
+        if (state.is(BlockTags.LOGS) || block == PlagueBlocks.ROTTED_LOG.get()) {
+            return BlockKind.LOG;
+        }
+        if (state.is(BlockTags.PLANKS)) return BlockKind.PLANKS;
         if (state.is(BlockTags.DIRT) || block == Blocks.FARMLAND) return BlockKind.DIRT;
         if (state.is(Tags.Blocks.STONES) || state.is(Tags.Blocks.ORES)
             || state.is(BlockTags.BASE_STONE_OVERWORLD)) return BlockKind.STONE;
@@ -98,11 +112,24 @@ public final class BlockTransforms {
         return BlockKind.OTHER;
     }
 
+    /**
+     * Часть ли это дерева: ствол или листва, живые или уже сгнившие.
+     *
+     * Нужно поверхностному проходу: столбец с деревом начинается высоко
+     * над землёй, и дерево надо пройти целиком, прежде чем считать глубину.
+     * Доски сюда не входят намеренно — крыша дома не крона.
+     */
+    public static boolean isWood(BlockState state) {
+        BlockKind вид = kindOf(state);
+        return вид == BlockKind.LOG || вид == BlockKind.LEAVES;
+    }
+
     /** Наш ли это блок — чтобы не перерисовывать уже сгнившее. */
     public static boolean isPlagueBlock(BlockState state) {
         return state.is(PlagueBlocks.ROTTED_DIRT.get())
             || state.is(PlagueBlocks.ROTTED_GRASS.get())
             || state.is(PlagueBlocks.ROTTED_STONE.get())
+            || state.is(PlagueBlocks.ROTTED_LOG.get())
             || state.is(PlagueBlocks.BLIGHTED_GRASS.get())
             || state.is(PlagueBlocks.PLAGUE_GROWTH.get())
             || state.is(PlagueBlocks.BLIGHT_VINE.get())

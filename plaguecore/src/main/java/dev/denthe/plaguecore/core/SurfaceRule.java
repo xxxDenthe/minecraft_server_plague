@@ -19,7 +19,8 @@ public final class SurfaceRule {
         GRASS,   // травяной блок
         DIRT,    // земля и её родня, включая грядку
         LEAVES,  // листва
-        LOG,     // стволы и доски
+        LOG,     // стволы: живые деревья
+        PLANKS,  // доски и прочая обработанная древесина: постройки
         STONE,   // камень и руда
         CROP,    // посевы
         PLANT,   // пучок травы, папоротник — мелочь, растущая на земле
@@ -34,6 +35,7 @@ public final class SurfaceRule {
         ROTTED_GRASS,
         ROTTED_DIRT,
         ROTTED_STONE,
+        ROTTED_LOG,
         BLIGHTED_GRASS,
         BLIGHTED_LEAVES,
         TRAMPLE_CROP,
@@ -60,10 +62,15 @@ public final class SurfaceRule {
             // только в пещерах. Листва гниёт и на этом останавливается.
             case LEAVES -> PlagueAction.BLIGHTED_LEAVES;
             // Камень на поверхности перерождается, а не обрастает: плёнка
-            // пятнами на утёсе терялась из виду. Ствол по-прежнему обрастает —
-            // подменять дерево камнем было бы враньём.
+            // пятнами на утёсе терялась из виду.
             case STONE  -> гниль ? PlagueAction.ROTTED_STONE : PlagueAction.NONE;
-            case LOG    -> гниль ? PlagueAction.COAT_GROWTH : PlagueAction.NONE;
+            // Ствол на Гнили тоже перерождается: у нас есть своё гнилое
+            // бревно, и целое дерево в мёртвом лесу выдавало, что чума
+            // прошлась только по земле.
+            case LOG    -> гниль ? PlagueAction.ROTTED_LOG : PlagueAction.NONE;
+            // Доски — почти всегда чья-то постройка. Их только обносит
+            // наростом: превращать сруб игрока в лес мы не подписывались.
+            case PLANKS -> гниль ? PlagueAction.COAT_GROWTH : PlagueAction.NONE;
             case CROP   -> гниль ? PlagueAction.DESTROY_CROP : PlagueAction.TRAMPLE_CROP;
             // Трава заражается с первого же уровня и дальше не меняется:
             // зелёные кустики посреди Гнили выдавали, что чума прошлась

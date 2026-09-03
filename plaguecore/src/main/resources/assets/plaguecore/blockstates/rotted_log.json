@@ -1,0 +1,5 @@
+{ "variants": {
+  "axis=y": { "model": "plaguecore:block/rotted_log" },
+  "axis=z": { "model": "plaguecore:block/rotted_log", "x": 90 },
+  "axis=x": { "model": "plaguecore:block/rotted_log", "x": 90, "y": 90 }
+} }

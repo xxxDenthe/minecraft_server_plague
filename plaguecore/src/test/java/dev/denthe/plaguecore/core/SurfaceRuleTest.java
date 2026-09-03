@@ -46,11 +46,22 @@ class SurfaceRuleTest {
     }
 
     @Test
-    void стволОбрастаетТолькоНаГнили() {
+    void стволГниётТолькоНаГнили() {
         assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.LOG, 1));
         assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.LOG, 2));
-        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.LOG, 3));
-        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.LOG, 4));
+        assertEquals(PlagueAction.ROTTED_LOG, SurfaceRule.actionFor(BlockKind.LOG, 3));
+        assertEquals(PlagueAction.ROTTED_LOG, SurfaceRule.actionFor(BlockKind.LOG, 4));
+    }
+
+    /**
+     * Доска — почти всегда чья-то постройка: её только обносит наростом.
+     * Превращать сруб игрока в гнилой лес мы не подписывались.
+     */
+    @Test
+    void доскиТолькоОбрастают() {
+        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.PLANKS, 2));
+        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.PLANKS, 3));
+        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.PLANKS, 4));
     }
 
     /**
@@ -99,7 +110,7 @@ class SurfaceRuleTest {
     void уровеньСердцаВедётСебяКакГниль() {
         assertEquals(PlagueAction.ROTTED_GRASS, SurfaceRule.actionFor(BlockKind.GRASS, 5));
         assertEquals(PlagueAction.ROTTED_STONE, SurfaceRule.actionFor(BlockKind.STONE, 5));
-        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.LOG, 5));
+        assertEquals(PlagueAction.ROTTED_LOG, SurfaceRule.actionFor(BlockKind.LOG, 5));
     }
 
     @Test
@@ -107,6 +118,8 @@ class SurfaceRuleTest {
         assertTrue(PlagueAction.COAT_GROWTH.isCoating(),
             "нарост кладётся на соседний воздух, а не вместо блока");
         assertFalse(PlagueAction.ROTTED_DIRT.isCoating());
+        assertFalse(PlagueAction.ROTTED_LOG.isCoating(),
+            "бревно подменяется на месте, а не кладётся рядом");
         assertFalse(PlagueAction.NONE.isCoating());
     }
 
