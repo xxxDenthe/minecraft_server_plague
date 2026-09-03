@@ -27,3 +27,6 @@ world_the_end/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Результат пекарни текстур — производное от textures_src, в репозитории не нужен
+textures_src/baked/
