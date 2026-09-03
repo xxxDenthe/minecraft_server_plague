@@ -34,14 +34,24 @@ public final class SpectatorToggle {
                 mc.getConnection().sendCommand(cmd);
             }
         } else {
-            savedMode = currentMode(mc);
-            savedX = mc.player.getX();
-            savedY = mc.player.getY();
-            savedZ = mc.player.getZ();
-            savedYaw = mc.player.getYRot();
-            savedPitch = mc.player.getXRot();
-            mc.getConnection().sendCommand("gamemode spectator");
+            enterSpectator(mc);
         }
+    }
+
+    /**
+     * Запомнить, где и в каком режиме игрок, и уйти в наблюдатели.
+     * Отдельный метод — им же пользуется «наблюдать за игроком» в панели,
+     * чтобы возврат по хоткею потом сработал.
+     */
+    public static void enterSpectator(Minecraft mc) {
+        if (mc.player == null || mc.getConnection() == null || mc.player.isSpectator()) return;
+        savedMode = currentMode(mc);
+        savedX = mc.player.getX();
+        savedY = mc.player.getY();
+        savedZ = mc.player.getZ();
+        savedYaw = mc.player.getYRot();
+        savedPitch = mc.player.getXRot();
+        mc.getConnection().sendCommand("gamemode spectator");
     }
 
     private static String currentMode(Minecraft mc) {
