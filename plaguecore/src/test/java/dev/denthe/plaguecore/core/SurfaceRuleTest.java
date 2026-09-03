@@ -46,20 +46,24 @@ class SurfaceRuleTest {
     }
 
     @Test
-    void заражённаяЛистваОдинаковаДляЛюбогоДерева() {
-        // Вид блока один — LEAVES. Дуб, берёза и вишня приходят сюда
-        // одним и тем же видом, значит и уходят одним и тем же блоком.
-        assertEquals(SurfaceRule.actionFor(BlockKind.LEAVES, 2),
-                     SurfaceRule.actionFor(BlockKind.LEAVES, 1),
-                     "порода дерева на результат не влияет");
+    void стволОбрастаетТолькоНаГнили() {
+        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.LOG, 1));
+        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.LOG, 2));
+        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.LOG, 3));
+        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.LOG, 4));
     }
 
+    /**
+     * Камень перерождается, а не обрастает: плёнка пятнами на утёсе
+     * терялась из виду, и владелец сообщил, что камень «вообще
+     * не заражается».
+     */
     @Test
-    void стволИКаменьТолькоОбрастают() {
-        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.LOG, 2));
+    void каменьПерерождаетсяНаГнили() {
+        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.STONE, 1));
         assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.STONE, 2));
-        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.LOG, 3));
-        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.STONE, 4));
+        assertEquals(PlagueAction.ROTTED_STONE, SurfaceRule.actionFor(BlockKind.STONE, 3));
+        assertEquals(PlagueAction.ROTTED_STONE, SurfaceRule.actionFor(BlockKind.STONE, 4));
     }
 
     @Test
@@ -81,7 +85,8 @@ class SurfaceRuleTest {
     @Test
     void уровеньСердцаВедётСебяКакГниль() {
         assertEquals(PlagueAction.ROTTED_GRASS, SurfaceRule.actionFor(BlockKind.GRASS, 5));
-        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.STONE, 5));
+        assertEquals(PlagueAction.ROTTED_STONE, SurfaceRule.actionFor(BlockKind.STONE, 5));
+        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.LOG, 5));
     }
 
     @Test

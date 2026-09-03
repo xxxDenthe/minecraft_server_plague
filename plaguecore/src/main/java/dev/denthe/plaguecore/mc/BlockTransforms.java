@@ -45,6 +45,7 @@ public final class BlockTransforms {
             case PODZOL        -> Blocks.PODZOL.defaultBlockState();
             case ROTTED_GRASS  -> PlagueBlocks.ROTTED_GRASS.get().defaultBlockState();
             case ROTTED_DIRT   -> PlagueBlocks.ROTTED_DIRT.get().defaultBlockState();
+            case ROTTED_STONE  -> PlagueBlocks.ROTTED_STONE.get().defaultBlockState();
             case BLIGHTED_LEAVES -> PlagueBlocks.BLIGHTED_LEAVES.get().defaultBlockState()
                                        .setValue(LeavesBlock.PERSISTENT, Boolean.TRUE);
             case DESTROY_CROP  -> Blocks.AIR.defaultBlockState();
@@ -95,6 +96,7 @@ public final class BlockTransforms {
     public static boolean isPlagueBlock(BlockState state) {
         return state.is(PlagueBlocks.ROTTED_DIRT.get())
             || state.is(PlagueBlocks.ROTTED_GRASS.get())
+            || state.is(PlagueBlocks.ROTTED_STONE.get())
             || state.is(PlagueBlocks.PLAGUE_GROWTH.get())
             || state.is(PlagueBlocks.BLIGHT_VINE.get())
             || state.is(PlagueBlocks.SPORE_SAC.get());

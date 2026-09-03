@@ -32,6 +32,7 @@ public final class SurfaceRule {
         PODZOL,
         ROTTED_GRASS,
         ROTTED_DIRT,
+        ROTTED_STONE,
         BLIGHTED_LEAVES,
         TRAMPLE_CROP,
         DESTROY_CROP,
@@ -56,8 +57,11 @@ public final class SurfaceRule {
             // Лоза на поверхности отменена решением владельца: она осталась
             // только в пещерах. Листва гниёт и на этом останавливается.
             case LEAVES -> PlagueAction.BLIGHTED_LEAVES;
-            case LOG,
-                 STONE  -> гниль ? PlagueAction.COAT_GROWTH : PlagueAction.NONE;
+            // Камень на поверхности перерождается, а не обрастает: плёнка
+            // пятнами на утёсе терялась из виду. Ствол по-прежнему обрастает —
+            // подменять дерево камнем было бы враньём.
+            case STONE  -> гниль ? PlagueAction.ROTTED_STONE : PlagueAction.NONE;
+            case LOG    -> гниль ? PlagueAction.COAT_GROWTH : PlagueAction.NONE;
             case CROP   -> гниль ? PlagueAction.DESTROY_CROP : PlagueAction.TRAMPLE_CROP;
             // Вода в спеке становится «стоячей и тёмной», но своей жидкости
             // у нас нет, а ванильной такой не существует. Пока не трогаем.

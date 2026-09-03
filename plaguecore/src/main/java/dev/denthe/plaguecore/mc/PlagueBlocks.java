@@ -15,7 +15,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.world.item.BlockItem;
 
 /**
- * Шесть блоков материализации. Дизайн материализации, раздел 7.
+ * Семь блоков материализации. Дизайн материализации, раздел 7.
  *
  * Регистрируются на мод-шине, не на игровой. Свойства копируются
  * с ванильных родственников, чтобы не выдумывать прочность и звук
@@ -50,6 +50,17 @@ public final class PlagueBlocks {
         BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT)
             .mapColor(MapColor.STONE)
             .sound(SoundType.ROOTED_DIRT));
+
+    /**
+     * Заражённый камень. Порода не обрастает плёнкой, а перерождается:
+     * плёнка на утёсе терялась из виду, а тёмный камень читается издалека.
+     * Идёт вглубь наравне с землёй, поэтому обрыв и карьер видно с обеих
+     * сторон.
+     */
+    public static final DeferredBlock<Block> ROTTED_STONE = БЛОКИ.registerSimpleBlock(
+        "rotted_stone",
+        BlockBehaviour.Properties.ofFullCopy(Blocks.STONE)
+            .mapColor(MapColor.COLOR_BLACK));
 
     /**
      * Заражённая листва. Одна на все породы: дуб, берёза, вишня и всё
@@ -108,6 +119,8 @@ public final class PlagueBlocks {
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_DIRT);
     public static final DeferredItem<BlockItem> ROTTED_GRASS_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_GRASS);
+    public static final DeferredItem<BlockItem> ROTTED_STONE_ITEM =
+        ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_STONE);
     public static final DeferredItem<BlockItem> BLIGHTED_LEAVES_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHTED_LEAVES);
     public static final DeferredItem<BlockItem> PLAGUE_GROWTH_ITEM =

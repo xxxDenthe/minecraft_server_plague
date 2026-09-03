@@ -77,6 +77,11 @@ public final class PlagueCommands {
                 .executes(PlagueCommands::перерисоватьПещеры))
             .executes(c -> перерисоватьПещерыВокруг(c, 2)));
 
+        корень.then(Commands.literal("redraw")
+            .then(Commands.argument("radius", IntegerArgumentType.integer(0, 63))
+                .executes(PlagueCommands::перерисоватьЗаново))
+            .executes(c -> перерисоватьЗановоВокруг(c, 4)));
+
         корень.then(Commands.literal("remove")
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
                 .executes(c -> очаг(c, false))));
@@ -223,6 +228,55 @@ public final class PlagueCommands {
         return n;
     }
 
+    /**
+     * Забыть, что чанки уже отрисованы, и нарисовать их заново.
+     *
+     * Материализация помнит, до какого уровня чанк доведён, и второй раз
+     * его не трогает. Это правильно в игре и мешает при разработке: стоит
+     * поменять правило — и в старом мире оно не применится никогда, потому
+     * что чанки давно «готовы». Команда сбрасывает эту память.
+     *
+     * Уже поставленные блоки чумы не откатываются: проход только добавляет.
+     * Для чистого мира нужен новый мир.
+     */
+    private static int перерисоватьЗаново(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        return перерисоватьЗановоВокруг(ctx, IntegerArgumentType.getInteger(ctx, "radius"));
+    }
+
+    private static int перерисоватьЗановоВокруг(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, int радиус) {
+        ServerLevel level = мир(ctx.getSource());
+        PlagueState st = PlagueState.get(level);
+        PlagueGrid g = st.grid();
+        net.minecraft.world.level.ChunkPos центр =
+            new net.minecraft.world.level.ChunkPos(
+                net.minecraft.core.BlockPos.containing(ctx.getSource().getPosition()));
+
+        int сброшено = 0;
+        for (int dz = -радиус; dz <= радиус; dz++) {
+            for (int dx = -радиус; dx <= радиус; dx++) {
+                int cx = центр.x + dx, cz = центр.z + dz;
+                int i = g.index(cx, cz);
+                if (i < 0) continue;
+                g.setAppliedSurfaceAt(i, 0);
+                g.setAppliedUndergroundAt(i, 0);
+                сброшено++;
+                // Незагруженные из очереди тут же вылетят, но вернутся сами
+                // при загрузке: память о них уже сброшена.
+                Materializer.поставить(st, cx, cz);
+                CaveMaterializer.поставить(st, cx, cz);
+            }
+        }
+        st.setDirty();
+
+        final int n = сброшено;
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Память об отрисовке сброшена у чанков: " + n
+            + ". В очереди сейчас: " + Materializer.длинаОчереди()), true);
+        return n;
+    }
+
     private static int ночь(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
         ServerLevel level = мир(ctx.getSource());
         PlagueState st = PlagueState.get(level);
@@ -248,6 +302,11 @@ public final class PlagueCommands {
         }
         st.setDirty();
         long мс = (System.nanoTime() - t0) / 1_000_000;
+
+        // Ночи прогнали в уме, а мир об этом не знает. Обычный ночной тик
+        // догоняет загруженные чанки сам; здесь его не было, и без этой
+        // строки перемотка меняла только числа, но не блоки.
+        Materializer.поставитьЗагруженные(level, st);
 
         final int итог = всего;
         ctx.getSource().sendSuccess(() -> Component.literal(

@@ -1,0 +1,6 @@
+{ "variants": { "": [
+  { "model": "plaguecore:block/rotted_stone" },
+  { "model": "plaguecore:block/rotted_stone", "y":  90 },
+  { "model": "plaguecore:block/rotted_stone", "y": 180 },
+  { "model": "plaguecore:block/rotted_stone", "y": 270 }
+] } }
