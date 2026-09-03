@@ -1,10 +1,7 @@
-// Верхняя панель: логотип LMPC слева, вторичные кнопки справа.
-// Логотип — готовый пиксельный ассет, его не перерисовываем.
+// Верхняя панель: вторичные кнопки в правом верхнем углу. Логотип LMPC
+// живёт на самом экране, по центру над никнеймом, а не здесь.
 
 import { el, icon } from './ui.js';
-
-// Без сборщика: путь к ассету — обычная строка относительно index.html.
-const LOGO_SRC = 'assets/lmpc-logo.png';
 
 export function createHeader(store, actions) {
   const backBtn = el('button', {
@@ -19,16 +16,14 @@ export function createHeader(store, actions) {
     class: 'hbtn', type: 'button', title: 'Discord-сервер', onclick: actions.discord,
   }, icon('discord', 18), el('span', { text: 'Discord' }));
 
+  // Приманка: выглядит как «во весь экран», окно не разворачивает.
   const fsBtn = el('button', {
     class: 'hbtn hbtn-icon', type: 'button', title: 'Полноэкранный режим',
-    'aria-label': 'Полноэкранный режим', onclick: actions.fullscreen,
+    'aria-label': 'Полноэкранный режим', onclick: actions.easterEgg,
   }, icon('expand', 18));
 
-  const right = el('div', { class: 'header-actions' }, discordBtn, settingsBtn, backBtn, fsBtn);
-
   const node = el('header', { class: 'header' },
-    el('img', { class: 'logo', src: LOGO_SRC, alt: 'LMPC', draggable: false }),
-    right,
+    el('div', { class: 'header-actions' }, discordBtn, settingsBtn, backBtn, fsBtn),
   );
 
   store.subscribe((s) => {

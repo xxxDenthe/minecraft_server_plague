@@ -16,8 +16,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // меняем здесь и пересобираем.
 const DISCORD_URL = 'https://discord.gg/7GKFA9zvX5';
 
-// Фиксированный размер 16:9 (бриф). Ресайз мышью выключен, но fullscreen
-// по F11 / из настроек — разрешён, интерфейс под него сам масштабируется.
+// Фиксированный размер 16:9 (бриф). Ни ресайза мышью, ни полного экрана:
+// кнопка «во весь экран» — пасхалка, окно физически не разворачивается.
 const WIN_WIDTH = 1280;
 const WIN_HEIGHT = 720;
 
@@ -37,7 +37,7 @@ function createWindow() {
     useContentSize: true,
     resizable: false,
     maximizable: false,
-    fullscreenable: true,
+    fullscreenable: false,
     backgroundColor: '#0c0d0f',
     autoHideMenuBar: true,
     webPreferences: {
@@ -51,11 +51,6 @@ function createWindow() {
   window.removeMenu();
 
   window.loadFile(path.join(here, '..', 'renderer', 'index.html'));
-
-  // Окно и клавиша F11 — один источник правды для интерфейса.
-  const pushFullscreen = () => send('window:fullscreen', window.isFullScreen());
-  window.on('enter-full-screen', pushFullscreen);
-  window.on('leave-full-screen', pushFullscreen);
 }
 
 ipcMain.handle('config:read', () => readConfig());
@@ -67,15 +62,6 @@ ipcMain.handle('log:open', () => shell.showItemInFolder(gameLogFile()));
 ipcMain.handle('folder:open', () => shell.openPath(paths.instance()));
 
 ipcMain.handle('discord:open', () => shell.openExternal(DISCORD_URL));
-
-ipcMain.handle('window:toggle-fullscreen', () => {
-  if (!window) return false;
-  const next = !window.isFullScreen();
-  window.setFullScreen(next);
-  return next;
-});
-
-ipcMain.handle('window:is-fullscreen', () => (window ? window.isFullScreen() : false));
 
 ipcMain.handle('game:play', async (_event, { nickname, maxRamMb, minRamMb } = {}) => {
   if (running) return { started: false, reason: 'игра уже запущена' };

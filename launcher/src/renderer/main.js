@@ -17,7 +17,6 @@ const store = createStore({
   maxRamMb: 6144,
   jvmArgs: '',
   packVersion: 0,
-  fullscreen: false,
   progressMsg: '',
   progressFrac: null,
   progressCount: '',
@@ -33,10 +32,10 @@ const actions = {
     window.launcher.writeConfig(patch);
     store.set(patch);
   },
-  toggleFullscreen: () => window.launcher.toggleFullscreen(),
   discord: () => window.launcher.openDiscord(),
   settings: () => store.set({ screen: 'settings' }),
   back: () => store.set({ screen: 'home' }),
+  easterEgg: showEgg,
 };
 
 async function runPlay(nickname) {
@@ -101,7 +100,25 @@ window.launcher.onGameClosed((code) => {
 });
 
 window.launcher.onUpdateAvailable((v) => store.set({ packVersion: Math.max(store.get().packVersion, v) }));
-window.launcher.onFullscreen((on) => store.set({ fullscreen: !!on }));
+
+// --- пасхалка ---
+// Кнопка «во весь экран» окно не разворачивает (его и нельзя). Вместо
+// этого — крупный текст на всё окно. Гасится кликом или Esc.
+let egg = null;
+function showEgg() {
+  if (egg) return;
+  egg = el('div', { class: 'egg', onclick: hideEgg },
+    el('span', { class: 'egg-text', text: 'ТЫ ПИДОРАС' }));
+  document.getElementById('app').append(egg);
+  document.addEventListener('keydown', onEggKey);
+}
+function hideEgg() {
+  if (!egg) return;
+  egg.remove();
+  egg = null;
+  document.removeEventListener('keydown', onEggKey);
+}
+function onEggKey(e) { if (e.key === 'Escape') hideEgg(); }
 
 // --- сборка ---
 const screenHost = el('div', { class: 'screen' });
@@ -120,17 +137,13 @@ async function boot() {
   const app = document.getElementById('app');
   app.append(createBackground(), shell);
 
-  const [cfg, fs] = await Promise.all([
-    window.launcher.readConfig(),
-    window.launcher.isFullscreen(),
-  ]);
+  const cfg = await window.launcher.readConfig();
   store.set({
     nickname: cfg.nickname || '',
     minRamMb: cfg.minRamMb,
     maxRamMb: cfg.maxRamMb,
     jvmArgs: cfg.jvmArgs || '',
     packVersion: cfg.packVersion || 0,
-    fullscreen: !!fs,
   });
 
   requestAnimationFrame(() => document.body.classList.add('ready'));

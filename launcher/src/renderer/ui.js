@@ -57,3 +57,9 @@ const ICONS = {
 export function clear(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
 }
+
+// Готовый пиксельный логотип LMPC. Путь — строка относительно index.html
+// (сборщика нет). Логотип не перерисовываем.
+export function logo() {
+  return el('img', { class: 'logo', src: 'assets/lmpc-logo.png', alt: 'LMPC', draggable: false });
+}

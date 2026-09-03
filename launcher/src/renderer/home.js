@@ -2,7 +2,7 @@
 // (никнейм → PLAY → состояние), справа — новости и модпак, снизу —
 // техническая информация о версиях. Фокус: LMPC → никнейм → PLAY.
 
-import { el, icon } from './ui.js';
+import { el, icon, logo } from './ui.js';
 import { State } from './state.js';
 import { createProgress } from './progress.js';
 import { createNews } from './news.js';
@@ -12,7 +12,7 @@ const MC_VERSION = '1.21.1'; // целевая версия проекта, фи
 export function createHome(store, actions) {
   const nickInput = el('input', {
     class: 'nick-input', id: 'nick', type: 'text', maxLength: 16,
-    autocomplete: 'off', spellcheck: false, placeholder: 'Никнейм',
+    autocomplete: 'off', spellcheck: false, placeholder: 'Введите ваш никнейм',
     value: store.get().nickname || '',
     oninput: () => { playBtn.disabled = !canPlay(); },
     onkeydown: (e) => { if (e.key === 'Enter' && canPlay()) startPlay(); },
@@ -43,16 +43,18 @@ export function createHome(store, actions) {
 
   const node = el('div', { class: 'home' },
     el('div', { class: 'home-main' },
+      el('aside', { class: 'home-side' },
+        createNews(),
+        modpackPanel,
+      ),
       el('div', { class: 'console' },
+        logo(),
         el('label', { class: 'field-label', for: 'nick', text: 'Никнейм' }),
         nickInput,
         playBtn,
         progress,
       ),
-      el('aside', { class: 'home-side' },
-        createNews(),
-        modpackPanel,
-      ),
+      el('div', { class: 'home-spacer' }),
     ),
     el('footer', { class: 'home-foot' }, versionInfo),
   );
@@ -77,7 +79,7 @@ export function createHome(store, actions) {
     nickInput.disabled = busy;
 
     const pack = node.querySelector('.v-pack');
-    pack.textContent = s.packVersion > 0 ? `сборка ${s.packVersion}` : 'не установлен';
+    pack.textContent = s.packVersion > 0 ? 'основной' : 'не установлен';
   });
 
   return node;

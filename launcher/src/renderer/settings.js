@@ -3,7 +3,7 @@
 // (Java, разрешение, полный экран в игре), показано выключенным —
 // без ложной функциональности.
 
-import { el, icon } from './ui.js';
+import { el, icon, logo } from './ui.js';
 
 const GB = 1024;
 const RAM_MIN = 1 * GB;
@@ -73,19 +73,10 @@ export function createSettings(store, actions) {
     onchange: () => actions.saveConfig({ jvmArgs: jvmInput.value.trim() }),
   });
 
-  // --- Игра ---
-  const fsToggle = toggle({
-    checked: store.get().fullscreen,
-    onChange: () => actions.toggleFullscreen(),
-  });
-  store.subscribe((s) => {
-    fsToggle.querySelector('.toggle-input').checked = !!s.fullscreen;
-  });
-
   const node = el('div', { class: 'settings' },
+    logo(),
     el('div', { class: 'settings-scroll' },
       group('Игра',
-        row('Полноэкранный режим лаунчера', fsToggle),
         row('Разрешение игры',
           el('select', { class: 'select', disabled: true }, el('option', { text: 'По умолчанию' })),
           'Появится в следующей версии'),
