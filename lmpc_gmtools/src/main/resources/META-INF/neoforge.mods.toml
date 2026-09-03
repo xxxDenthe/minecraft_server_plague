@@ -1,0 +1,25 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "All Rights Reserved"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "LMPC Мастер игры"
+description = '''Админская панель: открытие по хоткею с паролем, быстрый режим наблюдателя, телепорт к игрокам, вызов /plague info.'''
+
+# Клиентский мод. Обе зависимости помечены CLIENT, поэтому на выделенном
+# сервере он не требуется и не грузится — рассинхрона версий с сервером нет.
+[[dependencies.${mod_id}]]
+modId = "neoforge"
+type = "required"
+versionRange = "[${neoforge_version},)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+versionRange = "[${minecraft_version}]"
+ordering = "NONE"
+side = "CLIENT"
