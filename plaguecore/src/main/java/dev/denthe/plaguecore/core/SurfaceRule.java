@@ -24,6 +24,8 @@ public final class SurfaceRule {
         STONE,   // камень и руда
         CROP,    // посевы
         PLANT,   // пучок травы, папоротник — мелочь, растущая на земле
+        TALL_PLANT, // высокая трава и большой папоротник: две половины
+        FLOWER,  // цветы, одиночные и высокие
         WATER,   // вода
         OTHER    // всё прочее — не трогаем
     }
@@ -37,9 +39,11 @@ public final class SurfaceRule {
         ROTTED_STONE,
         ROTTED_LOG,
         BLIGHTED_GRASS,
+        BLIGHTED_TALL_GRASS,
         BLIGHTED_LEAVES,
         TRAMPLE_CROP,
         DESTROY_CROP,
+        DESTROY_PLANT,
         COAT_GROWTH;
 
         /** Нарост не заменяет блок, а кладётся плёнкой на соседний воздух. */
@@ -50,6 +54,20 @@ public final class SurfaceRule {
 
     /** Граница между косметикой и Гнилью. */
     private static final int ГНИЛЬ = 3;
+
+    /**
+     * Растёт ли на этом месте споровый мешок. Поверхностный близнец
+     * правила пещер (CaveRule, действие SPORE_SAC).
+     *
+     * Только на Гнили и только редко: мешок — не украшение земли,
+     * а знак, что здесь чума уже своя.
+     *
+     * @param weight вес места из маски, число в [0, 1)
+     * @param доля   какая часть мест получает мешок
+     */
+    public static boolean sporeSacAt(int level, float weight, float доля) {
+        return level >= ГНИЛЬ && weight < доля;
+    }
 
     public static PlagueAction actionFor(BlockKind kind, int level) {
         if (level <= 0) return PlagueAction.NONE;
@@ -76,6 +94,14 @@ public final class SurfaceRule {
             // зелёные кустики посреди Гнили выдавали, что чума прошлась
             // только по кубам.
             case PLANT  -> PlagueAction.BLIGHTED_GRASS;
+            // Высокая трава — те же кустики, только в две половины.
+            // Каждая половина подменяется сама по себе: обе лежат в одном
+            // столбце, и проход берёт их подряд.
+            case TALL_PLANT -> PlagueAction.BLIGHTED_TALL_GRASS;
+            // Цветы не гниют, а исчезают. Своих цветов у чумы нет, а живое
+            // жёлтое пятно посреди Гнили ломает картинку сильнее всего —
+            // решение владельца.
+            case FLOWER -> PlagueAction.DESTROY_PLANT;
             // Вода в спеке становится «стоячей и тёмной», но своей жидкости
             // у нас нет, а ванильной такой не существует. Пока не трогаем.
             case WATER,

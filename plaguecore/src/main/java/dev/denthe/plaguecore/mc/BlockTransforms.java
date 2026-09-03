@@ -7,6 +7,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -48,6 +49,8 @@ public final class BlockTransforms {
             case ROTTED_STONE  -> PlagueBlocks.ROTTED_STONE.get().defaultBlockState();
             case ROTTED_LOG    -> сгнитьСтвол(было);
             case BLIGHTED_GRASS -> PlagueBlocks.BLIGHTED_GRASS.get().defaultBlockState();
+            case BLIGHTED_TALL_GRASS -> высокаяТрава(было);
+            case DESTROY_PLANT -> Blocks.AIR.defaultBlockState();
             case BLIGHTED_LEAVES -> PlagueBlocks.BLIGHTED_LEAVES.get().defaultBlockState()
                                        .setValue(LeavesBlock.PERSISTENT, Boolean.TRUE);
             case DESTROY_CROP  -> Blocks.AIR.defaultBlockState();
@@ -63,6 +66,21 @@ public final class BlockTransforms {
 
     public static BlockState coating() {
         return PlagueBlocks.PLAGUE_GROWTH.get().defaultBlockState();
+    }
+
+    /**
+     * Половину высокой травы меняем на свою такую же половину.
+     *
+     * Ключ ко всему блоку: половины не связываем и соседей не трогаем.
+     * Верхняя и нижняя лежат в одном столбце подряд, проход берёт их
+     * за один заход, и в промежутке между двумя setBlock никто не успеет
+     * заметить, что половины разного рода.
+     */
+    private static BlockState высокаяТрава(BlockState было) {
+        BlockState стало = PlagueBlocks.BLIGHTED_TALL_GRASS.get().defaultBlockState();
+        return было.hasProperty(DoublePlantBlock.HALF)
+            ? стало.setValue(DoublePlantBlock.HALF, было.getValue(DoublePlantBlock.HALF))
+            : стало;
     }
 
     /** Ось бревна сохраняем: лежачие брёвны иначе встали бы торчком. */
@@ -91,11 +109,18 @@ public final class BlockTransforms {
         if (state.isAir()) return BlockKind.OTHER;
         if (block == Blocks.GRASS_BLOCK) return BlockKind.GRASS;
         if (state.is(BlockTags.CROPS)) return BlockKind.CROP;
-        // Только одноблочная мелочь. Высокая трава и большой папоротник
-        // состоят из двух половин, и подмена нижней оставила бы верхнюю
-        // висеть в воздухе: мы ставим блоки без обновления соседей.
+        // Одноблочная мелочь.
         if (block == Blocks.SHORT_GRASS || block == Blocks.FERN
             || block == PlagueBlocks.BLIGHTED_GRASS.get()) return BlockKind.PLANT;
+        // Двухблочная. Половины меняются каждая сама по себе, с сохранением
+        // своего HALF: связывать их не нужно, они лежат в одном столбце.
+        if (block == Blocks.TALL_GRASS || block == Blocks.LARGE_FERN
+            || block == PlagueBlocks.BLIGHTED_TALL_GRASS.get()) return BlockKind.TALL_PLANT;
+        // Цветы — оба тега сразу, и одиночные, и высокие в две половины.
+        // Тег #flowers брать нельзя: в нём цветущая азалия, а это листва.
+        if (state.is(BlockTags.SMALL_FLOWERS) || state.is(BlockTags.TALL_FLOWERS)) {
+            return BlockKind.FLOWER;
+        }
         if (state.is(BlockTags.LEAVES) || block == PlagueBlocks.BLIGHTED_LEAVES.get()) {
             return BlockKind.LEAVES;
         }
@@ -131,6 +156,7 @@ public final class BlockTransforms {
             || state.is(PlagueBlocks.ROTTED_STONE.get())
             || state.is(PlagueBlocks.ROTTED_LOG.get())
             || state.is(PlagueBlocks.BLIGHTED_GRASS.get())
+            || state.is(PlagueBlocks.BLIGHTED_TALL_GRASS.get())
             || state.is(PlagueBlocks.PLAGUE_GROWTH.get())
             || state.is(PlagueBlocks.BLIGHT_VINE.get())
             || state.is(PlagueBlocks.SPORE_SAC.get());

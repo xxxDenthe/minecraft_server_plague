@@ -1,0 +1,4 @@
+{ "variants": {
+  "half=lower": { "model": "plaguecore:block/blighted_tall_grass_bottom" },
+  "half=upper": { "model": "plaguecore:block/blighted_tall_grass_top" }
+} }

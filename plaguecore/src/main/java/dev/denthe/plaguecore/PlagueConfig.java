@@ -55,6 +55,7 @@ public final class PlagueConfig {
     private static final ModConfigSpec.IntValue БЛОКОВ_ЗА_ТИК;
     private static final ModConfigSpec.IntValue ГЛУБИНА;
     private static final ModConfigSpec.DoubleValue ДОЛЯ_НАРОСТА;
+    private static final ModConfigSpec.DoubleValue МЕШКИ_НАВЕРХУ;
     private static final ModConfigSpec.DoubleValue[] ДОЛЯ_УРОВНЯ =
         new ModConfigSpec.DoubleValue[MaterializationMask.НАСТРАИВАЕМЫХ_УРОВНЕЙ];
 
@@ -140,6 +141,10 @@ public final class PlagueConfig {
             .comment("Какая доля подходящих мест обрастает наростом.",
                      "Единица — сплошная плёнка, сквозь неё ничего не просвечивает.")
             .defineInRange("growthPatches", окр(PlagueConstants.GROWTH_PATCH_FRACTION), 0.0, 1.0);
+        МЕШКИ_НАВЕРХУ = СТРОИТЕЛЬ
+            .comment("Доля столбцов, на которых вырастает споровый мешок.",
+                     "0.012 — это примерно три мешка на чанк сплошной Гнили.")
+            .defineInRange("sporeSacs", окр(PlagueConstants.SURFACE_SPORE_SAC), 0.0, 1.0);
         for (int у = 1; у <= MaterializationMask.НАСТРАИВАЕМЫХ_УРОВНЕЙ; у++) {
             ДОЛЯ_УРОВНЯ[у - 1] = СТРОИТЕЛЬ
                 .comment("Какая доля земли поражена на уровне " + у + ".",
@@ -206,6 +211,7 @@ public final class PlagueConfig {
         PlagueConstants.BLOCKS_PER_TICK = БЛОКОВ_ЗА_ТИК.get();
         PlagueConstants.SURFACE_DEPTH = ГЛУБИНА.get();
         PlagueConstants.GROWTH_PATCH_FRACTION = ДОЛЯ_НАРОСТА.get().floatValue();
+        PlagueConstants.SURFACE_SPORE_SAC = МЕШКИ_НАВЕРХУ.get().floatValue();
 
         PlagueConstants.BLOCKS_PER_TICK_CAVE = БЛОКОВ_ЗА_ТИК_ПОД_ЗЕМЛЁЙ.get();
         PlagueConstants.CAVE_COLUMNS_PER_TICK = СТОЛБЦОВ_ЗА_ТИК.get();

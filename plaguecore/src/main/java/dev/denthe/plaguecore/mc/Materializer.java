@@ -4,6 +4,7 @@ import dev.denthe.plaguecore.PlagueConstants;
 import dev.denthe.plaguecore.PlagueCore;
 import dev.denthe.plaguecore.core.MaterializationMask;
 import dev.denthe.plaguecore.core.PlagueGrid;
+import dev.denthe.plaguecore.core.SurfaceRule;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -225,7 +226,43 @@ public final class Materializer {
             pos.set(wx, y, wz);
             изменено += поразить(level, pos, chunk.getBlockState(pos), seed, уровень);
         }
-        return изменено;
+
+        // Мешок сажаем последним: земля под ним к этому времени уже гнилая.
+        return изменено + посадитьМешок(level, chunk, seed, wx, wz, земля, уровень);
+    }
+
+    /**
+     * Споровый мешок на поверхности. Близнец пещерного, но реже:
+     * под землёй мешок — находка, наверху он должен быть приметой места,
+     * а не сорняком.
+     *
+     * До сих пор мешки жили только в пещерах, и владелец сообщил, что
+     * наверху их «просто нет». Так и было: подземный проход нарочно
+     * отступает от поверхности, а поверхностный про мешки не знал.
+     *
+     * Опора ищется на два блока вниз: «земля» столбца может оказаться
+     * травинкой или цветком, а мешку нужно на чём стоять.
+     */
+    private static int посадитьМешок(ServerLevel level, LevelChunk chunk, long seed,
+                                     int wx, int wz, int земля, int уровень) {
+        float вес = MaterializationMask.columnWeight(seed, wx * 7 + 3, wz * 13 - 5);
+        if (!SurfaceRule.sporeSacAt(уровень, вес, PlagueConstants.SURFACE_SPORE_SAC)) return 0;
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int y = земля; y >= земля - 1; y--) {
+            pos.set(wx, y, wz);
+            if (!chunk.getBlockState(pos).isFaceSturdy(level, pos, Direction.UP)) continue;
+
+            BlockPos место = new BlockPos(wx, y + 1, wz);
+            BlockState было = level.getBlockState(место);
+            // Место занято чем-то основательным — или мешок уже стоит.
+            if (!было.isAir() && !было.canBeReplaced()) return 0;
+            if (было.is(PlagueBlocks.SPORE_SAC.get())) return 0;
+
+            level.setBlock(место, BlockTransforms.sporeSac(), ФЛАГИ);
+            return 1;
+        }
+        return 0;
     }
 
     /** Один блок: подмена или нарост. Возвращает, сколько блоков изменено. */

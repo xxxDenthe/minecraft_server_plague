@@ -133,4 +133,39 @@ class SurfaceRuleTest {
     void отрицательныйУровеньБезопасен() {
         assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.GRASS, -1));
     }
+
+    /**
+     * Высокая трава — те же кустики, только в две половины. Правило
+     * про половины не знает вовсе: их различает уже переводчик блоков.
+     */
+    @Test
+    void высокаяТраваЗаражаетсяСразу() {
+        for (int уровень = 1; уровень <= 5; уровень++) {
+            assertEquals(PlagueAction.BLIGHTED_TALL_GRASS,
+                SurfaceRule.actionFor(BlockKind.TALL_PLANT, уровень), "уровень " + уровень);
+        }
+        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.TALL_PLANT, 0));
+    }
+
+    /**
+     * Цветы не гниют, а исчезают: своих цветов у чумы нет, а живое
+     * жёлтое пятно посреди Гнили ломает картинку сильнее всего.
+     */
+    @Test
+    void цветыИсчезаютСПервогоЖеУровня() {
+        for (int уровень = 1; уровень <= 5; уровень++) {
+            assertEquals(PlagueAction.DESTROY_PLANT,
+                SurfaceRule.actionFor(BlockKind.FLOWER, уровень), "уровень " + уровень);
+        }
+        assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.FLOWER, 0));
+    }
+
+    /** Мешок растёт только на Гнили и только на редких местах. */
+    @Test
+    void споровыйМешокТолькоНаГнилиИРедко() {
+        assertFalse(SurfaceRule.sporeSacAt(2, 0.0f, 0.012f), "на подзоле мешков нет");
+        assertTrue(SurfaceRule.sporeSacAt(3, 0.005f, 0.012f));
+        assertFalse(SurfaceRule.sporeSacAt(3, 0.5f, 0.012f), "место не выпало");
+        assertFalse(SurfaceRule.sporeSacAt(4, 0.0f, 0.0f), "доля ноль — мешков нет вовсе");
+    }
 }

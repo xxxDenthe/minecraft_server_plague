@@ -16,7 +16,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.world.item.BlockItem;
 
 /**
- * Девять блоков материализации. Дизайн материализации, раздел 7.
+ * Десять блоков материализации. Дизайн материализации, раздел 7.
  *
  * Регистрируются на мод-шине, не на игровой. Свойства копируются
  * с ванильных родственников, чтобы не выдумывать прочность и звук
@@ -110,6 +110,19 @@ public final class PlagueBlocks {
             .offsetType(BlockBehaviour.OffsetType.XZ)
             .noOcclusion());
 
+    /**
+     * Заражённая высокая трава: ванильная высокая трава и большой
+     * папоротник. Свойства взяты с ванильной высокой травы целиком —
+     * шелест, мгновенный слом, проходимость.
+     */
+    public static final DeferredBlock<BlightedTallGrassBlock> BLIGHTED_TALL_GRASS =
+        БЛОКИ.registerBlock(
+            "blighted_tall_grass",
+            BlightedTallGrassBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.TALL_GRASS)
+                .mapColor(MapColor.COLOR_GRAY)
+                .offsetType(BlockBehaviour.OffsetType.XZ));
+
     /** Плёнка на любой грани: наросты на камне, дереве и руде. */
     public static final DeferredBlock<PlagueGrowthBlock> PLAGUE_GROWTH = БЛОКИ.registerBlock(
         "plague_growth",
@@ -158,6 +171,8 @@ public final class PlagueBlocks {
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_LOG);
     public static final DeferredItem<BlockItem> BLIGHTED_GRASS_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHTED_GRASS);
+    public static final DeferredItem<BlockItem> BLIGHTED_TALL_GRASS_ITEM =
+        ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHTED_TALL_GRASS);
     public static final DeferredItem<BlockItem> BLIGHTED_LEAVES_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHTED_LEAVES);
     public static final DeferredItem<BlockItem> PLAGUE_GROWTH_ITEM =
