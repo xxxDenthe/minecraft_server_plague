@@ -116,7 +116,7 @@ public class GmPanelScreen extends Screen {
     private String selectedPlayer;
     private int listScroll;
     private boolean pickingTpTarget;
-    private int hdrTp, hdrState, hdrMod;   // Y заголовков групп в карточке, ставит initPlayers
+    private int hdrState, hdrMod;   // Y заголовков групп в карточке игрока, ставит initPlayers
 
     private String armed;      // id действия, ждущего подтверждения
     private long armedAt;
@@ -202,78 +202,71 @@ public class GmPanelScreen extends Screen {
         if (selectedPlayer != null && players.stream().noneMatch(p -> nameOf(p).equals(selectedPlayer))) {
             selectedPlayer = null;
         }
-        if (selectedPlayer == null) return;
         if (pickingTpTarget) {
-            initTpPicker();
+            addRenderableWidget(Button.builder(Component.literal("Отмена"),
+                b -> { pickingTpTarget = false; armed = null; rebuildWidgets(); })
+                .bounds(contentX + contentW - 64, contentY - 13, 64, 12).build());
             return;
         }
+        if (selectedPlayer == null) return;   // таблица рисуется вручную
 
-        int dx = detailX();
-        int dw = detailW();
-        int half = (dw - 4) / 2;
-        int third = (dw - 4) / 3;
-        int y = contentY + 24;
         String n = selectedPlayer;
+        int x = contentX, w = contentW;
 
         addRenderableWidget(Button.builder(Component.literal("◀ Таблица"),
-            b -> { selectedPlayer = null; rebuildWidgets(); })
-            .bounds(contentX, contentY + contentH - 14, 76, 13).build());
+            b -> { selectedPlayer = null; rebuildWidgets(); }).bounds(x, contentY, 72, 13).build());
 
-        // верхняя строка: выдача и наблюдение
-        addRenderableWidget(Button.builder(Component.literal("Выдать предмет…"),
-            b -> minecraft.setScreen(new ItemGiveScreen(this, n)))
-            .bounds(dx, y, half, BTN_H).build());
-        addRenderableWidget(Button.builder(Component.literal("Наблюдать"),
-            b -> { SpectatorToggle.enterSpectator(minecraft); run("spectate " + n); })
-            .bounds(dx + half + 4, y, dw - half - 4, BTN_H).build());
-        y += BTN_H + 12;
+        int y = contentY + 22;
+        buttonRow(x, y, w, new String[] { "Выдать…", "Наблюдать", "Телепорт", "Призвать" },
+            new Runnable[] {
+                () -> minecraft.setScreen(new ItemGiveScreen(this, n)),
+                () -> { SpectatorToggle.enterSpectator(minecraft); run("spectate " + n); },
+                () -> { run("tp @s " + n); onClose(); },
+                () -> run("tp " + n + " @s"),
+            });
+        y += BTN_H + 3;
+        addRenderableWidget(Button.builder(Component.literal("Телепортировать к другому игроку…"),
+            b -> { pickingTpTarget = true; rebuildWidgets(); }).bounds(x, y, w, BTN_H).build());
 
-        // Телепорт
-        hdrTp = y - 10;
-        y = add(dx, y, dw, "Телепорт к нему", () -> { run("tp @s " + n); onClose(); });
-        y = add(dx, y, dw, "Призвать к себе", () -> run("tp " + n + " @s"));
-        y = add(dx, y, dw, "К другому игроку…", () -> { pickingTpTarget = true; rebuildWidgets(); });
+        y += BTN_H + 14;
+        hdrState = y - 11;
+        buttonRow(x, y, w, new String[] { "Лечить", "Кормить", "Оба", "Снять эфф." },
+            new Runnable[] {
+                () -> run("effect give " + n + " minecraft:regeneration 3 4 true"),
+                () -> run("effect give " + n + " minecraft:saturation 1 4 true"),
+                () -> { run("effect give " + n + " minecraft:regeneration 3 4 true");
+                        run("effect give " + n + " minecraft:saturation 1 4 true"); },
+                () -> run("effect clear " + n),
+            });
 
-        // Состояние
-        y += 12;
-        hdrState = y - 10;
-        addRenderableWidget(Button.builder(Component.literal("Лечить"),
-            b -> run("effect give " + n + " minecraft:regeneration 3 4 true"))
-            .bounds(dx, y, third, BTN_H).build());
-        addRenderableWidget(Button.builder(Component.literal("Кормить"),
-            b -> run("effect give " + n + " minecraft:saturation 1 4 true"))
-            .bounds(dx + third + 2, y, third, BTN_H).build());
-        addRenderableWidget(Button.builder(Component.literal("Оба"),
-            b -> { run("effect give " + n + " minecraft:regeneration 3 4 true");
-                   run("effect give " + n + " minecraft:saturation 1 4 true"); })
-            .bounds(dx + (third + 2) * 2, y, dw - (third + 2) * 2, BTN_H).build());
-        y += BTN_H + 2;
-        y = add(dx, y, dw, "Снять все эффекты", () -> run("effect clear " + n));
-
-        // Модерация
-        y += 12;
-        hdrMod = y - 10;
-        reasonBox = new EditBox(font, dx, y, dw, 14, Component.literal("причина"));
-        reasonBox.setHint(Component.literal("причина"));
+        y += BTN_H + 14;
+        hdrMod = y - 11;
+        reasonBox = new EditBox(font, x, y, w, 14, Component.literal("причина"));
+        reasonBox.setHint(Component.literal("причина кика / бана (необязательно)"));
         reasonBox.setMaxLength(80);
-        reasonBox.setValue(reasonText);                 // переживаем rebuildWidgets
+        reasonBox.setValue(reasonText);
         reasonBox.setResponder(s -> reasonText = s);
         addRenderableWidget(reasonBox);
         y += 18;
-        addRenderableWidget(Button.builder(Component.literal("Кик"),
-            b -> run("kick " + n + reason())).bounds(dx, y, half, BTN_H).build());
-        addRenderableWidget(Button.builder(Component.literal(armedLabel("ban", "Бан")),
-            b -> { if (arm("ban")) run("ban " + n + reason()); })
-            .bounds(dx + half + 4, y, dw - half - 4, BTN_H).build());
-        y += BTN_H + 2;
-        add(dx, y, dw, armedLabel("kill", "Убить"), () -> { if (arm("kill")) run("kill " + n); });
+        buttonRow(x, y, w, new String[] { "Кик", armedLabel("ban", "Бан"), armedLabel("kill", "Убить") },
+            new Runnable[] {
+                () -> run("kick " + n + reason()),
+                () -> { if (arm("ban")) run("ban " + n + reason()); },
+                () -> { if (arm("kill")) run("kill " + n); },
+            });
     }
 
-    private void initTpPicker() {
-        // левый список станет выбором цели; кнопка «отмена» справа
-        addRenderableWidget(Button.builder(Component.literal("Отмена"),
-            b -> { pickingTpTarget = false; armed = null; rebuildWidgets(); })
-            .bounds(detailX(), contentY + 24, detailW(), BTN_H).build());
+    /** Ряд одинаковых кнопок на всю ширину. */
+    private void buttonRow(int x, int y, int w, String[] labels, Runnable[] actions) {
+        int n = labels.length, gap = 3;
+        int bw = (w - gap * (n - 1)) / n;
+        for (int i = 0; i < n; i++) {
+            int bx = x + i * (bw + gap);
+            int ww = (i == n - 1) ? x + w - bx : bw;
+            Runnable a = actions[i];
+            addRenderableWidget(Button.builder(Component.literal(labels[i]), b -> a.run())
+                .bounds(bx, y, ww, BTN_H).build());
+        }
     }
 
     // ── Мир ───────────────────────────────────────────────────────────────
@@ -322,18 +315,25 @@ public class GmPanelScreen extends Screen {
     // ── Опыты ─────────────────────────────────────────────────────────────
 
     private void initExperimental() {
-        int y = contentY + 50, w = (contentW - 8) / 2;
-        expBtn(contentX, y, w, "exp:freeze", "Заморозить мир", "tick freeze");
-        expBtn(contentX + w + 4, y, contentW - w - 4, "exp:unfreeze", "Разморозить", "tick unfreeze");
+        int y = contentY + 52, w = (contentW - 8) / 2;
+        expBtn(contentX, y, w, "exp:freeze", "Заморозить мир", () -> run("tick freeze"));
+        expBtn(contentX + w + 4, y, contentW - w - 4, "exp:unfreeze", "Разморозить", () -> run("tick unfreeze"));
         y += BTN_H + 4;
-        expBtn(contentX, y, w, "exp:step1", "Шаг ×1", "tick step 1");
-        expBtn(contentX + w + 4, y, contentW - w - 4, "exp:step20", "Шаг ×20", "tick step 20");
+        expBtn(contentX, y, w, "exp:step1", "Шаг ×1", () -> run("tick step 1"));
+        expBtn(contentX + w + 4, y, contentW - w - 4, "exp:step20", "Шаг ×20", () -> run("tick step 20"));
+        y += BTN_H + 12;
+        expBtn(contentX, y, w, "exp:pause", "Пауза сессии", () -> {
+            run("tick freeze"); run("plague pause");
+        });
+        expBtn(contentX + w + 4, y, contentW - w - 4, "exp:resume", "Продолжить сессию", () -> {
+            run("tick unfreeze"); run("plague resume");
+        });
     }
 
     /** Кнопка опыта: любое нажатие требует подтверждения вторым кликом. */
-    private void expBtn(int x, int y, int w, String id, String label, String cmd) {
+    private void expBtn(int x, int y, int w, String id, String label, Runnable action) {
         addRenderableWidget(Button.builder(Component.literal(armedLabel(id, label)),
-            b -> { if (arm(id)) run(cmd); }).bounds(x, y, w, BTN_H).build());
+            b -> { if (arm(id)) action.run(); }).bounds(x, y, w, BTN_H).build());
     }
 
     // ── Карта ─────────────────────────────────────────────────────────────
@@ -412,35 +412,7 @@ public class GmPanelScreen extends Screen {
     private void renderMapTerrain(GuiGraphics g, int mapX, int mapY, int mapW, int mapH,
                                   double midX, double midY) {
         var level = minecraft != null ? minecraft.level : null;
-        if (level == null) return;
-
-        mapTerrain.beginFrame();
-        double halfW = (mapW / 2.0) / mapScale, halfH = (mapH / 2.0) / mapScale;
-        int minCX = net.minecraft.util.Mth.floor(mapCX - halfW) >> 4;
-        int maxCX = net.minecraft.util.Mth.floor(mapCX + halfW) >> 4;
-        int minCZ = net.minecraft.util.Mth.floor(mapCZ - halfH) >> 4;
-        int maxCZ = net.minecraft.util.Mth.floor(mapCZ + halfH) >> 4;
-        if (maxCX - minCX > 80 || maxCZ - minCZ > 80) return;   // слишком отдалено — рельеф не рисуем
-
-        int step = mapScale >= 0.45 ? 1 : (mapScale >= 0.18 ? 2 : 4);
-        int cell = Math.max(1, (int) Math.ceil(mapScale * step));
-
-        for (int cx = minCX; cx <= maxCX; cx++) {
-            for (int cz = minCZ; cz <= maxCZ; cz++) {
-                int[] cols = mapTerrain.chunk(level, cx, cz);
-                if (cols == null) continue;
-                for (int x = 0; x < 16; x += step) {
-                    for (int z = 0; z < 16; z += step) {
-                        int col = cols[x * 16 + z];
-                        if (col == 0) continue;
-                        int sx = (int) Math.round(midX + ((cx << 4) + x - mapCX) * mapScale);
-                        int sy = (int) Math.round(midY + ((cz << 4) + z - mapCZ) * mapScale);
-                        if (sx < mapX - cell || sx > mapX + mapW || sy < mapY - cell || sy > mapY + mapH) continue;
-                        g.fill(sx, sy, sx + cell, sy + cell, col);
-                    }
-                }
-            }
-        }
+        mapTerrain.draw(g, level, mapX, mapY, mapW, mapH, mapCX, mapCZ, mapScale);
     }
 
     private void drawHead(GuiGraphics g, UUID id, int x, int y) {
@@ -540,73 +512,34 @@ public class GmPanelScreen extends Screen {
             px + 12, py + ph - FOOTER + 7, DIM, false);
     }
 
+    private static final int TROW = 13;   // высота строки таблицы игроков
+
     private void renderPlayers(GuiGraphics g, int mx, int my) {
-        if (selectedPlayer == null && !pickingTpTarget) {
+        if (selectedPlayer != null && !pickingTpTarget) {
+            renderPlayerCard(g);
+        } else {
             renderPlayerTable(g, mx, my);
-            return;
         }
+    }
 
-        List<PlayerInfo> players = onlinePlayers();
-
-        int listX = contentX;
-        int listW = Math.round(contentW * 0.40f);
-        int listY = contentY;
-        int listH = contentH - 16;
-
-        String title = pickingTpTarget
-            ? "Кому телепортировать " + selectedPlayer + "?"
-            : "Игроки онлайн: " + players.size();
-        g.drawString(font, font.plainSubstrByWidth(title, contentW), listX, listY - 12,
-            pickingTpTarget ? WARN : DIM, false);
-
-        g.fill(listX, listY, listX + listW, listY + listH, TRACK);
-        outline(g, listX, listY, listW, listH, BORDER);
-
-        if (players.isEmpty()) {
-            g.drawString(font, "никого", listX + 8, listY + 8, DIM, false);
-            return;
+    private void renderPlayerCard(GuiGraphics g) {
+        int x = contentX, w = contentW;
+        GmNetwork.Pos p = null;
+        for (GmNetwork.Pos q : GmMapData.players()) {
+            if (q.name().equals(selectedPlayer)) { p = q; break; }
         }
+        PlayerInfo pi = onlinePlayers().stream()
+            .filter(q -> nameOf(q).equals(selectedPlayer)).findFirst().orElse(null);
 
-        int maxScroll = Math.max(0, players.size() * ROW_H - listH);
-        listScroll = Math.max(0, Math.min(listScroll, maxScroll));
+        g.drawString(font, selectedPlayer, x + 82, contentY + 1, TEXT, false);
+        StringBuilder sub = new StringBuilder();
+        if (pi != null) sub.append(gameModeRu(pi.getGameMode())).append("  ·  ").append(pi.getLatency()).append(" мс");
+        if (p != null) sub.append("  ·  HP ").append(Math.round(p.health())).append("  ·  еда ").append(p.food());
+        g.drawString(font, font.plainSubstrByWidth(sub.toString(), w - 84), x + 82, contentY + 11, DIM, false);
+        g.fill(x, contentY + 18, x + w, contentY + 19, BORDER);
 
-        g.enableScissor(listX + 1, listY + 1, listX + listW - 1, listY + listH - 1);
-        int y = listY - listScroll;
-        for (PlayerInfo p : players) {
-            String name = nameOf(p);
-            boolean sel = name.equals(selectedPlayer) && !pickingTpTarget;
-            boolean hover = in(mx, my, listX, Math.max(y, listY), listW, ROW_H)
-                && my < listY + listH && my >= y;
-            if (sel) g.fill(listX + 1, y, listX + listW - 1, y + ROW_H, SELECT);
-            else if (hover) g.fill(listX + 1, y, listX + listW - 1, y + ROW_H, HOVER);
-            g.fill(listX + 6, y + ROW_H / 2 - 2, listX + 10, y + ROW_H / 2 + 2, pingColor(p.getLatency()));
-            g.drawString(font, font.plainSubstrByWidth(name, listW - 20), listX + 16, y + 4,
-                sel ? TEXT : DIM, false);
-            y += ROW_H;
-        }
-        g.disableScissor();
-
-        int dx = detailX();
-        if (selectedPlayer == null) {
-            g.drawString(font, "Выберите игрока слева", dx, listY + 4, DIM, false);
-            return;
-        }
-        if (pickingTpTarget) {
-            drawWrapped(g, "Выберите в списке слева, к кому телепортировать "
-                + selectedPlayer + ". Потребуется подтверждение.", dx, listY + 4, detailW(), DIM);
-            return;
-        }
-
-        g.fill(dx, listY + 2, dx + 4, listY + 12, ACCENT);
-        g.drawString(font, selectedPlayer, dx + 10, listY + 3, TEXT, false);
-        PlayerInfo pi = players.stream().filter(p -> nameOf(p).equals(selectedPlayer)).findFirst().orElse(null);
-        if (pi != null) {
-            g.drawString(font, gameModeRu(pi.getGameMode()) + "  ·  " + pi.getLatency() + " мс",
-                dx + 10, listY + 15, DIM, false);
-        }
-        g.drawString(font, "ТЕЛЕПОРТ", dx, hdrTp, ACCENT, false);
-        g.drawString(font, "СОСТОЯНИЕ", dx, hdrState, ACCENT, false);
-        g.drawString(font, "МОДЕРАЦИЯ", dx, hdrMod, ACCENT, false);
+        g.drawString(font, "СОСТОЯНИЕ", x, hdrState, ACCENT, false);
+        g.drawString(font, "МОДЕРАЦИЯ", x, hdrMod, ACCENT, false);
     }
 
     /** Живая таблица: ник, HP, еда, режим, расстояние. Клик по строке — карточка игрока. */
@@ -617,57 +550,71 @@ public class GmPanelScreen extends Screen {
         var me = mePlayer();
 
         int x = contentX, w = contentW, top = contentY;
-        int cName = x + 2;
-        int cHp = x + w - 190;
-        int cFood = x + w - 128;
-        int cMode = x + w - 96;
-        int cDist = x + w - 34;
+        int rDist = x + w;                 // правый край столбцов (числа выравниваем вправо)
+        int rMode = rDist - 32;
+        int rFood = rMode - 30;
+        int hpBarX = rFood - 62;
+        int nameW = hpBarX - x - 6;
 
-        g.drawString(font, "Игроки: " + players.size()
-            + (GmMapData.ageMs() == Long.MAX_VALUE ? "   (HP/еда — оператору при моде на сервере)" : ""),
-            x, top - 12, DIM, false);
-        g.drawString(font, "ник", cName, top, DIM, false);
-        g.drawString(font, "HP", cHp, top, DIM, false);
-        g.drawString(font, "еда", cFood, top, DIM, false);
-        g.drawString(font, "реж.", cMode, top, DIM, false);
-        g.drawString(font, "дист", cDist, top, DIM, false);
+        if (pickingTpTarget) {
+            g.fill(x, top - 13, x + w, top - 1, 0x33D8A24A);
+            g.drawString(font, font.plainSubstrByWidth(
+                "Кому телепортировать " + selectedPlayer + "?  Клик по строке.", w - 6),
+                x + 3, top - 11, WARN, false);
+        } else {
+            g.drawString(font, "Онлайн: " + players.size(), x, top - 11, DIM, false);
+        }
+
+        g.drawString(font, "игрок", x, top, DIM, false);
+        g.drawString(font, "HP", hpBarX, top, DIM, false);
+        rightStr(g, "еда", rFood, top, DIM);
+        rightStr(g, "реж.", rMode, top, DIM);
+        rightStr(g, "дист", rDist, top, DIM);
         g.fill(x, top + 10, x + w, top + 11, BORDER);
 
-        int listY = top + 14, listH = contentH - 14;
-        int maxScroll = Math.max(0, players.size() * ROW_H - listH);
+        int listY = top + 13, listH = contentH - 13;
+        int maxScroll = Math.max(0, players.size() * TROW - listH);
         listScroll = Math.max(0, Math.min(listScroll, maxScroll));
 
         g.enableScissor(x, listY, x + w, listY + listH);
         int y = listY - listScroll;
+        int idx = 0;
         for (PlayerInfo pi : players) {
             String name = nameOf(pi);
             GmNetwork.Pos p = pos.get(pi.getProfile().getId());
-            boolean hover = in(mx, my, x, Math.max(y, listY), w, ROW_H) && my >= y && my < listY + listH;
-            if (hover) g.fill(x, y, x + w, y + ROW_H, HOVER);
+            boolean vis = y + TROW > listY && y < listY + listH;
+            boolean hover = vis && in(mx, my, x, y, w, TROW) && my >= listY && my < listY + listH;
+            if (vis) {
+                if (hover) g.fill(x, y, x + w, y + TROW, HOVER);
+                else if ((idx & 1) == 1) g.fill(x, y, x + w, y + TROW, 0x0CFFFFFF);
 
-            g.drawString(font, font.plainSubstrByWidth(name, cHp - cName - 6), cName, y + 4, TEXT, false);
-            if (p != null) {
-                int bar = 30;
-                g.fill(cHp, y + 5, cHp + bar, y + 11, 0x40000000);
-                g.fill(cHp, y + 5, cHp + Math.round(bar * Math.min(1f, p.health() / 20f)), y + 11, hpColor(p.health()));
-                g.drawString(font, String.valueOf(Math.round(p.health())), cHp + bar + 3, y + 4, TEXT, false);
-                g.drawString(font, String.valueOf(p.food()), cFood, y + 4, TEXT, false);
-            } else {
-                g.drawString(font, "—", cHp, y + 4, DIM, false);
-                g.drawString(font, "—", cFood, y + 4, DIM, false);
+                g.drawString(font, font.plainSubstrByWidth(name, nameW), x, y + 3, TEXT, false);
+                if (p != null) {
+                    int bw = 28, fillW = Math.round(bw * Math.min(1f, p.health() / 20f));
+                    g.fill(hpBarX, y + 4, hpBarX + bw, y + 10, 0x40000000);
+                    g.fill(hpBarX, y + 4, hpBarX + fillW, y + 10, hpColor(p.health()));
+                    rightStr(g, String.valueOf(Math.round(p.health())), rFood - 6, y + 3, TEXT);
+                    rightStr(g, String.valueOf(p.food()), rFood, y + 3, TEXT);
+                } else {
+                    rightStr(g, "—", rFood, y + 3, DIM);
+                }
+                GameType gm = p != null ? GameType.byId(p.mode()) : pi.getGameMode();
+                rightStr(g, gameModeShort(gm), rMode, y + 3, DIM);
+                String dist = "—";
+                if (p != null && me != null) {
+                    double ddx = p.x() - me.getX(), ddz = p.z() - me.getZ();
+                    dist = String.valueOf((int) Math.sqrt(ddx * ddx + ddz * ddz));
+                }
+                rightStr(g, dist, rDist, y + 3, DIM);
             }
-            GameType gm = p != null ? GameType.byId(p.mode()) : pi.getGameMode();
-            g.drawString(font, gameModeShort(gm), cMode, y + 4, DIM, false);
-
-            String dist = "—";
-            if (p != null && me != null) {
-                double ddx = p.x() - me.getX(), ddz = p.z() - me.getZ();
-                dist = String.valueOf((int) Math.sqrt(ddx * ddx + ddz * ddz));
-            }
-            g.drawString(font, dist, cDist, y + 4, DIM, false);
-            y += ROW_H;
+            y += TROW;
+            idx++;
         }
         g.disableScissor();
+    }
+
+    private void rightStr(GuiGraphics g, String s, int rightX, int y, int color) {
+        g.drawString(font, s, rightX - font.width(s), y, color, false);
     }
 
     private static int hpColor(float hp) {
@@ -722,8 +669,8 @@ public class GmPanelScreen extends Screen {
 
     private void renderExperimental(GuiGraphics g) {
         g.drawString(font, "⚠ Опасные функции — каждая по двойному клику", contentX, contentY, WARN, false);
-        drawWrapped(g, "Стоп-кадр останавливает весь мир: мобов, рост, физику. "
-            + "«Шаг» проматывает мир на N тактов замороженным. Не забудьте разморозить.",
+        drawWrapped(g, "Стоп-кадр останавливает весь мир: мобов, рост, время, физику. "
+            + "«Пауза сессии» — то же плюс пауза чумы, одной кнопкой. Не забудьте вернуть.",
             contentX, contentY + 12, contentW, DIM);
     }
 
@@ -795,41 +742,25 @@ public class GmPanelScreen extends Screen {
                     y += ROW_H;
                 }
             }
-            // таблица игроков: клик по строке — карточка
-            if (section == Section.PLAYERS && selectedPlayer == null && !pickingTpTarget) {
-                int listY = contentY + 14, listH = contentH - 14;
+            // таблица игроков: клик по строке — выбор или цель телепорта
+            if (section == Section.PLAYERS && (selectedPlayer == null || pickingTpTarget)) {
+                int listY = contentY + 13, listH = contentH - 13;
                 if (in(mx, my, contentX, listY, contentW, listH)) {
                     List<PlayerInfo> players = onlinePlayers();
-                    int idx = (int) ((my - listY + listScroll) / ROW_H);
-                    if (idx >= 0 && idx < players.size()) {
-                        selectedPlayer = nameOf(players.get(idx));
-                        listScroll = 0;
-                        rebuildWidgets();
-                    }
-                    return true;
-                }
-            }
-            // узкий список игроков (когда карточка открыта)
-            if (section == Section.PLAYERS && (selectedPlayer != null || pickingTpTarget)) {
-                int listX = contentX;
-                int listW = Math.round(contentW * 0.40f);
-                int listY = contentY, listH = contentH - 16;
-                if (in(mx, my, listX, listY, listW, listH)) {
-                    List<PlayerInfo> players = onlinePlayers();
-                    int idx = (int) ((my - listY + listScroll) / ROW_H);
+                    int idx = (int) ((my - listY + listScroll) / TROW);
                     if (idx >= 0 && idx < players.size()) {
                         String name = nameOf(players.get(idx));
                         if (pickingTpTarget) {
-                            if (!name.equals(selectedPlayer)) {
-                                if (arm("tp2:" + name)) {
-                                    run("tp " + selectedPlayer + " " + name);
-                                    pickingTpTarget = false;
-                                }
+                            if (!name.equals(selectedPlayer) && arm("tp2:" + name)) {
+                                run("tp " + selectedPlayer + " " + name);
+                                pickingTpTarget = false;
+                                rebuildWidgets();
                             }
                         } else {
                             selectedPlayer = name;
+                            listScroll = 0;
+                            rebuildWidgets();
                         }
-                        rebuildWidgets();
                     }
                     return true;
                 }
@@ -894,14 +825,6 @@ public class GmPanelScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal(label), b -> onClick.run())
             .bounds(x, y, w, BTN_H).build());
         return y + BTN_H + 1;
-    }
-
-    private int detailX() {
-        return contentX + Math.round(contentW * 0.40f) + 12;
-    }
-
-    private int detailW() {
-        return contentX + contentW - detailX();
     }
 
     private boolean arm(String id) {
