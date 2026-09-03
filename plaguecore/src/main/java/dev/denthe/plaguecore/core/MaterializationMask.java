@@ -46,6 +46,20 @@ public final class MaterializationMask {
         return (h >>> 40) / (float) (1 << 24);
     }
 
+    /**
+     * Вес блока: то же число в [0, 1), но с учётом высоты. Нужно под
+     * землёй, где решение принимается для каждого блока, а не для столбца:
+     * стена пещеры зарастает пятнами и по вертикали тоже.
+     */
+    public static float blockWeight(long seed, int blockX, int blockY, int blockZ) {
+        long h = seed;
+        h ^= blockX * 0x9E3779B97F4A7C15L;
+        h ^= blockY * 0xD1B54A32D192ED03L;
+        h ^= blockZ * 0xC2B2AE3D27D4EB4FL;
+        h = перемешать(h);
+        return (h >>> 40) / (float) (1 << 24);
+    }
+
     private static long перемешать(long z) {
         z += 0x9E3779B97F4A7C15L;
         z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;

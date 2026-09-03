@@ -90,13 +90,19 @@ public final class PlagueBlocks {
             .pushReaction(PushReaction.DESTROY)
             .noOcclusion());
 
-    /** Споровый мешок. Обычный куб, но мягкий и глухой. */
-    public static final DeferredBlock<Block> SPORE_SAC = БЛОКИ.registerSimpleBlock(
+    /**
+     * Споровый мешок: бугор на полу пещеры. Не куб — своя модель
+     * из Blockbench, поэтому noOcclusion, иначе соседние грани пропадут.
+     */
+    public static final DeferredBlock<SporeSacBlock> SPORE_SAC = БЛОКИ.registerBlock(
         "spore_sac",
+        SporeSacBlock::new,
         BlockBehaviour.Properties.of()
             .mapColor(MapColor.TERRACOTTA_PURPLE)
             .strength(0.5f)
-            .sound(SoundType.SLIME_BLOCK));
+            .sound(SoundType.SLIME_BLOCK)
+            .pushReaction(PushReaction.DESTROY)
+            .noOcclusion());
 
     public static final DeferredItem<BlockItem> ROTTED_DIRT_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_DIRT);

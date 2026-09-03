@@ -120,6 +120,43 @@ class MaterializationMaskTest {
     }
 
     @Test
+    void весБлокаЛежитВНулеЕдинице() {
+        for (int y = -64; y < 128; y += 7) {
+            float вес = MaterializationMask.blockWeight(СИД, 13, y, -21);
+            assertTrue(вес >= 0f && вес < 1f, "вес " + вес + " на y=" + y);
+        }
+    }
+
+    @Test
+    void весБлокаДетерминирован() {
+        assertEquals(MaterializationMask.blockWeight(СИД, 5, 30, 7),
+                     MaterializationMask.blockWeight(СИД, 5, 30, 7));
+    }
+
+    /** Высота обязана участвовать: иначе весь столбец зарастал бы разом. */
+    @Test
+    void соседниеПоВысотеБлокиНеОдинаковы() {
+        float a = MaterializationMask.blockWeight(СИД, 5, 30, 7);
+        float b = MaterializationMask.blockWeight(СИД, 5, 31, 7);
+        assertNotEquals(a, b, 1e-6f);
+    }
+
+    @Test
+    void весБлокаРаспределёнРовно() {
+        int ниже = 0, всего = 0;
+        for (int x = 0; x < 16; x++) {
+            for (int y = 0; y < 16; y++) {
+                for (int z = 0; z < 16; z++) {
+                    if (MaterializationMask.blockWeight(СИД, x, y, z) < 0.25f) ниже++;
+                    всего++;
+                }
+            }
+        }
+        float доля = ниже / (float) всего;
+        assertTrue(доля > 0.22f && доля < 0.28f, "ждём около четверти, получено " + доля);
+    }
+
+    @Test
     void отрицательныеКоординатыРаботаютТакЖе() {
         int поражено = 0;
         for (int x = -16; x < 0; x++) {

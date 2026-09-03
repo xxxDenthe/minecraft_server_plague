@@ -100,4 +100,49 @@ public final class BlockTransforms {
             || state.is(PlagueBlocks.BLIGHT_VINE.get())
             || state.is(PlagueBlocks.SPORE_SAC.get());
     }
+
+    // ── подземелье ────────────────────────────────────────────────────
+    // Ядро, раздел 8.4. Геометрию («стена», «пол», «потолок») считает
+    // CaveMaterializer: она зависит от соседей, а не от самого блока.
+    // Здесь только вопросы к одному BlockState.
+
+    /** Рудная жила: на Гнили покрывается коркой целиком. */
+    public static boolean isOre(BlockState state) {
+        return state.is(Tags.Blocks.ORES);
+    }
+
+    /**
+     * Может ли чума вообще работать с этим блоком под землёй.
+     *
+     * Список нарочно узкий: природный камень, земля и стволы. Гнить
+     * и обрастать по всему, что подвернулось, нельзя — под землёй стоят
+     * механизмы Create, сундуки и постройки игроков, и превращать их
+     * в грязь мы не подписывались.
+     */
+    public static boolean isCaveSubstrate(BlockState state) {
+        if (state.isAir() || isPlagueBlock(state)) return false;
+        if (state.is(Blocks.BEDROCK)) return false;
+        if (!state.getFluidState().isEmpty()) return false;
+        BlockKind вид = kindOf(state);
+        return вид == BlockKind.STONE || вид == BlockKind.DIRT
+            || вид == BlockKind.GRASS || вид == BlockKind.LOG;
+    }
+
+    /** Годится ли блок под гнилой пол: только то, по чему ходят. */
+    public static boolean isCaveFloorMaterial(BlockState state) {
+        BlockKind вид = kindOf(state);
+        return вид == BlockKind.STONE || вид == BlockKind.DIRT || вид == BlockKind.GRASS;
+    }
+
+    public static BlockState rottedDirt() {
+        return PlagueBlocks.ROTTED_DIRT.get().defaultBlockState();
+    }
+
+    public static BlockState vine() {
+        return PlagueBlocks.BLIGHT_VINE.get().defaultBlockState();
+    }
+
+    public static BlockState sporeSac() {
+        return PlagueBlocks.SPORE_SAC.get().defaultBlockState();
+    }
 }

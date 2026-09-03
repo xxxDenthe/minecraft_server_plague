@@ -72,6 +72,11 @@ public final class PlagueCommands {
                 .executes(PlagueCommands::перерисовать))
             .executes(c -> перерисоватьВокруг(c, 4)));
 
+        корень.then(Commands.literal("rendercave")
+            .then(Commands.argument("radius", IntegerArgumentType.integer(0, 16))
+                .executes(PlagueCommands::перерисоватьПещеры))
+            .executes(c -> перерисоватьПещерыВокруг(c, 2)));
+
         корень.then(Commands.literal("remove")
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
                 .executes(c -> очаг(c, false))));
@@ -119,13 +124,19 @@ public final class PlagueCommands {
             "Местность размечена: " + (st.isTerrainInitialized() ? "да" : "нет")), false);
 
         int отстаёт = 0;
+        int отстаётПодЗемлёй = 0;
         for (int i = 0; i < g.cellCount(); i++) {
             if (g.getLevelAt(i) > g.getAppliedSurfaceAt(i)) отстаёт++;
+            if (g.getLevelAt(i) > g.getAppliedUndergroundAt(i)) отстаётПодЗемлёй++;
         }
         final int ждёт = отстаёт;
+        final int ждётПодЗемлёй = отстаётПодЗемлёй;
         s.sendSuccess(() -> Component.literal(
             String.format("Не отрисовано чанков: %d, в очереди сейчас: %d",
                 ждёт, Materializer.длинаОчереди())), false);
+        s.sendSuccess(() -> Component.literal(
+            String.format("Под землёй не отрисовано: %d, в очереди сейчас: %d",
+                ждётПодЗемлёй, CaveMaterializer.длинаОчереди())), false);
         return 1;
     }
 
@@ -179,6 +190,36 @@ public final class PlagueCommands {
         final int n = поставлено;
         ctx.getSource().sendSuccess(() -> Component.literal(
             "В очередь на перерисовку поставлено чанков: " + n), true);
+        return n;
+    }
+
+    /**
+     * То же для подземелья. Отдельная команда, потому что подземный проход
+     * сам по себе запускается только под живым игроком: без неё стадию
+     * пещер иначе как спуском в шахту не проверить.
+     */
+    private static int перерисоватьПещеры(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        return перерисоватьПещерыВокруг(ctx, IntegerArgumentType.getInteger(ctx, "radius"));
+    }
+
+    private static int перерисоватьПещерыВокруг(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, int радиус) {
+        ServerLevel level = мир(ctx.getSource());
+        PlagueState st = PlagueState.get(level);
+        net.minecraft.world.level.ChunkPos центр =
+            new net.minecraft.world.level.ChunkPos(
+                net.minecraft.core.BlockPos.containing(ctx.getSource().getPosition()));
+
+        int поставлено = 0;
+        for (int dz = -радиус; dz <= радиус; dz++) {
+            for (int dx = -радиус; dx <= радиус; dx++) {
+                if (CaveMaterializer.поставить(st, центр.x + dx, центр.z + dz)) поставлено++;
+            }
+        }
+        final int n = поставлено;
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "В очередь на подземную перерисовку поставлено чанков: " + n), true);
         return n;
     }
 
@@ -256,6 +297,12 @@ public final class PlagueCommands {
             очаги = StartGenerator.scatterEpicenters(st.grid(), сколько, rng);
             for (long p : очаги) st.addEpicenter(p);
         }
+
+        // Сетка сейчас будет переписана целиком, а в очередях лежат индексы
+        // и курсор от старой картины мира. Их надо забыть, иначе первый же
+        // тик дорисует чанк до уровня, которого у него больше нет.
+        Materializer.сброситьОчередь();
+        CaveMaterializer.сброситьОчередь();
 
         long t0 = System.nanoTime();
         StartGenerator.GenerationResult r =
