@@ -13,6 +13,7 @@ public class PlagueCore {
 
     public PlagueCore(IEventBus modEventBus, ModContainer container) {
         dev.denthe.plaguecore.mc.PlagueBlocks.register(modEventBus);
+        PlagueConfig.зарегистрировать(modEventBus, container);
         LOG.info("Plague Core загружается");
     }
 }

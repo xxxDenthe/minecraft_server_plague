@@ -55,9 +55,6 @@ public final class Materializer {
      */
     private static final int ВЫСОТА_ДЕРЕВА = 32;
 
-    /** Доля обрастаемых наростом мест: камень должен просвечивать. */
-    private static final float ДОЛЯ_НАРОСТА = 0.35f;
-
     /** Куда пытаемся положить нарост, в порядке предпочтения. */
     private static final Direction[] ПОРЯДОК_ГРАНЕЙ = {
         Direction.UP, Direction.NORTH, Direction.SOUTH,
@@ -265,7 +262,8 @@ public final class Materializer {
      * просвечивать камень. Выбор детерминирован, как и вся маска.
      */
     private static boolean пятноЗдесь(long seed, int wx, int y, int wz) {
-        return MaterializationMask.columnWeight(seed, wx * 31 + y, wz * 17 - y) < ДОЛЯ_НАРОСТА;
+        return MaterializationMask.columnWeight(seed, wx * 31 + y, wz * 17 - y)
+            < PlagueConstants.GROWTH_PATCH_FRACTION;
     }
 
     /**

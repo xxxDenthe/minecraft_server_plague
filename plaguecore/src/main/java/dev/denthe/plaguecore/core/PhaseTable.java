@@ -23,6 +23,38 @@ public final class PhaseTable {
         new PhaseParams(0.24f,  240,      1,             2)
     };
 
+    /** Последняя ночь фазы. Нужно конфигу, чтобы показать значение по умолчанию. */
+    public static int endNightOf(int phase) {
+        return PHASE_END_NIGHT[зажать(phase)];
+    }
+
+    /**
+     * Заменить одну фазу значениями из конфига. Ядро, раздел 6.2 —
+     * ровно те числа, которыми правится кривая распространения.
+     *
+     * Ночи фаз обязаны идти по возрастанию, иначе фаза схлопнется
+     * и следующая никогда не наступит. Ряд выправляется молча; метод
+     * сообщает, пришлось ли править. Вызывать по порядку, от нулевой.
+     *
+     * У последней фазы конца нет: она бессрочная, и endNight у неё
+     * не спрашивают.
+     *
+     * @return true, если значения из файла пришлось поправить
+     */
+    public static boolean задатьФазу(int phase, int endNight, PhaseParams params) {
+        int p = зажать(phase);
+        PARAMS[p] = params;
+        if (p == PHASE_COUNT - 1) return false;          // бессрочная
+        int минимум = (p == 0) ? 1 : PHASE_END_NIGHT[p - 1] + 1;
+        int годный = Math.max(минимум, endNight);
+        PHASE_END_NIGHT[p] = годный;
+        return годный != endNight;
+    }
+
+    private static int зажать(int phase) {
+        return phase < 0 ? 0 : Math.min(phase, PHASE_COUNT - 1);
+    }
+
     public static int phaseForNight(int night) {
         if (night <= 0) return 0;
         for (int p = 0; p < PHASE_COUNT; p++) {
@@ -32,7 +64,6 @@ public final class PhaseTable {
     }
 
     public static PhaseParams paramsFor(int phase) {
-        int p = phase < 0 ? 0 : Math.min(phase, PHASE_COUNT - 1);
-        return PARAMS[p];
+        return PARAMS[зажать(phase)];
     }
 }

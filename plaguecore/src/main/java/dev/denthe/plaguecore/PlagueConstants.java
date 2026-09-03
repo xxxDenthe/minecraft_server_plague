@@ -1,10 +1,25 @@
 package dev.denthe.plaguecore;
 
 /**
- * Все игровые числа в одном месте. Позже переедут в конфиг.
+ * Все игровые числа в одном месте.
+ *
+ * Значения здесь — **стартовые**. Поверх них ложится конфиг
+ * `config/plaguecore-common.toml`: при загрузке мира и при каждой правке
+ * файла {@link PlagueConfig} перезаписывает поля ниже. Правило проекта —
+ * за день до сессии баланс правится текстовым файлом, без пересборки,
+ * поэтому поля нарочно не final.
+ *
+ * Разделение простое:
+ *   нефинальное поле — ручка, её крутит человек из конфига;
+ *   финальное поле   — устройство мода, менять на ходу нельзя.
+ *
+ * Класс остаётся чистой Java: конфиг знает о нём, а он о конфиге — нет.
+ * Иначе пакет core потянул бы за собой NeoForge.
  */
 public final class PlagueConstants {
     private PlagueConstants() {}
+
+    // ── Устройство: на ходу не меняется ───────────────────────────────
 
     /** Максимальный уровень заражения чанка. 5 выставляет только подсистема логова. */
     public static final int MAX_LEVEL = 5;
@@ -12,23 +27,38 @@ public final class PlagueConstants {
     /** Потолок, до которого поднимается обычное распространение. */
     public static final int MAX_NATURAL_LEVEL = 4;
 
-    /** Сколько ночей держится шрам после полной очистки. */
-    public static final int SCAR_NIGHTS = 5;
-
-    /** Во сколько раз растёт бюджет ночи, если игроки спали. */
-    public static final float SLEEP_BUDGET_MULTIPLIER = 2.0f;
-
-    /** Дополнительный рост уровня на месте при сне. */
-    public static final int SLEEP_EXTRA_GROWTH = 1;
-
     /** Сторона мира в блоках. */
     public static final int WORLD_SIZE_BLOCKS = 1000;
 
-    /** Сторона сетки в чанках. 63 × 16 = 1008 — покрывает границу с запасом. */
+    /**
+     * Сторона сетки в чанках. 63 × 16 = 1008 — покрывает границу с запасом.
+     *
+     * В конфиг не выносится намеренно: размер сетки записан в сохранение
+     * мира, и смена числа на живом мире означала бы порчу данных.
+     */
     public static final int GRID_SIZE_CHUNKS = 63;
 
+    /**
+     * Потолок очереди чанков на перерисовку.
+     *
+     * Тоже не ручка: очередь создаётся при загрузке класса, задолго
+     * до того, как прочитан конфиг.
+     */
+    public static final int MAX_QUEUE_LENGTH = 512;
+
+    // ── Ручки: их крутит конфиг ───────────────────────────────────────
+
+    /** Сколько ночей держится шрам после полной очистки. */
+    public static int SCAR_NIGHTS = 5;
+
+    /** Во сколько раз растёт бюджет ночи, если игроки спали. */
+    public static float SLEEP_BUDGET_MULTIPLIER = 2.0f;
+
+    /** Дополнительный рост уровня на месте при сне. */
+    public static int SLEEP_EXTRA_GROWTH = 1;
+
     /** Доля мира, заражённая на старте сессии. */
-    public static final float START_INFECTION_PERCENT = 0.10f;
+    public static float START_INFECTION_PERCENT = 0.10f;
 
     /**
      * Сколько очагов сажается на старте сессии.
@@ -39,20 +69,13 @@ public final class PlagueConstants {
      * заражено 23% мира, при 32 — 75%, как и задумано спеком.
      * Разбор: docs/superpowers/notes/2026-09-03-krivaya-rasprostraneniya.md
      */
-    public static final int START_EPICENTERS = 32;
+    public static int START_EPICENTERS = 32;
 
     // ── Материализация ────────────────────────────────────────────────
-    // Дизайн материализации, раздел 8. Числа временно живут здесь;
-    // по правилу проекта им положено переехать в конфиг.
+    // Дизайн материализации, раздел 8.
 
     /** Изменений блоков за тик на поверхности. Настоящая защита TPS. */
-    public static final int BLOCKS_PER_TICK = 128;
-
-    /** Отдельный, более жёсткий лимит для подземелья. */
-    public static final int BLOCKS_PER_TICK_CAVE = 12;
-
-    /** Потолок очереди чанков на перерисовку. */
-    public static final int MAX_QUEUE_LENGTH = 512;
+    public static int BLOCKS_PER_TICK = 128;
 
     /**
      * На сколько блоков вглубь от поверхности идёт материализация.
@@ -62,27 +85,34 @@ public final class PlagueConstants {
      * границей. Из-за этого камень не заражался вообще никогда. Шесть даёт
      * три слоя камня под почвой, как просил владелец.
      */
-    public static final int SURFACE_DEPTH = 6;
+    public static int SURFACE_DEPTH = 6;
+
+    /** Доля обрастаемых наростом мест на поверхности: камень должен просвечивать. */
+    public static float GROWTH_PATCH_FRACTION = 0.35f;
 
     // ── Подземелье ────────────────────────────────────────────────────
     // Ядро, раздел 8.4. Доли покрытия: какая часть подходящих мест
     // получает нарост. Пороги обязаны расти вместе с уровнем, иначе
-    // покрытие перестанет быть вложенным и стены начнут выздоравливать.
+    // покрытие перестанет быть вложенным и стены начнут выздоравливать;
+    // за этим следит PlagueConfig при загрузке.
+
+    /** Отдельный, более жёсткий лимит блоков за тик для подземелья. */
+    public static int BLOCKS_PER_TICK_CAVE = 12;
 
     /** Стены пещер на уровнях 1–2: редкие пятна. */
-    public static final float CAVE_WALL_SPARSE = 0.15f;
+    public static float CAVE_WALL_SPARSE = 0.15f;
 
     /** Стены пещер на Гнили: почти сплошь, но просветы остаются. */
-    public static final float CAVE_WALL_DENSE = 0.85f;
+    public static float CAVE_WALL_DENSE = 0.85f;
 
     /** Доля потолка, с которой свисают лозы. */
-    public static final float CAVE_CEILING_VINES = 0.20f;
+    public static float CAVE_CEILING_VINES = 0.20f;
 
     /** Доля пола, становящаяся гнилой землёй. */
-    public static final float CAVE_FLOOR_ROT = 0.45f;
+    public static float CAVE_FLOOR_ROT = 0.45f;
 
     /** Доля пола под споровые мешки. Входит в долю гнилого пола. */
-    public static final float CAVE_SPORE_SAC = 0.03f;
+    public static float CAVE_SPORE_SAC = 0.03f;
 
     /**
      * Сколько столбцов чанка просматривается за тик под землёй.
@@ -92,5 +122,5 @@ public final class PlagueConstants {
      * не тратит бюджет вовсе. Без этой границы чанк без пещер
      * прочёсывался бы целиком за один тик.
      */
-    public static final int CAVE_COLUMNS_PER_TICK = 16;
+    public static int CAVE_COLUMNS_PER_TICK = 16;
 }

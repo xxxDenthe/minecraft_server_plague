@@ -231,4 +231,33 @@ class MaterializationMaskTest {
         assertTrue(поражено > 100 && поражено < 220,
             "на уровне 3 ждём около 70% из 256, получено " + поражено);
     }
+
+    /**
+     * Доли приходят из конфига, то есть от человека с блокнотом. Ряд
+     * обязан расти вместе с уровнем — на этом держится то, что рост
+     * уровня только добавляет блоки. Кривой ряд выправляется молча.
+     */
+    @Test
+    void долиИзКонфигаВыправляютсяПоВозрастанию() {
+        float[] исходные = новыеДоли();
+        try {
+            assertTrue(MaterializationMask.задатьДоли(new float[] {0.5f, 0.2f, 0.9f, 2.0f}),
+                "ряд был кривой, метод обязан о том сообщить");
+            assertEquals(0.5f, MaterializationMask.fractionFor(1), 0.001f);
+            assertEquals(0.5f, MaterializationMask.fractionFor(2), 0.001f, "0.2 подтянуто до соседа");
+            assertEquals(0.9f, MaterializationMask.fractionFor(3), 0.001f);
+            assertEquals(1.0f, MaterializationMask.fractionFor(4), 0.001f, "2.0 прижато к единице");
+
+            assertFalse(MaterializationMask.задатьДоли(исходные), "родной ряд править не за что");
+            assertEquals(0.35f, MaterializationMask.fractionFor(2), 0.001f);
+        } finally {
+            MaterializationMask.задатьДоли(исходные);
+        }
+    }
+
+    private static float[] новыеДоли() {
+        float[] доли = new float[MaterializationMask.НАСТРАИВАЕМЫХ_УРОВНЕЙ];
+        for (int у = 1; у <= доли.length; у++) доли[у - 1] = MaterializationMask.fractionFor(у);
+        return доли;
+    }
 }

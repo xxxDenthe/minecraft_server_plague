@@ -90,4 +90,41 @@ class PhaseTableTest {
         }
         assertEquals(2735, сумма, "суммарный бюджет за 30 ночей по спеку 6.2");
     }
+
+    /**
+     * Фазы приходят из конфига: ими правится кривая распространения,
+     * и это главная ручка всей игры. Ночи обязаны идти по возрастанию,
+     * иначе фаза схлопнется и следующая не наступит никогда.
+     */
+    @Test
+    void фазыИзКонфигаВыправляютсяПоВозрастанию() {
+        int конец0 = PhaseTable.endNightOf(0);
+        int конец1 = PhaseTable.endNightOf(1);
+        PhaseParams было0 = PhaseTable.paramsFor(0);
+        PhaseParams было1 = PhaseTable.paramsFor(1);
+        try {
+            assertFalse(PhaseTable.задатьФазу(0, 9, new PhaseParams(0.5f, 7, 2, 1)));
+            assertEquals(9, PhaseTable.endNightOf(0));
+            assertEquals(7, PhaseTable.paramsFor(0).budget());
+            assertEquals(0, PhaseTable.phaseForNight(9));
+
+            assertTrue(PhaseTable.задатьФазу(1, 3, было1), "ночь 3 раньше конца нулевой фазы");
+            assertEquals(10, PhaseTable.endNightOf(1), "подтянуто на ночь после нулевой");
+        } finally {
+            PhaseTable.задатьФазу(0, конец0, было0);
+            PhaseTable.задатьФазу(1, конец1, было1);
+        }
+    }
+
+    /** У последней фазы конца нет: она бессрочная, и конфиг его не задаёт. */
+    @Test
+    void последняяФазаОстаётсяБессрочной() {
+        PhaseParams было = PhaseTable.paramsFor(PhaseTable.PHASE_COUNT - 1);
+        try {
+            PhaseTable.задатьФазу(PhaseTable.PHASE_COUNT - 1, 5, было);
+            assertEquals(PhaseTable.PHASE_COUNT - 1, PhaseTable.phaseForNight(100000));
+        } finally {
+            PhaseTable.задатьФазу(PhaseTable.PHASE_COUNT - 1, Integer.MAX_VALUE, было);
+        }
+    }
 }
