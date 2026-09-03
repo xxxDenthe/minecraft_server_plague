@@ -19,29 +19,33 @@ const manifestText = (packVersion) =>
 const answer = (text) => async () => ({ ok: true, status: 200, text: async () => text });
 
 describe('доступ к приватному релизу', () => {
-  it('без токена заголовков нет', () => {
-    expect(manifestHeaders('')).toEqual({});
+  it('без токена Authorization не уходит', () => {
+    expect(manifestHeaders('').Authorization).toBe(undefined);
   });
 
   it('с токеном уходит Authorization', () => {
     expect(manifestHeaders('ghp_x').Authorization).toBe('Bearer ghp_x');
   });
+
+  it('Accept — octet-stream: иначе GitHub отдаст описание ассета, а не файл', () => {
+    expect(manifestHeaders('ghp_x').Accept).toBe('application/octet-stream');
+  });
 });
 
 describe('манифест до первой раздачи', () => {
   it('без адреса лаунчер работает без пака, а не падает', async () => {
-    await expect(loadManifest({ url: '' })).resolves.toBe(null);
+    await expect(loadManifest({ source: { kind: 'none' } })).resolves.toBe(null);
   });
 
   it('с адресом манифест разбирается', async () => {
-    const m = await loadManifest({ url: 'https://example.net/pack.json', fetchImpl: answer(manifestText(7)) });
+    const m = await loadManifest({ source: { kind: 'url', url: 'https://example.net/pack.json' }, fetchImpl: answer(manifestText(7)) });
     expect(m.packVersion).toBe(7);
   });
 });
 
 describe('слежение за обновлениями', () => {
   it('без адреса ничего не опрашивает', () => {
-    const stop = watchForUpdates({ knownVersion: 1, url: '' });
+    const stop = watchForUpdates({ knownVersion: 1, source: { kind: 'none' } });
     expect(typeof stop).toBe('function');
     stop();
   });
@@ -53,7 +57,7 @@ describe('слежение за обновлениями', () => {
     const stop = watchForUpdates({
       knownVersion: 5,
       intervalMs: 1000,
-      url: 'https://example.net/pack.json',
+      source: { kind: 'url', url: 'https://example.net/pack.json' },
       fetchImpl: answer(manifestText(6)),
       onUpdate: (v) => seen.push(v),
     });
@@ -73,7 +77,7 @@ describe('слежение за обновлениями', () => {
     const stop = watchForUpdates({
       knownVersion: 6,
       intervalMs: 1000,
-      url: 'https://example.net/pack.json',
+      source: { kind: 'url', url: 'https://example.net/pack.json' },
       fetchImpl: answer(manifestText(6)),
       onUpdate: (v) => seen.push(v),
     });
@@ -92,7 +96,7 @@ describe('слежение за обновлениями', () => {
     const stop = watchForUpdates({
       knownVersion: 1,
       intervalMs: 1000,
-      url: 'https://example.net/pack.json',
+      source: { kind: 'url', url: 'https://example.net/pack.json' },
       fetchImpl: async () => {
         throw new Error('сеть отвалилась');
       },
@@ -113,7 +117,7 @@ describe('слежение за обновлениями', () => {
     const stop = watchForUpdates({
       knownVersion: 1,
       intervalMs: 1000,
-      url: 'https://example.net/pack.json',
+      source: { kind: 'url', url: 'https://example.net/pack.json' },
       fetchImpl: async () => {
         calls += 1;
         return { ok: true, status: 200, text: async () => manifestText(1) };

@@ -7,7 +7,8 @@ import path from 'node:path';
 
 import * as paths from './paths.js';
 import { readConfig, writeConfig } from './config.js';
-import { fetchManifest } from './manifest.js';
+import { fetchManifest, parseManifest } from './manifest.js';
+import { fetchPackManifestText, apiHeaders } from './github.js';
 import { ensureJava } from './java.js';
 import { ensureVanilla, ensureVersionJson } from './minecraft.js';
 import { ensureNeoForge, readProfile } from './neoforge.js';
@@ -15,21 +16,42 @@ import { planSync, applySync } from './sync.js';
 import { launchGame } from './launch.js';
 import { progressEvent, STAGES } from './progress.js';
 
-// Адрес манифеста и токен доступа к приватному релизу подставляются
-// при сборке (спек, раздел 12). Пока релиза нет, лаунчер обязан
-// оставаться работоспособным: без манифеста он ставит чистый клиент
-// с NeoForge и честно об этом пишет.
-export const MANIFEST_URL = process.env.PLAGUE_MANIFEST_URL ?? '';
+// Откуда берётся пак. Подставляется при сборке (спек, раздел 12):
+// приватный релиз GitHub плюс токен только на чтение. Пока релиза нет,
+// лаунчер обязан оставаться работоспособным — без манифеста он ставит
+// чистый клиент с NeoForge и честно об этом пишет.
+export const REPO = process.env.PLAGUE_REPO ?? '';
+export const RELEASE_TAG = process.env.PLAGUE_RELEASE_TAG ?? 'pack';
 export const MANIFEST_TOKEN = process.env.PLAGUE_MANIFEST_TOKEN ?? '';
 
+// Запасной путь: манифест по прямому адресу, без GitHub. Нужен для
+// отладки и на случай, если раздачу однажды переедет на свой сервер.
+export const MANIFEST_URL = process.env.PLAGUE_MANIFEST_URL ?? '';
+
+// Ассеты приватного релиза отдаются только по API и только с этим
+// Accept: с обычным придёт JSON с описанием, а не файл.
 export function manifestHeaders(token = MANIFEST_TOKEN) {
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}`, Accept: 'application/octet-stream' };
+  return apiHeaders(token, 'application/octet-stream');
 }
 
-export async function loadManifest({ url = MANIFEST_URL, fetchImpl = fetch } = {}) {
-  if (!url) return null;
-  return fetchManifest(url, { fetchImpl, headers: manifestHeaders() });
+export function packSource() {
+  if (REPO) {
+    const [owner, repo] = REPO.split('/');
+    return { kind: 'github', owner, repo, tag: RELEASE_TAG };
+  }
+  if (MANIFEST_URL) return { kind: 'url', url: MANIFEST_URL };
+  return { kind: 'none' };
+}
+
+export async function loadManifest({ source = packSource(), fetchImpl = fetch } = {}) {
+  if (source.kind === 'none') return null;
+
+  if (source.kind === 'github') {
+    const text = await fetchPackManifestText({ ...source, token: MANIFEST_TOKEN, fetchImpl });
+    return parseManifest(text);
+  }
+
+  return fetchManifest(source.url, { fetchImpl, headers: manifestHeaders() });
 }
 
 // Файлы пака ставятся при каждом запуске, всё остальное — один раз.
@@ -57,14 +79,14 @@ export async function syncPack(manifest, { onProgress = null, ...rest } = {}) {
 export async function prepare({
   nickname,
   onProgress = null,
-  manifestUrl = MANIFEST_URL,
+  source = packSource(),
   fetchImpl = fetch,
   ...rest
 } = {}) {
   paths.ensureDirs();
 
   const config = readConfig();
-  const manifest = await loadManifest({ url: manifestUrl, fetchImpl });
+  const manifest = await loadManifest({ source, fetchImpl });
 
   const minecraft = manifest?.minecraft ?? '1.21.1';
   const neoforge = manifest?.neoforge ?? '21.1.249';
@@ -136,12 +158,12 @@ export async function play({ nickname, maxRamMb = null, onProgress = null, onLin
 export function watchForUpdates({
   knownVersion,
   intervalMs = 5 * 60 * 1000,
-  url = MANIFEST_URL,
+  source = packSource(),
   fetchImpl = fetch,
   onUpdate = null,
   onError = null,
 } = {}) {
-  if (!url) return () => {};
+  if (source.kind === 'none') return () => {};
 
   let stopped = false;
   let announced = knownVersion;
@@ -149,8 +171,8 @@ export function watchForUpdates({
   const tick = async () => {
     if (stopped) return;
     try {
-      const manifest = await fetchManifest(url, { fetchImpl, headers: manifestHeaders() });
-      if (manifest.packVersion > announced) {
+      const manifest = await loadManifest({ source, fetchImpl });
+      if (manifest && manifest.packVersion > announced) {
         announced = manifest.packVersion;
         onUpdate?.(manifest.packVersion);
       }

@@ -9,7 +9,8 @@
     "start": "electron .",
     "test": "vitest run",
     "dist": "electron-builder --win",
-    "manifest": "node tools/build-manifest.js"
+    "manifest": "node tools/build-manifest.js",
+    "publish": "node tools/publish-pack.js"
   },
   "devDependencies": {
     "electron": "^44.1.1",
