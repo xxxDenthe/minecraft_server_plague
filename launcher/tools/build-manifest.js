@@ -146,7 +146,7 @@ async function main() {
 
   console.log(`${args.out}: версия ${manifest.packVersion}, файлов ${files.length}, из них модов ${mods}`);
   console.log(`объём раздачи: ${(bytes / 1024 / 1024).toFixed(1)} МБ`);
-  console.log('сверьте число модов с mods/MODLIST.md — их должно быть ровно 87');
+  console.log('сверьте число модов с mods/MODLIST.md — там же лежит эталонный список');
 }
 
 main().catch((err) => {

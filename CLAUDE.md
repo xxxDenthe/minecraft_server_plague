@@ -26,7 +26,7 @@ launcher/                  лаунчер на Electron: раздача пака
 ## Платформа
 
 ```
-Minecraft 1.21.1 · NeoForge · Create 6.0.10 · 86 модов
+Minecraft 1.21.1 · NeoForge · Create 6.0.10 · 98 модов
 JDK 21 · Gradle 8.14.5 через wrapper · ModDevGradle 2.0.146 · NeoForge 21.1.249
 modId = plaguecore, пакет dev.denthe.plaguecore
 ```
