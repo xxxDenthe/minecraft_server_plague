@@ -1,15 +1,19 @@
 package dev.denthe.gmtools.client;
 
+import dev.denthe.gmtools.net.GmNetwork;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Comparator;
@@ -38,7 +42,7 @@ public class GmPanelScreen extends Screen {
     static int plagueGuiWait = 0;
 
     private enum Section {
-        SELF("Себе"), PLAYERS("Игроки"),
+        SELF("Себе"), PLAYERS("Игроки"), MAP("Карта"),
         WORLD("Мир", "Погода", "Правила"),
         BROADCAST("Вещание", "Заголовок", "Чат", "Звук"),
         PLAGUE("Чума"), EXPERIMENTAL("Опыты");
@@ -48,6 +52,12 @@ public class GmPanelScreen extends Screen {
     }
 
     private static final int[] folderIdx = new int[Section.values().length];
+
+    // вид карты игроков (переживает переоткрытие панели)
+    private static double mapCX, mapCZ;
+    private static double mapScale = 0.35;
+    private static boolean mapCentered;
+    private boolean mapDragging;
 
     /**
      * Правило и его id для команды /gamerule. Клиенту сервер синхронизирует
@@ -136,6 +146,7 @@ public class GmPanelScreen extends Screen {
         switch (section) {
             case SELF -> initSelf();
             case PLAYERS -> initPlayers();
+            case MAP -> initMap();
             case WORLD -> initWorld();
             case BROADCAST -> initBroadcast();
             case PLAGUE -> initPlague();
@@ -322,6 +333,94 @@ public class GmPanelScreen extends Screen {
             b -> { if (arm(id)) run(cmd); }).bounds(x, y, w, BTN_H).build());
     }
 
+    // ── Карта ─────────────────────────────────────────────────────────────
+
+    private void initMap() {
+        addRenderableWidget(Button.builder(Component.literal("К себе"),
+            b -> { mapCentered = false; }).bounds(contentX, contentY + contentH - 15, 56, 14).build());
+    }
+
+    private int mapH() {
+        return contentH - 20;
+    }
+
+    private void renderMap(GuiGraphics g, int mx, int my) {
+        int mapX = contentX, mapY = contentY, mapW = contentW, mapH = mapH();
+        var me = mePlayer();
+        if (!mapCentered && me != null) {
+            mapCX = me.getX();
+            mapCZ = me.getZ();
+            mapCentered = true;
+        }
+        byte myDim = me != null ? localDim(me) : 0;
+
+        g.fill(mapX, mapY, mapX + mapW, mapY + mapH, 0xFF0E1110);
+        outline(g, mapX, mapY, mapW, mapH, BORDER);
+        g.enableScissor(mapX + 1, mapY + 1, mapX + mapW - 1, mapY + mapH - 1);
+
+        double midX = mapX + mapW / 2.0, midY = mapY + mapH / 2.0;
+
+        // сетка через каждые 100 блоков
+        double gridPx = 100 * mapScale;
+        if (gridPx >= 8) {
+            double firstX = midX - ((mapCX % 100) * mapScale);
+            for (double x = firstX - Math.ceil(mapW / gridPx) * gridPx; x < mapX + mapW + gridPx; x += gridPx) {
+                if (x >= mapX && x <= mapX + mapW) g.fill((int) x, mapY, (int) x + 1, mapY + mapH, 0x18FFFFFF);
+            }
+            double firstY = midY - ((mapCZ % 100) * mapScale);
+            for (double y = firstY - Math.ceil(mapH / gridPx) * gridPx; y < mapY + mapH + gridPx; y += gridPx) {
+                if (y >= mapY && y <= mapY + mapH) g.fill(mapX, (int) y, mapX + mapW, (int) y + 1, 0x18FFFFFF);
+            }
+        }
+        // оси мира (0,0)
+        int zeroX = (int) Math.round(midX + (0 - mapCX) * mapScale);
+        int zeroY = (int) Math.round(midY + (0 - mapCZ) * mapScale);
+        if (zeroX >= mapX && zeroX <= mapX + mapW) g.fill(zeroX, mapY, zeroX + 1, mapY + mapH, 0x40FFFFFF);
+        if (zeroY >= mapY && zeroY <= mapY + mapH) g.fill(mapX, zeroY, mapX + mapW, zeroY + 1, 0x40FFFFFF);
+
+        String hover = null;
+        int shownHere = 0, elsewhere = 0;
+        for (GmNetwork.Pos p : GmMapData.players()) {
+            if (p.dim() != myDim) { elsewhere++; continue; }
+            shownHere++;
+            int sx = (int) Math.round(midX + (p.x() - mapCX) * mapScale);
+            int sy = (int) Math.round(midY + (p.z() - mapCZ) * mapScale);
+            if (sx < mapX - 10 || sx > mapX + mapW + 10 || sy < mapY - 10 || sy > mapY + mapH + 10) continue;
+            boolean self = me != null && p.id().equals(me.getUUID());
+            if (self) g.fill(sx - 6, sy - 6, sx + 6, sy + 6, ACCENT);
+            drawHead(g, p.id(), sx - 4, sy - 4);
+            if (mx >= sx - 5 && mx < sx + 5 && my >= sy - 5 && my < sy + 5
+                && my >= mapY && my < mapY + mapH && mx >= mapX && mx < mapX + mapW) {
+                hover = p.name();
+            }
+        }
+        g.disableScissor();
+
+        long age = GmMapData.ageMs();
+        String status = age == Long.MAX_VALUE
+            ? "нет данных с сервера — нужны права оператора и мод на сервере"
+            : "обновлено " + (age / 1000) + " с назад   ·   тут: " + shownHere
+              + (elsewhere > 0 ? "   ·   в других измерениях: " + elsewhere : "");
+        g.drawString(font, font.plainSubstrByWidth(status, mapW - 64), mapX + 62, mapY + mapH + 4, DIM, false);
+
+        if (hover != null) g.renderTooltip(font, Component.literal(hover), mx, my);
+    }
+
+    private void drawHead(GuiGraphics g, UUID id, int x, int y) {
+        var info = minecraft != null && minecraft.getConnection() != null
+            ? minecraft.getConnection().getPlayerInfo(id) : null;
+        var skin = info != null ? info.getSkin() : DefaultPlayerSkin.get(id);
+        PlayerFaceRenderer.draw(g, skin, x, y, 8);
+    }
+
+    private static byte localDim(net.minecraft.client.player.LocalPlayer p) {
+        var d = p.level().dimension();
+        if (d == Level.OVERWORLD) return 0;
+        if (d == Level.NETHER) return 1;
+        if (d == Level.END) return 2;
+        return 3;
+    }
+
     // ───────────────────────────────────────────────────────────── render ──
 
     @Override
@@ -353,6 +452,7 @@ public class GmPanelScreen extends Screen {
         switch (section) {
             case SELF -> g.drawString(font, "Быстрые действия для себя", contentX, contentY, DIM, false);
             case PLAYERS -> renderPlayers(g, mx, my);
+            case MAP -> renderMap(g, mx, my);
             case WORLD -> renderWorld(g, mx, my);
             case BROADCAST -> renderBroadcast(g);
             case PLAGUE -> renderPlague(g);
@@ -562,6 +662,11 @@ public class GmPanelScreen extends Screen {
                     fx += w + 4;
                 }
             }
+            // карта: начать перетаскивание
+            if (section == Section.MAP && in(mx, my, contentX, contentY, contentW, mapH())) {
+                mapDragging = true;
+                return true;
+            }
             // правила: две кнопки на строку
             if (section == Section.WORLD && folder() == 1) {
                 int y = contentY + 2;
@@ -614,7 +719,32 @@ public class GmPanelScreen extends Screen {
             listScroll -= (int) (dys * ROW_H);
             return true;
         }
+        if (unlocked && section == Section.MAP && in(mx, my, contentX, contentY, contentW, mapH())) {
+            double midX = contentX + contentW / 2.0, midY = contentY + mapH() / 2.0;
+            double wx = mapCX + (mx - midX) / mapScale;
+            double wz = mapCZ + (my - midY) / mapScale;
+            mapScale = Math.max(0.02, Math.min(6.0, mapScale * (dys > 0 ? 1.2 : 1 / 1.2)));
+            mapCX = wx - (mx - midX) / mapScale;
+            mapCZ = wz - (my - midY) / mapScale;
+            return true;
+        }
         return super.mouseScrolled(mx, my, dxs, dys);
+    }
+
+    @Override
+    public boolean mouseDragged(double mx, double my, int btn, double dragX, double dragY) {
+        if (unlocked && section == Section.MAP && mapDragging) {
+            mapCX -= dragX / mapScale;
+            mapCZ -= dragY / mapScale;
+            return true;
+        }
+        return super.mouseDragged(mx, my, btn, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mx, double my, int btn) {
+        mapDragging = false;
+        return super.mouseReleased(mx, my, btn);
     }
 
     @Override

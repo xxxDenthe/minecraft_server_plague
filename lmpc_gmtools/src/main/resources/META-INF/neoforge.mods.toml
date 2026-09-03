@@ -6,20 +6,21 @@ license = "All Rights Reserved"
 modId = "${mod_id}"
 version = "${mod_version}"
 displayName = "LMPC Мастер игры"
-description = '''Админская панель: открытие по хоткею с паролем, быстрый режим наблюдателя, телепорт к игрокам, вызов /plague info.'''
+description = '''Админская панель: открытие по хоткею с паролем, быстрый режим наблюдателя, телепорт и модерация игроков, погода и правила, вещание, карта игроков.'''
 
-# Клиентский мод. Обе зависимости помечены CLIENT, поэтому на выделенном
-# сервере он не требуется и не грузится — рассинхрона версий с сервером нет.
+# Клиент — вся панель. Сервер — только рассылка позиций игроков для карты
+# (право 2). Версии клиента и сервера должны совпадать: jar кладётся и в
+# mods/ клиента, и в mods/ сервера.
 [[dependencies.${mod_id}]]
 modId = "neoforge"
 type = "required"
 versionRange = "[${neoforge_version},)"
 ordering = "NONE"
-side = "CLIENT"
+side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "minecraft"
 type = "required"
 versionRange = "[${minecraft_version}]"
 ordering = "NONE"
-side = "CLIENT"
+side = "BOTH"
