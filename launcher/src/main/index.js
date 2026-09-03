@@ -45,6 +45,8 @@ ipcMain.handle('config:write', (_event, patch) => writeConfig({ ...readConfig(),
 
 ipcMain.handle('log:open', () => shell.showItemInFolder(gameLogFile()));
 
+ipcMain.handle('folder:open', () => shell.openPath(paths.instance()));
+
 ipcMain.handle('game:play', async (_event, { nickname, maxRamMb } = {}) => {
   if (running) return { started: false, reason: 'игра уже запущена' };
 

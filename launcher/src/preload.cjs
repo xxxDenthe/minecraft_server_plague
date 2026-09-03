@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('launcher', {
   writeConfig: (patch) => ipcRenderer.invoke('config:write', patch),
   play: (options) => ipcRenderer.invoke('game:play', options),
   openLog: () => ipcRenderer.invoke('log:open'),
+  openFolder: () => ipcRenderer.invoke('folder:open'),
 
   onProgress: on('progress'),
   onLog: on('log'),

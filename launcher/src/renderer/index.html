@@ -3,32 +3,98 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self'; style-src 'self'">
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
   <title>Чума</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Фон: заглушка. Силуэт мёртвого города в дыму, палитра из style.css.
+       ponytail: временный SVG, заменить настоящим артом — тогда img-src в CSP
+       уже разрешает и картинку, и data:. -->
+  <svg class="backdrop" viewBox="0 0 900 600" preserveAspectRatio="xMidYMax slice"
+       aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1c1613"/>
+        <stop offset="0.55" stop-color="#151110"/>
+        <stop offset="1" stop-color="#0d0a09"/>
+      </linearGradient>
+      <radialGradient id="haze" cx="0.5" cy="0.9" r="0.75">
+        <stop offset="0" stop-color="#3a4a2c" stop-opacity="0.28"/>
+        <stop offset="1" stop-color="#3a4a2c" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="900" height="600" fill="url(#sky)"/>
+    <rect width="900" height="600" fill="url(#haze)"/>
+    <g fill="#0b0908" opacity="0.85">
+      <path d="M0 600 V430 h70 v-60 h40 v90 h60 V300 h34 v230 Z"/>
+      <path d="M150 600 V360 h90 l30 -40 l30 40 h44 V600 Z"/>
+      <path d="M330 600 V420 h60 v-120 h20 v-40 h16 v40 h20 v120 h50 V600 Z"/>
+      <path d="M520 600 V330 h110 v70 h40 V300 h30 v300 Z"/>
+      <path d="M700 600 V400 h80 v-70 h40 v70 h80 V600 Z"/>
+    </g>
+    <g fill="#c8a24a" opacity="0.5">
+      <rect x="386" y="248" width="4" height="10"/>
+      <rect x="250" y="336" width="5" height="6"/>
+      <rect x="612" y="352" width="6" height="7"/>
+    </g>
+  </svg>
+
   <main>
-    <header>
-      <h1>Чума</h1>
-      <p class="subtitle">Minecraft 1.21.1 · NeoForge · 99 модов</p>
-    </header>
+    <!-- ЭКРАН 1: запуск -->
+    <section id="view-main" class="view">
+      <button id="to-settings" class="icon-btn" type="button" title="Настройки"
+              aria-label="Настройки">⚙</button>
 
-    <section class="controls">
-      <label for="nickname">Ник</label>
-      <input id="nickname" type="text" maxlength="16" autocomplete="off"
-             placeholder="как вас будут звать в игре">
-      <button id="play" type="button">Играть</button>
+      <header>
+        <h1>Чума</h1>
+        <p class="subtitle">Minecraft 1.21.1 · NeoForge · 99 модов</p>
+      </header>
+
+      <section class="controls">
+        <label for="nickname">Ник</label>
+        <input id="nickname" type="text" maxlength="16" autocomplete="off"
+               placeholder="как вас будут звать в игре">
+        <button id="play" type="button">Играть</button>
+      </section>
+
+      <p id="notice" class="notice" hidden></p>
+
+      <section class="progress">
+        <div class="bar"><div id="bar-fill"></div></div>
+        <p id="stage">Готов к запуску</p>
+      </section>
+
+      <details id="details">
+        <summary>Подробности</summary>
+        <pre id="log" aria-live="polite"></pre>
+      </details>
     </section>
 
-    <p id="notice" class="notice" hidden></p>
+    <!-- ЭКРАН 2: настройки -->
+    <section id="view-settings" class="view" hidden>
+      <button id="to-main" class="icon-btn" type="button" title="Назад"
+              aria-label="Назад">←</button>
 
-    <section class="progress">
-      <div class="bar"><div id="bar-fill"></div></div>
-      <p id="stage">Готов к запуску</p>
+      <header>
+        <h1>Настройки</h1>
+        <p class="subtitle">Меняются на лету, применяются со следующего запуска</p>
+      </header>
+
+      <section class="field">
+        <label for="ram">Память для игры — <span id="ram-value">6 ГБ</span></label>
+        <input id="ram" type="range" min="2048" max="12288" step="1024" value="6144">
+        <p class="hint">6–8 ГБ хватает паку из 99 модов. Больше — если машина
+          мощная и мир большой.</p>
+      </section>
+
+      <section class="field">
+        <button id="open-folder" class="link-btn" type="button">Открыть папку игры</button>
+        <button id="open-log" class="link-btn" type="button">Открыть папку логов</button>
+      </section>
+
+      <p class="version" id="version">пак не установлен</p>
     </section>
-
-    <pre id="log" aria-live="polite"></pre>
   </main>
 
   <script src="renderer.js"></script>

@@ -1,41 +1,99 @@
 :root {
   --bg: #14100f;
   --panel: #1e1917;
+  --panel-glass: rgba(30, 25, 23, 0.72);
   --ink: #e8e0d8;
   --muted: #8b7f76;
   --accent: #7d9b5a;
+  --accent-dim: #5f7844;
   --line: #2e2724;
+  --warn: #c8a24a;
 }
 
 * { box-sizing: border-box; }
+
+/* hidden — это всего лишь display:none в стилях браузера, и любое
+   правило display в нашем CSS его перебивает. Возвращаем силой. */
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
   font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* Фон живёт за всем окном и не мешает кликам. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 
 main {
-  max-width: 720px;
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 40px 28px;
+  height: 100vh;
+}
+
+/* Экраны занимают одно место; переключение — атрибутом hidden. */
+.view {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  height: 100vh;
+  gap: 22px;
+  height: 100%;
+  background: var(--panel-glass);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 28px;
+  backdrop-filter: blur(2px);
 }
 
 h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .subtitle {
-  margin: 4px 0 0;
+  margin: 6px 0 0;
   color: var(--muted);
+}
+
+/* Угловая кнопка: шестерёнка на первом экране, стрелка назад на втором. */
+.icon-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 120ms, border-color 120ms;
+}
+
+.icon-btn:hover {
+  color: var(--ink);
+  border-color: var(--accent);
 }
 
 .controls {
@@ -48,7 +106,7 @@ h1 {
   color: var(--muted);
 }
 
-input {
+input[type="text"] {
   flex: 1;
   padding: 10px 12px;
   background: var(--panel);
@@ -58,12 +116,12 @@ input {
   font: inherit;
 }
 
-input:focus {
+input[type="text"]:focus {
   outline: none;
   border-color: var(--accent);
 }
 
-button {
+#play {
   padding: 10px 28px;
   background: var(--accent);
   border: none;
@@ -72,9 +130,13 @@ button {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition: background 120ms;
 }
 
-button:disabled {
+#play:hover:not(:disabled) { background: #8fae68; }
+#play:active:not(:disabled) { background: var(--accent-dim); }
+
+#play:disabled {
   background: var(--line);
   color: var(--muted);
   cursor: default;
@@ -82,7 +144,8 @@ button:disabled {
 
 .bar {
   height: 6px;
-  background: var(--panel);
+  background: #0f0c0b;
+  border: 1px solid var(--line);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -91,7 +154,19 @@ button:disabled {
   height: 100%;
   width: 0;
   background: var(--accent);
-  transition: width 120ms linear;
+  transition: width 160ms linear;
+}
+
+/* Полоса «дышит», пока идёт работа без счётчика (распаковка, установка). */
+#bar-fill.pulse {
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent), var(--accent-dim));
+  background-size: 200% 100%;
+  animation: pulse 1.4s linear infinite;
+}
+
+@keyframes pulse {
+  from { background-position: 200% 0; }
+  to { background-position: 0 0; }
 }
 
 #stage {
@@ -99,10 +174,36 @@ button:disabled {
   color: var(--muted);
 }
 
+/* Точки после «Идёт установка» — чтобы окно не выглядело зависшим. */
+#stage.working::after {
+  content: "";
+  animation: dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+}
+
+details {
+  margin-top: auto;
+}
+
+summary {
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+}
+
+summary:hover { color: var(--ink); }
+
 #log {
-  flex: 1;
-  margin: 0;
+  margin: 8px 0 0;
   padding: 12px;
+  height: 160px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 4px;
@@ -115,10 +216,54 @@ button:disabled {
 /* Уведомление об обновлении пака: появляется прямо во время игры,
    поэтому должно быть заметным, но не мигающим. */
 .notice {
-  margin: 0 0 12px;
+  margin: 0;
   padding: 10px 14px;
-  border-left: 3px solid #c8a24a;
+  border-left: 3px solid var(--warn);
   background: #241d15;
   color: #e8d9b5;
   font-size: 13px;
+}
+
+/* --- Настройки --- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.field label { color: var(--ink); }
+
+#ram-value {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.link-btn {
+  align-self: flex-start;
+  padding: 8px 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.link-btn:hover { color: #8fae68; text-decoration: underline; }
+
+.version {
+  margin-top: auto;
+  color: var(--muted);
+  font-size: 12px;
 }
