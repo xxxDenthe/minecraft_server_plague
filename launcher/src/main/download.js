@@ -12,15 +12,28 @@ import { pipeline } from 'node:stream/promises';
 
 import { progressEvent } from './progress.js';
 
-export async function sha256OfFile(file) {
-  const hash = createHash('sha256');
+export async function hashOfFile(file, algorithm = 'sha256') {
+  const hash = createHash(algorithm);
   await pipeline(fs.createReadStream(file), hash);
   return hash.digest('hex');
 }
 
-export async function fileMatches(file, sha256) {
+export const sha256OfFile = (file) => hashOfFile(file, 'sha256');
+
+// Файлы пака проверяются по SHA-256, файлы Mojang — по SHA-1: чужой
+// формат, чужой выбор, спорить не с кем.
+export function checksumOf({ sha256 = null, sha1 = null } = {}) {
+  if (sha256) return { algorithm: 'sha256', value: sha256.toLowerCase() };
+  if (sha1) return { algorithm: 'sha1', value: sha1.toLowerCase() };
+  return null;
+}
+
+export async function fileMatches(file, checksum) {
+  const wanted = typeof checksum === 'string' ? checksumOf({ sha256: checksum }) : checksum;
+  if (!wanted) return false;
+
   try {
-    return (await sha256OfFile(file)) === sha256.toLowerCase();
+    return (await hashOfFile(file, wanted.algorithm)) === wanted.value;
   } catch (err) {
     if (err.code === 'ENOENT') return false;
     throw err;
@@ -36,7 +49,7 @@ async function removeQuietly(file) {
 // Одна попытка: скачать во временный файл, посчитать хеш на лету
 // и переименовать только после сверки. Игрок закроет лаунчер
 // на середине — и папка не останется с обрубками.
-async function attempt({ url, dest, sha256, headers, fetchImpl, onBytes }) {
+async function attempt({ url, dest, checksum, headers, fetchImpl, onBytes }) {
   const temp = `${dest}.part`;
   await fsp.mkdir(path.dirname(dest), { recursive: true });
   await removeQuietly(temp);
@@ -49,7 +62,7 @@ async function attempt({ url, dest, sha256, headers, fetchImpl, onBytes }) {
     throw new Error(`пустой ответ на ${url}`);
   }
 
-  const hash = createHash('sha256');
+  const hash = createHash(checksum?.algorithm ?? 'sha256');
   const out = fs.createWriteStream(temp);
   const source = Readable.fromWeb(response.body);
 
@@ -66,9 +79,9 @@ async function attempt({ url, dest, sha256, headers, fetchImpl, onBytes }) {
   }
 
   const actual = hash.digest('hex');
-  if (sha256 && actual !== sha256.toLowerCase()) {
+  if (checksum && actual !== checksum.value) {
     await removeQuietly(temp);
-    throw new Error(`хеш не совпал для ${url}: ждали ${sha256}, получили ${actual}`);
+    throw new Error(`хеш не совпал для ${url}: ждали ${checksum.value}, получили ${actual}`);
   }
 
   await fsp.rm(dest, { force: true });
@@ -81,22 +94,25 @@ export async function downloadFile({
   url,
   dest,
   sha256 = null,
+  sha1 = null,
   headers = {},
   retries = 3,
   retryDelayMs = 500,
   fetchImpl = fetch,
   onBytes = null,
 }) {
+  const checksum = checksumOf({ sha256, sha1 });
+
   // Уже лежит с верным хешем — не качаем. Ради этого правила и заведён
   // весь манифест: повторный запуск не должен тянуть гигабайт заново.
-  if (sha256 && (await fileMatches(dest, sha256))) {
-    return { path: dest, sha256: sha256.toLowerCase(), downloaded: false };
+  if (checksum && (await fileMatches(dest, checksum))) {
+    return { path: dest, sha256: checksum.value, downloaded: false };
   }
 
   let lastError;
   for (let tryNo = 1; tryNo <= retries; tryNo += 1) {
     try {
-      const actual = await attempt({ url, dest, sha256, headers, fetchImpl, onBytes });
+      const actual = await attempt({ url, dest, checksum, headers, fetchImpl, onBytes });
       return { path: dest, sha256: actual, downloaded: true };
     } catch (err) {
       lastError = err;

@@ -175,3 +175,25 @@ describe('скачивание пачкой', () => {
     await expect(downloadAll([], {})).resolves.toEqual([]);
   });
 });
+
+describe('SHA-1 для файлов Mojang', () => {
+  it('файл проверяется по sha1, если задан он', async () => {
+    const { createHash } = await import('node:crypto');
+    const sha1 = createHash('sha1').update(BODY).digest('hex');
+    const dest = path.join(dir, 'client.jar');
+
+    const res = await downloadFile({ url: `${base}/file`, dest, sha1 });
+    expect(res.downloaded).toBe(true);
+
+    const again = await downloadFile({ url: `${base}/file`, dest, sha1 });
+    expect(again.downloaded).toBe(false);
+  });
+
+  it('чужой sha1 отвергается так же, как чужой sha256', async () => {
+    const dest = path.join(dir, 'client.jar');
+    await expect(
+      downloadFile({ url: `${base}/file`, dest, sha1: 'f'.repeat(40), retries: 1 })
+    ).rejects.toThrow(/хеш не совпал/);
+    expect(fs.existsSync(dest)).toBe(false);
+  });
+});
