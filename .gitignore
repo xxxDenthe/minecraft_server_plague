@@ -2,6 +2,9 @@
 mods/*.jar
 mods/*.disabled
 
+# Папка раздачи лаунчера: копия пака, 268 МБ джарников
+pack-build/
+
 # Сборка Gradle / Java
 build/
 .gradle/
