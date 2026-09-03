@@ -228,6 +228,10 @@ public class GmPanelScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("Телепортировать к другому игроку…"),
             b -> { pickingTpTarget = true; rebuildWidgets(); }).bounds(x, y, w, BTN_H).build());
 
+        y += BTN_H + 3;
+        addRenderableWidget(Button.builder(Component.literal("Заморозить / разморозить"),
+            b -> run("gmtools freeze " + n)).bounds(x, y, w, BTN_H).build());
+
         y += BTN_H + 14;
         hdrState = y - 11;
         buttonRow(x, y, w, new String[] { "Лечить", "Кормить", "Оба", "Снять эфф." },
