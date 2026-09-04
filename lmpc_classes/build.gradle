@@ -38,6 +38,12 @@ repositories {
 }
 
 dependencies {
+    // Curios не публикует джарник для рынка — компилируемся против джарника
+    // из мод-пака, как plaguecore делает с Jade. Зависимость необязательная
+    // (neoforge.mods.toml), пак его ставит всегда, но краха без него быть
+    // не должно.
+    compileOnly files("${projectDir}/../mods/curios-neoforge-9.5.1+1.21.1.jar")
+
     testImplementation platform('org.junit:junit-bom:5.11.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

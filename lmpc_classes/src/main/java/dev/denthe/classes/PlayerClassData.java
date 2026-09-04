@@ -32,18 +32,23 @@ public class PlayerClassData {
     /** Мастерство текущего класса. Спек, раздел 2.1. */
     public int мастерство = 0;
 
+    /** Мировой тик, когда снова можно пить улучшенный отвар. −1 — готов сейчас. */
+    public long отварГотовТик = -1L;
+
     public PlayerClassData() {}
 
-    public PlayerClassData(Класс класс, long последняяСменаТик, int мастерство) {
+    public PlayerClassData(Класс класс, long последняяСменаТик, int мастерство, long отварГотовТик) {
         this.класс = класс;
         this.последняяСменаТик = последняяСменаТик;
         this.мастерство = мастерство;
+        this.отварГотовТик = отварГотовТик;
     }
 
     public static final Codec<PlayerClassData> CODEC = RecordCodecBuilder.create(и -> и.group(
         Codec.STRING.xmap(Класс::valueOf, Класс::name).fieldOf("class").forGetter(д -> д.класс),
         Codec.LONG.fieldOf("lastSwitchTick").forGetter(д -> д.последняяСменаТик),
-        Codec.INT.fieldOf("mastery").forGetter(д -> д.мастерство)
+        Codec.INT.fieldOf("mastery").forGetter(д -> д.мастерство),
+        Codec.LONG.fieldOf("brewReadyTick").forGetter(д -> д.отварГотовТик)
     ).apply(и, PlayerClassData::new));
 
     /**

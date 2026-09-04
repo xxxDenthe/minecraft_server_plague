@@ -1,8 +1,10 @@
 package dev.denthe.classes;
 
+import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import org.slf4j.Logger;
 
 /**
  * Точка входа. Подсистема 3 «Классы», отдельным модом от `plaguecore` —
@@ -13,10 +15,14 @@ import net.neoforged.fml.common.Mod;
 @Mod(LmpcClasses.MODID)
 public class LmpcClasses {
     public static final String MODID = "lmpc_classes";
+    public static final Logger LOG = LogUtils.getLogger();
 
     public LmpcClasses(IEventBus modEventBus, ModContainer container) {
         PlayerClassData.register(modEventBus);
         ClassBlocks.register(modEventBus);
+        ClassItems.register(modEventBus);
         ClassesConfig.зарегистрировать(modEventBus, container);
+
+        if (PlagueBridge.доступен()) LOG.info("plaguecore найден, мост чумы подключён");
     }
 }

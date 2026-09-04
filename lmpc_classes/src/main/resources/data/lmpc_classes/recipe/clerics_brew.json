@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "plaguecore:plague_brew" },
+    { "item": "plaguecore:spore_sac" },
+    { "item": "minecraft:golden_carrot" }
+  ],
+  "result": {
+    "id": "lmpc_classes:clerics_brew",
+    "count": 1
+  }
+}

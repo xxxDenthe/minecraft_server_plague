@@ -22,3 +22,12 @@ type = "required"
 versionRange = "[${minecraft_version}]"
 ordering = "NONE"
 side = "BOTH"
+
+# Кулон Клирика — Curios-предмет. Необязательная зависимость: без Curios
+# мод грузится как обычно, просто кулона не будет (пак его ставит всегда).
+[[dependencies.${mod_id}]]
+modId = "curios"
+type = "optional"
+versionRange = "[9.0.0,)"
+ordering = "AFTER"
+side = "BOTH"

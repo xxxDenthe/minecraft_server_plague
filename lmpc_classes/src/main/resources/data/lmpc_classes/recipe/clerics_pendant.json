@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "minecraft:gold_ingot" },
+    { "item": "minecraft:string" },
+    { "item": "plaguecore:spore_sac" }
+  ],
+  "result": {
+    "id": "lmpc_classes:clerics_pendant",
+    "count": 1
+  }
+}

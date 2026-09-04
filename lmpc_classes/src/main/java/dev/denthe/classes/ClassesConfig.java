@@ -25,6 +25,27 @@ public final class ClassesConfig {
                  "0.3 — треть сохраняется, остальное срезается.")
         .defineInRange("masteryKeepFraction", 0.3, 0.0, 1.0);
 
+    private static final ModConfigSpec.DoubleValue КУЛОН_БАЗОВАЯ_ЗАЩИТА = СТРОИТЕЛЬ
+        .comment("Доп. защита от кулона Клирика (0..1), складывается с бронёй в plaguecore.",
+                 "Полная — только у Клирика, у остальных классов — половина (clericPendantOtherClassFraction).")
+        .defineInRange("clericPendantProtection", 0.15, 0.0, 0.9);
+
+    private static final ModConfigSpec.DoubleValue КУЛОН_ДОЛЯ_НЕ_КЛИРИКУ = СТРОИТЕЛЬ
+        .comment("Доля clericPendantProtection, которую кулон даёт не-Клирику.")
+        .defineInRange("clericPendantOtherClassFraction", 0.5, 0.0, 1.0);
+
+    private static final ModConfigSpec.IntValue ОТВАР_КУЛДАУН = СТРОИТЕЛЬ
+        .comment("Кулдаун улучшенного отвара Клирика на одного игрока, в минутах.")
+        .defineInRange("clericBrewCooldownMinutes", 10, 0, 120);
+
+    private static final ModConfigSpec.DoubleValue ОТВАР_ЛЕЧЕНИЕ = СТРОИТЕЛЬ
+        .comment("Сколько очков заражённости снимает улучшенный отвар за раз.")
+        .defineInRange("clericBrewCureAmount", 40.0, 0.0, 100.0);
+
+    private static final ModConfigSpec.IntValue ОТВАР_ИММУНИТЕТ = СТРОИТЕЛЬ
+        .comment("Иммунитет от улучшенного отвара, в минутах.")
+        .defineInRange("clericBrewImmunityMinutes", 5, 0, 60);
+
     public static final ModConfigSpec SPEC = СТРОИТЕЛЬ.build();
 
     /** Минимальный перерыв между сменами класса, в тиках (20 в секунде). */
@@ -35,6 +56,31 @@ public final class ClassesConfig {
     /** Доля мастерства старого класса, остающаяся при смене. */
     public static double доляМастерстваПриСмене() {
         return ДОЛЯ_МАСТЕРСТВА_ПРИ_СМЕНЕ.get();
+    }
+
+    /** Базовая защита от кулона (для Клирика — целиком). */
+    public static float кулонБазоваяЗащита() {
+        return КУЛОН_БАЗОВАЯ_ЗАЩИТА.get().floatValue();
+    }
+
+    /** Доля базовой защиты кулона для не-Клирика. */
+    public static float кулонДоляНеКлирику() {
+        return КУЛОН_ДОЛЯ_НЕ_КЛИРИКУ.get().floatValue();
+    }
+
+    /** Кулдаун улучшенного отвара, в тиках. */
+    public static long отварКулдаунТики() {
+        return ОТВАР_КУЛДАУН.get() * 1200L;
+    }
+
+    /** Сколько очков снимает улучшенный отвар. */
+    public static float отварЛечение() {
+        return ОТВАР_ЛЕЧЕНИЕ.get().floatValue();
+    }
+
+    /** Длительность иммунитета от отвара, в тиках. */
+    public static long отварИммунитетТики() {
+        return ОТВАР_ИММУНИТЕТ.get() * 1200L;
     }
 
     public static void зарегистрировать(IEventBus modEventBus, ModContainer container) {

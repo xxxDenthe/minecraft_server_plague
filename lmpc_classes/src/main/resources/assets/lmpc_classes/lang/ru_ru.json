@@ -1,3 +1,5 @@
 {
-  "block.lmpc_classes.class_altar": "Алтарь призвания"
+  "block.lmpc_classes.class_altar": "Алтарь призвания",
+  "item.lmpc_classes.clerics_pendant": "Кулон Клирика",
+  "item.lmpc_classes.clerics_brew": "Отвар Клирика"
 }
