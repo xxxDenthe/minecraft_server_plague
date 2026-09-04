@@ -50,6 +50,20 @@
   `curios-neoforge-*.jar` в `run/server/mods/` вручную — `run/`
   в `.gitignore`, никуда не коммитится.
 
+## Устройство (0.4.4)
+
+**Кулон не надевался — забытый файл, не баг предмета.** Curios мало
+объявить тег (`data/curios/tags/item/necklace.json`, был с самого
+начала) — слот ещё нужно **выдать сущности** отдельным файлом,
+Curios сам по себе не даёт игроку ни одного слота. Добавлен
+`data/lmpc_classes/curios/entities/player.json`:
+`{"entities": ["minecraft:player"], "slots": ["necklace"]}` —
+тот же формат, что у `supplementaries`/`sophisticatedbackpacks`
+в паке (сверено с их джарниками). Лог `Curios API: Loaded N curio
+entities` не показатель — там считаются entity-типы, а не файлы,
+несколько модов дописывают слоты одному и тому же `player` в одну
+запись.
+
 ## Устройство (0.4.3)
 
 **Обводка решена — x-ray-силуэт, вернулись к первой версии 0.4.0.**
