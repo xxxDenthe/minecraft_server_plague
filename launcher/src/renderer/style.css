@@ -231,7 +231,7 @@ body:not(.ready) .shell { opacity: 0; }
 .home-skin { min-width: 0; width: 100%; max-width: 380px; margin-right: auto; }
 
 .skin-box {
-  width: 210px;
+  width: 188px;
   background: var(--panel-bg);
   border: var(--edge) solid var(--ink-4);
   border-radius: 2px;
