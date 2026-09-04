@@ -19,6 +19,13 @@
 привязка к модам-донорам зафиксированы в
 `2026-09-04-modpak-kryuchki-i-zagotovki-igroka.md`.
 
+**Реализация — отдельный мод `lmpc_classes`, не часть `plaguecore`.**
+`plaguecore/` — территория владельца, туда не лезем, тем же правилом,
+что `lmpc_shade` и `lmpc_gmtools`. Мост к `plaguecore` (крючок
+`protection()`, `PlagueApi.cure/grantImmunity`) — только мягкий, через
+рефлексию, без Gradle-зависимости между джарами. Устройство модуля —
+`lmpc_classes/CLAUDE.md`.
+
 ---
 
 ## 2. Как получаешь и меняешь класс
