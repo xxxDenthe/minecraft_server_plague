@@ -117,6 +117,7 @@ zombieawareness-neoforge-1.21.0-1.13.2.jar
 plaguecore-0.1.0.jar
 lmpc_gmtools-0.16.0.jar
 lmpc_shade-0.8.0.jar
+lmpc_classes-0.4.1.jar
 ```
 
 Не качаются со стороны, собираются из исходников:
@@ -125,6 +126,7 @@ lmpc_shade-0.8.0.jar
 cd plaguecore   && ./gradlew build   # нужен на сервере и у игроков
 cd lmpc_gmtools  && ./gradlew build   # панель мастера, нужен и на сервере
 cd lmpc_shade    && ./gradlew build   # цветокор мира, с 0.7.0 нужен и на сервере
+cd lmpc_classes  && ./gradlew build   # система классов, нужен и на сервере, требует curios
 ```
 
 Джарники появляются в `<модуль>/build/libs/`. `plaguecore` считает
@@ -133,7 +135,9 @@ cd lmpc_shade    && ./gradlew build   # цветокор мира, с 0.7.0 ну
 через раздел «Графика» в панели `lmpc_gmtools` (`/lmpcshade`, право 2)
 правит цветокор **у всех игроков разом**, значения хранятся в мире.
 Версии клиента и сервера должны совпадать для `lmpc_shade`, `lmpc_gmtools`,
-`plaguecore`.
+`plaguecore`, `lmpc_classes`. `lmpc_classes` — система классов
+(Клирик пока единственный с реальными способностями: кулон, отвар,
+кормление наведением); жёстко требует `curios` — без него не грузится.
 
 ## Отключено намеренно
 
