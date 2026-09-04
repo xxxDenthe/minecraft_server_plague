@@ -39,6 +39,9 @@ function createWindow() {
     resizable: false,
     maximizable: false,
     fullscreenable: false,
+    // В собранном .exe иконку окну даёт сам исполняемый файл; это для
+    // режима разработки (npm start) и панели задач.
+    icon: path.join(here, '..', 'renderer', 'assets', 'lmpc-icon.ico'),
     backgroundColor: '#0c0d0f',
     autoHideMenuBar: true,
     webPreferences: {

@@ -8,6 +8,9 @@ files:
 win:
   target: nsis
   artifactName: LMPC-Launcher-${version}.${ext}
+  # Иконка из логотипа LMPC (tools/make-icon.ps1). Лежит в src/, а не
+  # в build/, потому что build/ у проекта в .gitignore.
+  icon: src/renderer/assets/lmpc-icon.ico
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
