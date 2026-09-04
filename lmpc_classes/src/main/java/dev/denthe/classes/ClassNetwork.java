@@ -33,7 +33,6 @@ public final class ClassNetwork {
     private ClassNetwork() {}
 
     private static final String VERSION = "1";
-    private static final double МАКС_ДИСТАНЦИЯ = 6.0;
 
     /** Клиент закончил канал наведения — просит напоить цель. */
     public record FeedRequest(UUID targetId) implements CustomPacketPayload {
@@ -65,7 +64,8 @@ public final class ClassNetwork {
         var цель = мир.getServer().getPlayerList().getPlayer(targetId);
         if (цель == null || цель == клирик) return;
         if (цель.level() != мир) return;
-        if (клирик.distanceToSqr(цель) > МАКС_ДИСТАНЦИЯ * МАКС_ДИСТАНЦИЯ) return;
+        double макс = ClassesConfig.скормитьДистанция();
+        if (клирик.distanceToSqr(цель) > макс * макс) return;
 
         InteractionHand рука = рукаСОтваром(клирик);
         if (рука == null) return;

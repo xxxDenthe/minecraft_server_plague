@@ -50,6 +50,11 @@ public final class ClassesConfig {
         .comment("Сколько тиков держать ПКМ на союзнике, чтобы напоить его отваром. 60 — три секунды.")
         .defineInRange("clericFeedChannelTicks", 60, 10, 600);
 
+    private static final ModConfigSpec.DoubleValue СКОРМИТЬ_ДИСТАНЦИЯ = СТРОИТЕЛЬ
+        .comment("Максимальное расстояние до союзника, чтобы его напоить, в блоках.",
+                 "Не магия — Клирик должен стоять вплотную. 1.5 — чуть больше одного блока.")
+        .defineInRange("clericFeedMaxDistance", 1.5, 0.5, 4.0);
+
     public static final ModConfigSpec SPEC = СТРОИТЕЛЬ.build();
 
     /** Минимальный перерыв между сменами класса, в тиках (20 в секунде). */
@@ -90,6 +95,11 @@ public final class ClassesConfig {
     /** Сколько тиков держать ПКМ на союзнике, чтобы напоить его. */
     public static int скормитьДлительностьТики() {
         return СКОРМИТЬ_ДЛИТЕЛЬНОСТЬ.get();
+    }
+
+    /** Максимальное расстояние до союзника, чтобы его напоить, в блоках. */
+    public static double скормитьДистанция() {
+        return СКОРМИТЬ_ДИСТАНЦИЯ.get();
     }
 
     public static void зарегистрировать(IEventBus modEventBus, ModContainer container) {
