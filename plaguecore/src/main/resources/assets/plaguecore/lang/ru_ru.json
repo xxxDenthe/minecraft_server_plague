@@ -14,5 +14,6 @@
   "entity.plaguecore.infected_pig": "Заражённая свинья",
   "item.plaguecore.infected_cow_spawn_egg": "Яйцо призыва заражённой коровы",
   "item.plaguecore.infected_pig_spawn_egg": "Яйцо призыва заражённой свиньи",
+  "item.plaguecore.plague_brew": "Отвар от чумы",
   "itemGroup.plaguecore": "Чума"
 }

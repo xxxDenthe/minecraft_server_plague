@@ -215,6 +215,15 @@ public final class PlagueBlocks {
             свойства -> new DeferredSpawnEggItem(
                 PlagueEntities.INFECTED_COW, 0x3E3A36, 0x5C3A5C, свойства));
 
+    /**
+     * Отвар от чумы. Не блок, но живёт здесь же: заводить отдельный
+     * DeferredRegister ради одного предмета — лишний файл на пустом месте,
+     * а творческая вкладка всё равно берёт содержимое из ПРЕДМЕТЫ целиком.
+     */
+    public static final DeferredItem<net.minecraft.world.item.Item> PLAGUE_BREW =
+        ПРЕДМЕТЫ.registerItem("plague_brew",
+            свойства -> new BrewItem(свойства.stacksTo(16)));
+
     public static void register(IEventBus modEventBus) {
         БЛОКИ.register(modEventBus);
         ПРЕДМЕТЫ.register(modEventBus);
