@@ -7,6 +7,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -65,8 +66,22 @@ public final class ClassCommands {
         }
 
         д.сменитьКласс(класс, сейчас, ClassesConfig.доляМастерстваПриСмене());
+        выдатьГримуарЕслиНадо(игрок);
         c.getSource().sendSuccess(() -> Component.literal("Класс: " + класс), false);
         return 1;
+    }
+
+    /**
+     * Гримуар — не крафтимый предмет, а личный дневник призвания:
+     * выдаётся один раз при первом реальном выборе класса. Проверка
+     * по инвентарю, а не по отдельному флагу — так и потерянный
+     * гримуар восполнится при следующей смене класса, без отдельной
+     * команды на этот случай.
+     */
+    private static void выдатьГримуарЕслиНадо(ServerPlayer игрок) {
+        boolean есть = игрок.getInventory().contains(
+            стопка -> стопка.is(ClassItems.CLASS_CODEX.get()));
+        if (!есть) игрок.getInventory().add(new ItemStack(ClassItems.CLASS_CODEX.get()));
     }
 
     private static int показать(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {

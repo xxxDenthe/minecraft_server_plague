@@ -25,6 +25,13 @@ public final class ClassItems {
         "clerics_brew", свойства -> new ClericsBrewItem(свойства.stacksTo(1)));
 
     /**
+     * Гримуар — личный дневник призвания. Выдаётся автоматически при
+     * первом выборе класса ({@link ClassCommands}), крафта нет.
+     */
+    public static final DeferredItem<ClassCodexItem> CLASS_CODEX = ПРЕДМЕТЫ.registerItem(
+        "class_codex", свойства -> new ClassCodexItem(свойства.stacksTo(1)));
+
+    /**
      * Сырой бутон чумы. По спеку (раздел 10.4 старого документа)
      * должен добываться диким кустом в Гнили или расти на грядке
      * Фермера — ни того, ни другого ещё нет, поэтому пока обычный
