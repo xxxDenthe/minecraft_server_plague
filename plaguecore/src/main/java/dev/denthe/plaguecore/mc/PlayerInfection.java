@@ -19,7 +19,9 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingHealEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
@@ -181,5 +183,45 @@ public final class PlayerInfection {
 
         сытость.setFoodLevel(Math.max(0, сытость.getFoodLevel() - отнятьЕды));
         сытость.setSaturation(Math.max(0f, сытость.getSaturationLevel() - отнятьНасыщения));
+    }
+
+    // ── постоянная цена смерти ────────────────────────────────────────
+
+    /**
+     * Смерть на стадии 2+ стоит полсердца навсегда.
+     *
+     * Считается стадия в момент смерти, а не источник урона: умер
+     * от лихорадки, от моба, от падения — неважно, важно, что был болен.
+     * Правило простое и не требует объяснений.
+     *
+     * Работает в связке с модом Corpse: лут не теряется, поэтому
+     * единственной ценой смерти остаётся здоровье.
+     */
+    @SubscribeEvent
+    public static void приСмерти(LivingDeathEvent событие) {
+        if (!(событие.getEntity() instanceof ServerPlayer игрок)) return;
+
+        PlayerPlagueData д = PlayerPlagueData.данные(игрок);
+        if (д.стадия < 2) return;
+
+        д.смертей++;
+        PlagueCore.LOG.info("{} умер на стадии {}, смертей от чумы: {}",
+            игрок.getGameProfile().getName(), д.стадия, д.смертей);
+    }
+
+    /**
+     * После возрождения игрок — новая сущность с чистыми атрибутами.
+     * Вложение переносится само (copyOnDeath), а модификаторы здоровья
+     * приходится вешать заново.
+     */
+    @SubscribeEvent
+    public static void приВозрождении(PlayerEvent.PlayerRespawnEvent событие) {
+        if (событие.getEntity() instanceof ServerPlayer игрок) пересчитатьЗдоровье(игрок);
+    }
+
+    /** Тем же порядком — при входе в игру: атрибуты грузятся без наших модификаторов. */
+    @SubscribeEvent
+    public static void приВходе(PlayerEvent.PlayerLoggedInEvent событие) {
+        if (событие.getEntity() instanceof ServerPlayer игрок) пересчитатьЗдоровье(игрок);
     }
 }
