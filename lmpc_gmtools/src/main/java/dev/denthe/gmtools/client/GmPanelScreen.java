@@ -3,6 +3,7 @@ package dev.denthe.gmtools.client;
 import dev.denthe.gmtools.net.GmNetwork;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.PlayerFaceRenderer;
@@ -17,6 +18,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -44,7 +46,9 @@ public class GmPanelScreen extends Screen {
         SELF("Себе"), PLAYERS("Игроки"), MAP("Карта"),
         WORLD("Мир", "Погода", "Правила"),
         BROADCAST("Вещание", "Заголовок", "Чат", "Звук"),
-        PLAGUE("Чума"), EXPERIMENTAL("Опыты"), LOG("Журнал");
+        PLAGUE("Чума"),
+        GRAPHICS("Графика", "Кадр", "Ночь", "Туман", "Небо"),
+        EXPERIMENTAL("Опыты"), LOG("Журнал");
         final String label;
         final String[] folders;
         Section(String l, String... f) { this.label = l; this.folders = f; }
@@ -149,6 +153,7 @@ public class GmPanelScreen extends Screen {
             case WORLD -> initWorld();
             case BROADCAST -> initBroadcast();
             case PLAGUE -> initPlague();
+            case GRAPHICS -> initGraphics();
             case EXPERIMENTAL -> initExperimental();
             case LOG -> add(contentX, contentY + 30, contentW, "Показать журнал в чате",
                 () -> { run("gmtools log"); onClose(); });
@@ -493,6 +498,7 @@ public class GmPanelScreen extends Screen {
             case WORLD -> renderWorld(g, mx, my);
             case BROADCAST -> renderBroadcast(g);
             case PLAGUE -> renderPlague(g);
+            case GRAPHICS -> renderGraphics(g);
             case EXPERIMENTAL -> renderExperimental(g);
             case LOG -> {
                 g.drawString(font, "Журнал действий мастеров", contentX, contentY, DIM, false);
@@ -700,6 +706,180 @@ public class GmPanelScreen extends Screen {
         g.drawString(font, "Мод plague core", contentX, contentY, DIM, false);
         drawWrapped(g, "«Состояние» пишет сводку в чат. «Карта» открывает экран чумы — "
             + "по Esc вернётесь сюда.", contentX, contentY + 62, contentW, DIM);
+    }
+
+    // ── Графика ───────────────────────────────────────────────────────────
+    // Живой редактор цветокора мода lmpc_shade. Значения дёргаются
+    // рефлексией через ShadeAccess — прямой зависимости между джарами нет.
+    // Ползунки меняют конфиг в памяти сразу, «Сохранить» пишет в файл.
+
+    private void initGraphics() {
+        if (!ShadeAccess.available()) return;
+        String grp = section.folders[folder()];
+        int x = contentX, y = contentY + 2, w = contentW;
+        for (String id : ShadeAccess.ids()) {
+            if (grp.equals(ShadeAccess.group(id))) {
+                y = addShadeControl(x, y, w, id);
+            }
+        }
+        int by = contentY + contentH - 14;
+        addRenderableWidget(Button.builder(Component.literal("Вернуть подобранные"), b -> {
+            run("lmpcshade reset");
+            ShadeAccess.resetAll();
+            rebuildWidgets();
+        }).bounds(x, by, 128, 13).build());
+        addRenderableWidget(Button.builder(Component.literal("Сохранить локально"),
+                b -> ShadeAccess.save())
+            .bounds(x + w - 108, by, 108, 13).build());
+    }
+
+    /**
+     * Отправить значение на сервер: он сохранит его в мире и разошлёт
+     * всем игрокам. Право проверяет сервер (OP). Локальный превью уже
+     * выставлен вызывающим — сервер потом пришлёт то же значение
+     * авторитетно. В одиночке идёт через встроенный сервер.
+     */
+    private void pushShade(String id, String value) {
+        run("lmpcshade set " + id + " " + value);
+    }
+
+    /** Кладёт виджет(ы) под один параметр, возвращает следующий y. */
+    private int addShadeControl(int x, int y, int w, String id) {
+        String kind = ShadeAccess.kind(id);
+        String label = ShadeAccess.label(id) + (ShadeAccess.live(id) ? "" : " *");
+        switch (kind) {
+            case "BOOL" -> {
+                addRenderableWidget(Button.builder(boolMsg(label, shadeBool(id)), b -> {
+                    boolean nv = !shadeBool(id);
+                    ShadeAccess.set(id, nv);
+                    pushShade(id, String.valueOf(nv));
+                    b.setMessage(boolMsg(label, nv));
+                }).bounds(x, y, w, 13).build());
+                return y + ROW_H;
+            }
+            case "HEX" -> {
+                int[] rgb = parseHex(String.valueOf(ShadeAccess.get(id)));
+                String base = ShadeAccess.label(id);
+                for (int ch = 0; ch < 3; ch++) {
+                    addRenderableWidget(new HexChannelSlider(x, y + ch * ROW_H, w, 13,
+                        base + " " + "RGB".charAt(ch), id, ch, rgb[ch]));
+                }
+                return y + 3 * ROW_H;
+            }
+            default -> {
+                addRenderableWidget(new ShadeSlider(x, y, w, 13, label, id,
+                    ShadeAccess.min(id), ShadeAccess.max(id), "INT".equals(kind),
+                    ((Number) ShadeAccess.get(id)).doubleValue()));
+                return y + ROW_H;
+            }
+        }
+    }
+
+    private void renderGraphics(GuiGraphics g) {
+        if (!ShadeAccess.available()) {
+            g.drawString(font, "Мод lmpc_shade не найден в паке.", contentX, contentY + 4, DIM, false);
+            return;
+        }
+        g.drawString(font, "на сервере правки применяются у всех · * — после перезахода в мир",
+            contentX, contentY + contentH - 26, DIM, false);
+    }
+
+    private static boolean shadeBool(String id) {
+        return Boolean.TRUE.equals(ShadeAccess.get(id));
+    }
+
+    private static Component boolMsg(String label, boolean v) {
+        return Component.literal(label + ":  " + (v ? "вкл" : "выкл"));
+    }
+
+    private static int[] parseHex(String s) {
+        try {
+            int v = Integer.parseInt(s.replace("#", "").trim(), 16);
+            return new int[] { (v >> 16) & 255, (v >> 8) & 255, v & 255 };
+        } catch (RuntimeException e) {
+            return new int[] { 128, 128, 128 };
+        }
+    }
+
+    // Ползунки — нестатические: при отпускании мыши шлют значение на
+    // сервер через pushShade. Во время перетаскивания — только локальный
+    // превью (applyValue). Правки стрелками клавиатуры на сервер не
+    // уходят до следующего перетаскивания — мелочь, GM тянет мышью.
+
+    private final class ShadeSlider extends AbstractSliderButton {
+        private final String id;
+        private final double lo, hi;
+        private final boolean intKind;
+        private final String label;
+
+        ShadeSlider(int x, int y, int w, int h, String label, String id,
+                    double lo, double hi, boolean intKind, double cur) {
+            super(x, y, w, h, Component.empty(), hi > lo ? (cur - lo) / (hi - lo) : 0.0);
+            this.id = id;
+            this.lo = lo;
+            this.hi = hi;
+            this.intKind = intKind;
+            this.label = label;
+            updateMessage();
+        }
+
+        private String current() {
+            double v = lo + this.value * (hi - lo);
+            return intKind ? String.valueOf(Math.round(v)) : String.format(Locale.ROOT, "%.3f", v);
+        }
+
+        @Override
+        protected void updateMessage() {
+            setMessage(Component.literal(label + ":  " + (intKind
+                ? current()
+                : String.format(Locale.ROOT, "%.2f", lo + this.value * (hi - lo)))));
+        }
+
+        @Override
+        protected void applyValue() {
+            ShadeAccess.set(id, current());
+        }
+
+        @Override
+        public void onRelease(double mouseX, double mouseY) {
+            pushShade(id, current());
+        }
+    }
+
+    /** Один канал hex-цвета (0..255); при движении пересобирает весь цвет. */
+    private final class HexChannelSlider extends AbstractSliderButton {
+        private final String id;
+        private final int channel;
+        private final String label;
+
+        HexChannelSlider(int x, int y, int w, int h, String label, String id, int channel, int v0) {
+            super(x, y, w, h, Component.empty(), v0 / 255.0);
+            this.id = id;
+            this.channel = channel;
+            this.label = label;
+            updateMessage();
+        }
+
+        private String current() {
+            int[] rgb = parseHex(String.valueOf(ShadeAccess.get(id)));
+            rgb[channel] = (int) Math.round(this.value * 255);
+            return String.format(Locale.ROOT, "%02X%02X%02X", rgb[0], rgb[1], rgb[2]);
+        }
+
+        @Override
+        protected void updateMessage() {
+            setMessage(Component.literal(label + ":  " + (int) Math.round(this.value * 255)));
+        }
+
+        @Override
+        protected void applyValue() {
+            ShadeAccess.set(id, current());
+        }
+
+        @Override
+        public void onRelease(double mouseX, double mouseY) {
+            pushShade(id, current());
+        }
     }
 
     private void renderExperimental(GuiGraphics g) {

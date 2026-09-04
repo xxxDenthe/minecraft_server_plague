@@ -1,0 +1,23 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "All Rights Reserved"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "LMPC Мрак"
+description = '''Мир чумы серее и глуше: полноэкранная цветокоррекция (обесцвечивание глубже в темноте, ночь без света почти чёрная, тёплые пятна у факелов, зерно, постеризация, реакция на низкое HP), серый туман и туман в пещерах, споровая взвесь, пасмурное небо без солнца. Клиент: config/lmpc_shade-client.toml. Сервер: /lmpcshade set|reset (право 2) — мастер игры правит цветокор у всех игроков разом, значения хранятся в мире. Панель редактора — в моде lmpc_gmtools.'''
+
+[[dependencies.${mod_id}]]
+modId = "neoforge"
+type = "required"
+versionRange = "[${neoforge_version},)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+versionRange = "[${minecraft_version}]"
+ordering = "NONE"
+side = "BOTH"

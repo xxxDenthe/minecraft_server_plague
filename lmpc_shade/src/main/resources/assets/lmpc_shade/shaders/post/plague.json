@@ -1,0 +1,15 @@
+{
+    "targets": [ "swap" ],
+    "passes": [
+        {
+            "name": "lmpc_shade:plague",
+            "intarget": "minecraft:main",
+            "outtarget": "swap"
+        },
+        {
+            "name": "blit",
+            "intarget": "swap",
+            "outtarget": "minecraft:main"
+        }
+    ]
+}

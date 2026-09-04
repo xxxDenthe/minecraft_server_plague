@@ -86,7 +86,6 @@ resourcefullib-neoforge-1.21-3.0.12.jar
 rhino-2101.2.8-build.91.jar
 sable-neoforge-1.21.1-2.0.5.jar
 Searchables-neoforge-1.21.1-1.0.2.jar
-shine-2.0.2+1.21.1-neoforge.jar
 sit-1.21.1-1.4.jar
 skinlayers3d-neoforge-1.11.2-mc1.21.1.jar
 sliceanddice-4.3.3-neoforge.jar
@@ -115,24 +114,36 @@ zombieawareness-neoforge-1.21.0-1.13.2.jar
 
 ```
 plaguecore-0.1.0.jar
+lmpc_gmtools-0.16.0.jar
+lmpc_shade-0.7.0.jar
 ```
 
-Единственный мод в паке, который не качается со стороны, а собирается
-из исходников в `plaguecore/`:
+Не качаются со стороны, собираются из исходников:
 
 ```
-cd plaguecore && ./gradlew build
+cd plaguecore   && ./gradlew build   # нужен на сервере и у игроков
+cd lmpc_gmtools  && ./gradlew build   # панель мастера, нужен и на сервере
+cd lmpc_shade    && ./gradlew build   # цветокор мира, с 0.7.0 нужен и на сервере
 ```
 
-Джарник появляется в `plaguecore/build/libs/`. Нужен и на сервере, и у
-каждого игрока: серверная часть считает заражение, клиентская рисует
-админский экран `/plague gui`.
+Джарники появляются в `<модуль>/build/libs/`. `plaguecore` считает
+заражение (сервер) и рисует `/plague gui` (клиент). `lmpc_shade` — цветокор,
+тёмная ночь, туман, пасмурное небо; с 0.7.0 `side = BOTH`: мастер игры
+через раздел «Графика» в панели `lmpc_gmtools` (`/lmpcshade`, право 2)
+правит цветокор **у всех игроков разом**, значения хранятся в мире.
+Версии клиента и сервера должны совпадать для `lmpc_shade`, `lmpc_gmtools`,
+`plaguecore`.
 
 ## Отключено намеренно
 
-Ничего. `sodiumoptionsapi-neoforge-1.0.10-1.21.1.jar.disabled` лежал
-здесь отключённым (несовместим с Reese's Sodium Options по метаданным);
-в обновлении пака от 2026-09-03 файл убран из папки совсем.
+- **`shine-2.0.2+1.21.1-neoforge.jar.disabled`** — Shine добавляет цветной
+  свет, bloom и rim-lighting; это тянуло против серой обесцвеченной
+  стилистики. Настроение теперь держат `lmpc_shade` (цветокор, тьма,
+  туман, небо) и ванильные эффекты пака. Джарник оставлен в папке с
+  `.disabled` — вернуть на место, если понадобится.
+- `sodiumoptionsapi-neoforge-1.0.10-1.21.1.jar.disabled` лежал здесь
+  отключённым (несовместим с Reese's Sodium Options по метаданным);
+  в обновлении пака от 2026-09-03 файл убран из папки совсем.
 
 ## Удалено осознанно
 
