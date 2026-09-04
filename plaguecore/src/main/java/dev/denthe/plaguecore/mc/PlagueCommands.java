@@ -10,9 +10,11 @@ import dev.denthe.plaguecore.core.SpreadEngine;
 import dev.denthe.plaguecore.core.StartGenerator;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.coordinates.ColumnPosArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -85,6 +87,12 @@ public final class PlagueCommands {
         корень.then(Commands.literal("remove")
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
                 .executes(c -> очаг(c, false))));
+
+        корень.then(Commands.literal("player")
+            .then(Commands.argument("who", EntityArgument.player())
+                .executes(PlagueCommands::показатьИгрока)
+                .then(Commands.argument("value", FloatArgumentType.floatArg(0f, 100f))
+                    .executes(PlagueCommands::выставитьИгроку))));
 
         event.getDispatcher().register(корень);
     }
@@ -402,6 +410,32 @@ public final class PlagueCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                 "Очаг убран из чанка " + cx + ", " + cz), true);
         }
+        return 1;
+    }
+
+    /** Показать заражённость игрока. Спек подсистемы 2, раздел 9 ядра. */
+    private static int показатьИгрока(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> c)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer кто = EntityArgument.getPlayer(c, "who");
+        PlayerPlagueData д = PlayerPlagueData.данные(кто);
+        c.getSource().sendSuccess(() -> Component.literal(String.format(
+            "%s: заражённость %.1f, стадия %d, смертей от чумы %d",
+            кто.getGameProfile().getName(), д.заражённость, д.стадия, д.смертей)), false);
+        return 1;
+    }
+
+    /** Выставить заражённость. Главный инструмент проверки подсистемы. */
+    private static int выставитьИгроку(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> c)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer кто = EntityArgument.getPlayer(c, "who");
+        float значение = FloatArgumentType.getFloat(c, "value");
+        PlayerInfection.задать(кто, значение);
+        PlayerPlagueData д = PlayerPlagueData.данные(кто);
+        c.getSource().sendSuccess(() -> Component.literal(String.format(
+            "%s: заражённость %.1f, стадия %d",
+            кто.getGameProfile().getName(), д.заражённость, д.стадия)), true);
         return 1;
     }
 }
