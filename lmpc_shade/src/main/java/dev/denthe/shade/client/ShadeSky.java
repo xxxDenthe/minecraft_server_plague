@@ -78,7 +78,12 @@ public final class ShadeSky {
 
             float block = pixelX / 15.0f;   // блочный свет 0..1
             float sky = pixelY / 15.0f;     // небесный свет 0..1
-            float noBlock = (1.0f - block) * (1.0f - block); // свет «спасает» по кривой
+            // Свет «спасает» по крутой кривой: даже слабый блочный свет
+            // (тусклый край факела) заметно вытаскивает пиксель из тьмы.
+            // Куб вместо квадрата — свет бьёт дальше. Полную тьму
+            // (block == 0) не трогаем: там noBlock всё равно 1.
+            float lightSave = 1.0f - block;
+            float noBlock = lightSave * lightSave * lightSave;
             float crush = Mth.clamp(night * sky * noBlock * boost, 0f, 1f);
             if (crush <= 0f) return;
 
