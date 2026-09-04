@@ -14,6 +14,7 @@ import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.world.item.BlockItem;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 
 /**
  * Десять блоков материализации. Дизайн материализации, раздел 7.
@@ -88,6 +89,20 @@ public final class PlagueBlocks {
      */
     public static final DeferredBlock<LeavesBlock> BLIGHTED_LEAVES = БЛОКИ.registerBlock(
         "blighted_leaves",
+        LeavesBlock::new,
+        BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_LEAVES)
+            .mapColor(MapColor.COLOR_GRAY));
+
+    /**
+     * Иссохшая листва — вторая, поздняя стадия того же увядания. Заражённая
+     * листва выше ещё живая и держит цвет шкуры заражённой скотины; эта
+     * досуха мертва и сидит в нижней половине той же серой лестницы.
+     *
+     * Правило поверхности ставит её с уровня Гнили (3 и выше), там же,
+     * где гниют ствол и камень. До Гнили листва остаётся заражённой.
+     */
+    public static final DeferredBlock<LeavesBlock> WITHERED_LEAVES = БЛОКИ.registerBlock(
+        "withered_leaves",
         LeavesBlock::new,
         BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_LEAVES)
             .mapColor(MapColor.COLOR_GRAY));
@@ -175,12 +190,30 @@ public final class PlagueBlocks {
         ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHTED_TALL_GRASS);
     public static final DeferredItem<BlockItem> BLIGHTED_LEAVES_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHTED_LEAVES);
+    public static final DeferredItem<BlockItem> WITHERED_LEAVES_ITEM =
+        ПРЕДМЕТЫ.registerSimpleBlockItem(WITHERED_LEAVES);
     public static final DeferredItem<BlockItem> PLAGUE_GROWTH_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(PLAGUE_GROWTH);
     public static final DeferredItem<BlockItem> BLIGHT_VINE_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHT_VINE);
     public static final DeferredItem<BlockItem> SPORE_SAC_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(SPORE_SAC);
+
+    /**
+     * Яйца призыва заражённой скотины. Естественный способ достать моба
+     * в творческом режиме: без них остаётся только команда summon.
+     *
+     * Цвета держат палитру чумы — серая основа, фиолетовая крапина.
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> INFECTED_PIG_SPAWN_EGG =
+        ПРЕДМЕТЫ.registerItem("infected_pig_spawn_egg",
+            свойства -> new DeferredSpawnEggItem(
+                PlagueEntities.INFECTED_PIG, 0x585048, 0x5C3A5C, свойства));
+
+    public static final DeferredItem<DeferredSpawnEggItem> INFECTED_COW_SPAWN_EGG =
+        ПРЕДМЕТЫ.registerItem("infected_cow_spawn_egg",
+            свойства -> new DeferredSpawnEggItem(
+                PlagueEntities.INFECTED_COW, 0x3E3A36, 0x5C3A5C, свойства));
 
     public static void register(IEventBus modEventBus) {
         БЛОКИ.register(modEventBus);

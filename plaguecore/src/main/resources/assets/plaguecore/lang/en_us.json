@@ -11,5 +11,8 @@
   "block.plaguecore.spore_sac": "Spore Sac",
   "block.plaguecore.withered_leaves": "Withered Leaves",
   "entity.plaguecore.infected_cow": "Infected Cow",
-  "entity.plaguecore.infected_pig": "Infected Pig"
+  "entity.plaguecore.infected_pig": "Infected Pig",
+  "item.plaguecore.infected_cow_spawn_egg": "Infected Cow Spawn Egg",
+  "item.plaguecore.infected_pig_spawn_egg": "Infected Pig Spawn Egg",
+  "itemGroup.plaguecore": "Plague"
 }

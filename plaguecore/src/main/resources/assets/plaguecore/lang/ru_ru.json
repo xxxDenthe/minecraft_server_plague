@@ -11,5 +11,8 @@
   "block.plaguecore.spore_sac": "Споровый мешок",
   "block.plaguecore.withered_leaves": "Иссохшая листва",
   "entity.plaguecore.infected_cow": "Заражённая корова",
-  "entity.plaguecore.infected_pig": "Заражённая свинья"
+  "entity.plaguecore.infected_pig": "Заражённая свинья",
+  "item.plaguecore.infected_cow_spawn_egg": "Яйцо призыва заражённой коровы",
+  "item.plaguecore.infected_pig_spawn_egg": "Яйцо призыва заражённой свиньи",
+  "itemGroup.plaguecore": "Чума"
 }
