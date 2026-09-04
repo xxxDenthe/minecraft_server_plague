@@ -129,9 +129,9 @@ PlagueBridge.cure(игрок, ClassesConfig.отварЛечение());        
 PlagueBridge.grantImmunity(игрок, ClassesConfig.отварИммунитетТики()); // 5 минут умолчанием
 ```
 
-`PlagueApi` в `plaguecore` так и не появился — мост читает и правит
-`PlayerPlagueData`/`PlayerInfection.задать` напрямую, теми же
-публичными членами, которые `PlagueApi` должен был обернуть.
+`PlagueApi` появился (подсистема 2 закрыта 2026-09-04) — `PlagueBridge`
+рефлексирует именно на него, не на `PlayerPlagueData`/
+`PlayerInfection` напрямую, как было первую пару версий.
 
 **Напоить союзника — сделано (0.4.0), наведением, не броском.**
 Клирик должен стоять вплотную к цели (`clericFeedMaxDistance`,

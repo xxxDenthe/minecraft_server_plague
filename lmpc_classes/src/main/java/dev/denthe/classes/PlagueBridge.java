@@ -2,7 +2,6 @@ package dev.denthe.classes;
 
 import net.minecraft.server.level.ServerPlayer;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
@@ -10,16 +9,22 @@ import java.lang.reflect.Method;
  * зависимости между джарами нет и не будет. Любая ошибка отражения —
  * тихий отказ, не краш: без `plaguecore` (или при несовпавшей версии)
  * эти вызовы просто ничего не делают.
+ *
+ * С 0.4.0 — рефлексия на {@code dev.denthe.plaguecore.mc.PlagueApi},
+ * официальную точку входа для подсистемы классов (спек ядра,
+ * раздел 9.6). Раньше сюда лезли напрямую в {@code PlayerPlagueData}/
+ * {@code PlayerInfection.задать} — тот способ тоже работал, но
+ * `PlagueApi` появился именно для нас, и его контракт устойчивее:
+ * `cure` сам читает текущую заражённость (не нужно тащить её через
+ * отдельное поле), `grantImmunity` не укорачивает уже идущий иммунитет.
  */
 public final class PlagueBridge {
     private PlagueBridge() {}
 
-    private static final String ПАКЕТ = "dev.denthe.plaguecore.mc";
+    private static final String КЛАСС_API = "dev.denthe.plaguecore.mc.PlagueApi";
 
-    private static Method методДанные;       // PlayerPlagueData.данные(Player)
-    private static Method методЗадать;       // PlayerInfection.задать(ServerPlayer, float)
-    private static Field полеЗаражённость;   // PlayerPlagueData.заражённость
-    private static Field полеИммунитетДо;    // PlayerPlagueData.иммунитетДо
+    private static Method методCure;
+    private static Method методGrantImmunity;
     private static boolean инициализирован;
     private static boolean доступен;
 
@@ -27,12 +32,9 @@ public final class PlagueBridge {
         if (инициализирован) return;
         инициализирован = true;
         try {
-            Class<?> данныеКласс = Class.forName(ПАКЕТ + ".PlayerPlagueData");
-            Class<?> infectionКласс = Class.forName(ПАКЕТ + ".PlayerInfection");
-            методДанные = данныеКласс.getMethod("данные", net.minecraft.world.entity.player.Player.class);
-            методЗадать = infectionКласс.getMethod("задать", ServerPlayer.class, float.class);
-            полеЗаражённость = данныеКласс.getField("заражённость");
-            полеИммунитетДо = данныеКласс.getField("иммунитетДо");
+            Class<?> api = Class.forName(КЛАСС_API);
+            методCure = api.getMethod("cure", ServerPlayer.class, float.class);
+            методGrantImmunity = api.getMethod("grantImmunity", ServerPlayer.class, int.class);
             доступен = true;
         } catch (ReflectiveOperationException e) {
             доступен = false;
@@ -45,25 +47,12 @@ public final class PlagueBridge {
         return доступен;
     }
 
-    /** Текущая заражённость игрока, −1 если plaguecore недоступен. */
-    public static float заражённость(ServerPlayer игрок) {
-        инициализировать();
-        if (!доступен) return -1f;
-        try {
-            Object данные = методДанные.invoke(null, игрок);
-            return полеЗаражённость.getFloat(данные);
-        } catch (ReflectiveOperationException e) {
-            return -1f;
-        }
-    }
-
     /** Снять {@code amount} очков заражённости. */
     public static void cure(ServerPlayer игрок, float amount) {
         инициализировать();
         if (!доступен) return;
         try {
-            float текущая = полеЗаражённость.getFloat(методДанные.invoke(null, игрок));
-            методЗадать.invoke(null, игрок, Math.max(0f, текущая - amount));
+            методCure.invoke(null, игрок, amount);
         } catch (ReflectiveOperationException e) {
             // молчим — без plaguecore лечить нечего
         }
@@ -74,9 +63,7 @@ public final class PlagueBridge {
         инициализировать();
         if (!доступен) return;
         try {
-            Object данные = методДанные.invoke(null, игрок);
-            long сейчас = игрок.level().getGameTime();
-            полеИммунитетДо.setLong(данные, сейчас + ticks);
+            методGrantImmunity.invoke(null, игрок, (int) Math.min(Integer.MAX_VALUE, ticks));
         } catch (ReflectiveOperationException e) {
             // молчим
         }

@@ -25,13 +25,21 @@
   приёмом, что `ShadeApi`/`ShadeAccess` между `lmpc_shade` и
   `lmpc_gmtools`: жёсткой Gradle-зависимости между джарами нет, нет
   мода-донора — заглушка/не сработало, но не краш. Работает в обе
-  стороны (0.3.0): `PlagueBridge.java` здесь читает и правит
-  заражённость игрока (`PlayerPlagueData`/`PlayerInfection.задать`
-  в `plaguecore`), `ClassesApi.java` здесь — то, что `plaguecore`
-  дёргает обратно (`ClassBridge.java` там) ради защиты от кулона.
+  стороны: `PlagueBridge.java` здесь читает и правит заражённость
+  игрока, `ClassesApi.java` здесь — то, что `plaguecore` дёргает
+  обратно (`ClassBridge.java` там) ради защиты от кулона.
   Правка `PlayerInfection.защита()` в `plaguecore` сделана с явного
   разрешения владельца, заметка — `docs/superpowers/notes/
   2026-09-04-most-classes-plaguecore.md`.
+  **С момента, когда друг завёл `dev.denthe.plaguecore.mc.PlagueApi`
+  (официальную точку входа для классов, спек ядра 9.6),
+  `PlagueBridge` рефлексирует именно на него** (`cure`,
+  `grantImmunity`), а не на `PlayerPlagueData`/`PlayerInfection`
+  напрямую, как было в 0.3.0–0.4.0. Три причины: контракт `PlagueApi`
+  устойчивее (он для нас и задуман), не нужно тащить текущую
+  заражённость отдельным полем — `cure` сам её читает, а
+  `grantImmunity` не укорачивает уже идущий иммунитет (было — просто
+  перезаписывало поле).
 - **Curios — обязательная зависимость, честно.** Задумывалась
   «мягкой», как мост к `plaguecore`, но не вышло: `ClericsPendantItem
   implements ICurioItem` напрямую, и без Curios на classpath JVM не
@@ -95,10 +103,9 @@
   `spore_sac` + золотая морковка) доступен всем, у не-Клирика бутылка
   просто пропадает без эффекта. Свой кулдаун на игрока
   (`PlayerClassData.отварГотовТик`, `clericBrewCooldownMinutes`).
-- `PlagueBridge.java` — мост К `plaguecore`: `cure(amount)` дёргает
-  `PlayerInfection.задать`, `grantImmunity(ticks)` пишет
-  `PlayerPlagueData.иммунитетДо` напрямую (сеттера для него в
-  `plaguecore` нет, только публичное поле).
+- `PlagueBridge.java` — мост К `plaguecore`: рефлексия на
+  `dev.denthe.plaguecore.mc.PlagueApi.cure/grantImmunity` (раздел
+  ниже, «Мост к `plaguecore`»).
 - `ClassesApi.java` — мост ОТ `plaguecore`: `protectionBonus(Player)`,
   которую `plaguecore` зовёт рефлексией из `ClassBridge`. Полная
   защита (`clericPendantProtection`, 0.15 по умолчанию) — Клирику
