@@ -1,0 +1,24 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "All Rights Reserved"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "LMPC Классы"
+description = '''Система классов «Чумы»: Клирик, Кузнец, Фермер, Летописец. Путёвка выбирает и меняет класс игрока. Дизайн — docs/superpowers/specs/2026-09-04-klassy-design.md в основном репозитории.'''
+
+# Класс — данные игрока и предметы, нужны на обеих сторонах.
+[[dependencies.${mod_id}]]
+modId = "neoforge"
+type = "required"
+versionRange = "[${neoforge_version},)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+versionRange = "[${minecraft_version}]"
+ordering = "NONE"
+side = "BOTH"

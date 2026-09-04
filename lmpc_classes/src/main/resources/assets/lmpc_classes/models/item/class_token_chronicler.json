@@ -1,0 +1,4 @@
+{
+  "parent": "item/generated",
+  "textures": { "layer0": "lmpc_classes:item/class_token_chronicler" }
+}

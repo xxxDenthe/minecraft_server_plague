@@ -1,0 +1,59 @@
+package dev.denthe.classes;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.world.entity.player.Player;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
+
+import java.util.function.Supplier;
+
+/**
+ * Класс игрока. Спек — 2026-09-04-klassy-design.md, раздел 2 и 10.
+ *
+ * Свой мод, свой Data Attachment: `plaguecore` не трогаем, класс живёт
+ * отдельно от заражённости.
+ */
+public class PlayerClassData {
+
+    public enum Класс { NONE, CLERIC, SMITH, FARMER, CHRONICLER }
+
+    public static final DeferredRegister<AttachmentType<?>> ВЛОЖЕНИЯ =
+        DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, LmpcClasses.MODID);
+
+    /** Текущий класс. NONE — без класса, чистые руки. */
+    public Класс класс = Класс.NONE;
+
+    /** Мировой тик последней смены. −1 — ни разу не менял, кулдаун не действует. */
+    public long последняяСменаТик = -1L;
+
+    public PlayerClassData() {}
+
+    public PlayerClassData(Класс класс, long последняяСменаТик) {
+        this.класс = класс;
+        this.последняяСменаТик = последняяСменаТик;
+    }
+
+    public static final Codec<PlayerClassData> CODEC = RecordCodecBuilder.create(и -> и.group(
+        Codec.STRING.xmap(Класс::valueOf, Класс::name).fieldOf("class").forGetter(д -> д.класс),
+        Codec.LONG.fieldOf("lastSwitchTick").forGetter(д -> д.последняяСменаТик)
+    ).apply(и, PlayerClassData::new));
+
+    public static final Supplier<AttachmentType<PlayerClassData>> КЛАСС =
+        ВЛОЖЕНИЯ.register("player_class", () -> AttachmentType
+            .builder(PlayerClassData::new)
+            .serialize(CODEC)
+            .copyOnDeath()
+            .build());
+
+    /** Данные игрока. Вложение создаётся само при первом обращении. */
+    public static PlayerClassData данные(Player игрок) {
+        return игрок.getData(КЛАСС.get());
+    }
+
+    public static void register(IEventBus modEventBus) {
+        ВЛОЖЕНИЯ.register(modEventBus);
+    }
+}
