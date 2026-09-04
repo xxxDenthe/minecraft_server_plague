@@ -29,17 +29,33 @@ public class PlayerClassData {
     /** Мировой тик последней смены. −1 — ни разу не менял, кулдаун не действует. */
     public long последняяСменаТик = -1L;
 
+    /** Мастерство текущего класса. Спек, раздел 2.1. */
+    public int мастерство = 0;
+
     public PlayerClassData() {}
 
-    public PlayerClassData(Класс класс, long последняяСменаТик) {
+    public PlayerClassData(Класс класс, long последняяСменаТик, int мастерство) {
         this.класс = класс;
         this.последняяСменаТик = последняяСменаТик;
+        this.мастерство = мастерство;
     }
 
     public static final Codec<PlayerClassData> CODEC = RecordCodecBuilder.create(и -> и.group(
         Codec.STRING.xmap(Класс::valueOf, Класс::name).fieldOf("class").forGetter(д -> д.класс),
-        Codec.LONG.fieldOf("lastSwitchTick").forGetter(д -> д.последняяСменаТик)
+        Codec.LONG.fieldOf("lastSwitchTick").forGetter(д -> д.последняяСменаТик),
+        Codec.INT.fieldOf("mastery").forGetter(д -> д.мастерство)
     ).apply(и, PlayerClassData::new));
+
+    /**
+     * Сменить класс. Мастерство старого класса срезается до доли
+     * {@code keepFraction} (спек, раздел 2.1 — умолчание 0.3), а не
+     * обнуляется: решение должно стоить, но не карать за пробу.
+     */
+    public void сменитьКласс(Класс новый, long тик, double keepFraction) {
+        класс = новый;
+        последняяСменаТик = тик;
+        мастерство = (int) Math.floor(мастерство * Math.max(0.0, Math.min(1.0, keepFraction)));
+    }
 
     public static final Supplier<AttachmentType<PlayerClassData>> КЛАСС =
         ВЛОЖЕНИЯ.register("player_class", () -> AttachmentType

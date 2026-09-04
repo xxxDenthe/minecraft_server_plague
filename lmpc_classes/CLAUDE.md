@@ -28,28 +28,41 @@
   дойдёт до способностей (крючок `protection()` в `PlayerInfection`
   для пассивки Клирика, `PlagueApi.cure/grantImmunity` для его отвара).
 
-## Устройство (0.1.0)
+## Устройство (0.2.0)
 
 - `LmpcClasses.java` — точка входа, регистрирует всё ниже.
 - `ClassSwitch.java` — чистая функция кулдауна смены класса, без
   импортов Minecraft, проверяется обычным JUnit (`ClassSwitchTest`).
 - `PlayerClassData.java` — Data Attachment на игроке: текущий класс
-  (`enum Класс`: NONE/CLERIC/SMITH/FARMER/CHRONICLER) и тик последней
-  смены. `copyOnDeath` — смерть класс не сбрасывает.
-- `ClassTokenItem.java` + `ClassItems.java` — четыре путёвки,
-  право-клик меняет класс, если не идёт кулдаун. **Крафта нет** —
-  донорский материал + `cleansing_agent` из `plaguecore` ещё не
-  существуют в игре. Получить путёвку пока можно из творческого
-  режима или команды.
-- `ClassCommands.java` — `/lmpcclasses class <игрок> [класс]`, обход
-  кулдауна и крафта для проверки на живом сервере, право 2.
+  (`enum Класс`: NONE/CLERIC/SMITH/FARMER/CHRONICLER), тик последней
+  смены и `мастерство` (раздел 2.1 спека). `сменитьКласс(...)` — смена
+  со срезом мастерства старого класса до `masteryKeepFraction`, а не
+  обнулением. `copyOnDeath` — смерть класс и мастерство не сбрасывает.
+- `ClassAltarBlock.java` + `ClassBlocks.java` — единственный блок
+  мода, «Алтарь призвания». Правый клик без предмета в руке
+  (`useWithoutItem`) открывает клиентский экран, никакого меню-
+  контейнера нет — путёвок-предметов больше не существует (крафт
+  под них требовал `cleansing_agent` из `plaguecore`, которого ещё
+  нет; блок эту зависимость снял целиком). Дроп — сам блок
+  (`data/lmpc_classes/loot_table/blocks/class_altar.json`), в
+  творческой вкладке «Функциональные блоки».
+- `client/ClassAltarScreen.java` — пять кнопок (без класса + четыре
+  класса), каждая шлёт `/lmpcclasses choose <класс>`
+  (`Minecraft.getConnection().sendCommand`) тем же приёмом, что панель
+  `lmpc_gmtools`. Экран ничего не решает — сервер сам проверяет
+  кулдаун и режет мастерство.
+- `ClassCommands.java` — `/lmpcclasses choose <класс>` (себе, право 0,
+  настоящий путь смены) и `/lmpcclasses class <игрок> [класс]`
+  (админский обход кулдауна и среза мастерства, право 2, для проверки
+  на живом сервере).
 - `ClassesConfig.java` — `config/lmpc_classes-common.toml`,
-  `classSwitchCooldownMinutes` (умолчание 30).
-- `ClassCreativeTab.java` — своя вкладка в творческом инвентаре.
+  `classSwitchCooldownMinutes` (умолчание 30), `masteryKeepFraction`
+  (умолчание 0.3).
 
-**Текстур у путёвок нет** — модели ссылаются на
-`lmpc_classes:item/class_token_<класс>`, картинки не заведены,
-в игре предметы будут розово-чёрными до textures_src.
+**Текстуры блока нет** — модель ссылается на ванильный
+`minecraft:block/chiseled_stone_bricks` как временную заглушку,
+не на свою картинку. Заменить, когда появится своя, в
+`models/block/class_altar.json`.
 
 ## Рабочий процесс (требования владельца, как у gmtools/shade)
 
@@ -71,8 +84,11 @@
   grantImmunity`), тиры Очистителя для Кузнеца, грядка `plague_bloom`
   и сам реагент `cleansing_agent` для Фермера, точный вывод Jade для
   Летописца. Все мосты к `plaguecore` — рефлексия, не Gradle-зависимость.
-- Рецепт путёвок, когда появится `cleansing_agent`.
-- Текстуры путёвок (владелец, `textures_src/`).
+- Своя текстура алтаря (владелец, `textures_src/`) вместо заглушки
+  на ванильном камне.
+- Растёт ли мастерство от реальных действий — сейчас поле только
+  заведено и режется при смене, ничего его не пополняет: триггеры
+  появятся вместе со способностью каждого класса.
 
 Связано: `docs/superpowers/specs/2026-09-04-klassy-design.md`,
 lmpc-gmtools-sostoyanie, lmpc-shade-sostoyanie (память Kuragane).

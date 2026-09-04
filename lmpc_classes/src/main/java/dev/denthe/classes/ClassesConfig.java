@@ -20,11 +20,21 @@ public final class ClassesConfig {
         .comment("Минимальный перерыв между сменами класса, в минутах.")
         .defineInRange("classSwitchCooldownMinutes", 30, 0, 1440);
 
+    private static final ModConfigSpec.DoubleValue ДОЛЯ_МАСТЕРСТВА_ПРИ_СМЕНЕ = СТРОИТЕЛЬ
+        .comment("Какая доля мастерства старого класса остаётся при смене.",
+                 "0.3 — треть сохраняется, остальное срезается.")
+        .defineInRange("masteryKeepFraction", 0.3, 0.0, 1.0);
+
     public static final ModConfigSpec SPEC = СТРОИТЕЛЬ.build();
 
     /** Минимальный перерыв между сменами класса, в тиках (20 в секунде). */
     public static long кулдаунСменыТики() {
         return КУЛДАУН_СМЕНЫ_КЛАССА.get() * 1200L;
+    }
+
+    /** Доля мастерства старого класса, остающаяся при смене. */
+    public static double доляМастерстваПриСмене() {
+        return ДОЛЯ_МАСТЕРСТВА_ПРИ_СМЕНЕ.get();
     }
 
     public static void зарегистрировать(IEventBus modEventBus, ModContainer container) {

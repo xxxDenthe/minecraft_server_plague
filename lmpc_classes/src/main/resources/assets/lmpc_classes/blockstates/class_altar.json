@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "lmpc_classes:block/class_altar" }
+  }
+}

@@ -1,7 +1,3 @@
 {
-  "itemGroup.lmpc_classes": "Классы Чумы",
-  "item.lmpc_classes.class_token_cleric": "Путёвка Клирика",
-  "item.lmpc_classes.class_token_smith": "Путёвка Кузнеца",
-  "item.lmpc_classes.class_token_farmer": "Путёвка Фермера",
-  "item.lmpc_classes.class_token_chronicler": "Путёвка Летописца"
+  "block.lmpc_classes.class_altar": "Алтарь призвания"
 }

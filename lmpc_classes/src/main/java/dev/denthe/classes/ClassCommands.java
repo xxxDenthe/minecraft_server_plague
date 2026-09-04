@@ -14,10 +14,13 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import java.util.Locale;
 
 /**
- * Админские команды. Спек, раздел 2.
+ * Команды. Спек, раздел 2.
  *
- * Обход кулдауна и крафта путёвки для проверки на живом сервере —
- * тем же приёмом, что `/plague setlevel`/`/plague player` в plaguecore.
+ * {@code /lmpcclasses choose <класс>} — настоящий путь смены: себе,
+ * с проверкой кулдауна и срезом мастерства (раздел 2.1). Её шлёт экран
+ * алтаря призвания. {@code /lmpcclasses class <кто> <класс>} — админский
+ * обход обоих правил для проверки на живом сервере, тем же приёмом,
+ * что `/plague setlevel`/`/plague player` в plaguecore.
  */
 @EventBusSubscriber(modid = LmpcClasses.MODID)
 public final class ClassCommands {
@@ -25,27 +28,56 @@ public final class ClassCommands {
 
     @SubscribeEvent
     public static void зарегистрировать(RegisterCommandsEvent event) {
-        var корень = Commands.literal("lmpcclasses").requires(s -> s.hasPermission(2));
+        var корень = Commands.literal("lmpcclasses");
+
+        var выбор = Commands.literal("choose");
+        for (PlayerClassData.Класс к : PlayerClassData.Класс.values()) {
+            выбор.then(Commands.literal(к.name().toLowerCase(Locale.ROOT))
+                .executes(c -> выбрать(c, к)));
+        }
+        корень.then(выбор);
 
         var ктоДляКласса = Commands.argument("who", EntityArgument.player())
+            .requires(s -> s.hasPermission(2))
             .executes(ClassCommands::показать);
         for (PlayerClassData.Класс к : PlayerClassData.Класс.values()) {
             ктоДляКласса.then(Commands.literal(к.name().toLowerCase(Locale.ROOT))
                 .executes(c -> выставить(c, к)));
         }
-        корень.then(Commands.literal("class").then(ктоДляКласса));
+        корень.then(Commands.literal("class").requires(s -> s.hasPermission(2)).then(ктоДляКласса));
 
         event.getDispatcher().register(корень);
     }
 
-    private static int показать(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
-        ServerPlayer кто = EntityArgument.getPlayer(c, "who");
-        PlayerClassData.Класс класс = PlayerClassData.данные(кто).класс;
-        c.getSource().sendSuccess(() -> Component.literal(
-            кто.getGameProfile().getName() + ": класс " + класс), false);
+    /** Настоящая смена: себе, с кулдауном и срезом мастерства. */
+    private static int выбрать(CommandContext<CommandSourceStack> c, PlayerClassData.Класс класс)
+            throws CommandSyntaxException {
+        ServerPlayer игрок = c.getSource().getPlayerOrException();
+        PlayerClassData д = PlayerClassData.данные(игрок);
+        long кулдаунТики = ClassesConfig.кулдаунСменыТики();
+        long сейчас = игрок.level().getGameTime();
+
+        if (!ClassSwitch.можноСменить(д.последняяСменаТик, сейчас, кулдаунТики)) {
+            long осталосьТиков = кулдаунТики - (сейчас - д.последняяСменаТик);
+            c.getSource().sendFailure(Component.literal(
+                "Класс можно сменить через " + (осталосьТиков / 1200 + 1) + " мин."));
+            return 0;
+        }
+
+        д.сменитьКласс(класс, сейчас, ClassesConfig.доляМастерстваПриСмене());
+        c.getSource().sendSuccess(() -> Component.literal("Класс: " + класс), false);
         return 1;
     }
 
+    private static int показать(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        ServerPlayer кто = EntityArgument.getPlayer(c, "who");
+        PlayerClassData д = PlayerClassData.данные(кто);
+        c.getSource().sendSuccess(() -> Component.literal(
+            кто.getGameProfile().getName() + ": класс " + д.класс + ", мастерство " + д.мастерство), false);
+        return 1;
+    }
+
+    /** Админский обход кулдауна и среза мастерства — для проверки. */
     private static int выставить(CommandContext<CommandSourceStack> c, PlayerClassData.Класс класс)
             throws CommandSyntaxException {
         ServerPlayer кто = EntityArgument.getPlayer(c, "who");

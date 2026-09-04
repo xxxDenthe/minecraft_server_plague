@@ -1,7 +1,3 @@
 {
-  "itemGroup.lmpc_classes": "Plague Classes",
-  "item.lmpc_classes.class_token_cleric": "Cleric's Vocation",
-  "item.lmpc_classes.class_token_smith": "Smith's Vocation",
-  "item.lmpc_classes.class_token_farmer": "Farmer's Vocation",
-  "item.lmpc_classes.class_token_chronicler": "Chronicler's Vocation"
+  "block.lmpc_classes.class_altar": "Altar of Calling"
 }
