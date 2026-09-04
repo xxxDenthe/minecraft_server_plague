@@ -46,6 +46,10 @@ public final class ClassesConfig {
         .comment("Иммунитет от улучшенного отвара, в минутах.")
         .defineInRange("clericBrewImmunityMinutes", 5, 0, 60);
 
+    private static final ModConfigSpec.IntValue СКОРМИТЬ_ДЛИТЕЛЬНОСТЬ = СТРОИТЕЛЬ
+        .comment("Сколько тиков держать ПКМ на союзнике, чтобы напоить его отваром. 60 — три секунды.")
+        .defineInRange("clericFeedChannelTicks", 60, 10, 600);
+
     public static final ModConfigSpec SPEC = СТРОИТЕЛЬ.build();
 
     /** Минимальный перерыв между сменами класса, в тиках (20 в секунде). */
@@ -81,6 +85,11 @@ public final class ClassesConfig {
     /** Длительность иммунитета от отвара, в тиках. */
     public static long отварИммунитетТики() {
         return ОТВАР_ИММУНИТЕТ.get() * 1200L;
+    }
+
+    /** Сколько тиков держать ПКМ на союзнике, чтобы напоить его. */
+    public static int скормитьДлительностьТики() {
+        return СКОРМИТЬ_ДЛИТЕЛЬНОСТЬ.get();
     }
 
     public static void зарегистрировать(IEventBus modEventBus, ModContainer container) {
