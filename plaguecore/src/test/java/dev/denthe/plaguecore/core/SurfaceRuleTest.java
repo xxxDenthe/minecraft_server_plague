@@ -37,10 +37,13 @@ class SurfaceRuleTest {
     }
 
     @Test
-    void листваГниётИНаЭтомОстанавливается() {
+    void листваСначалаЗаражаетсяПотомИссыхает() {
         // Лоза на поверхности отменена: она осталась только в пещерах.
-        for (int уровень = 1; уровень <= 4; уровень++) {
-            assertEquals(PlagueAction.BLIGHTED_LEAVES,
+        // Косметика — заражённая листва, Гниль — иссохшая.
+        assertEquals(PlagueAction.BLIGHTED_LEAVES, SurfaceRule.actionFor(BlockKind.LEAVES, 1));
+        assertEquals(PlagueAction.BLIGHTED_LEAVES, SurfaceRule.actionFor(BlockKind.LEAVES, 2));
+        for (int уровень = 3; уровень <= 5; уровень++) {
+            assertEquals(PlagueAction.WITHERED_LEAVES,
                 SurfaceRule.actionFor(BlockKind.LEAVES, уровень), "уровень " + уровень);
         }
     }

@@ -1,0 +1,6 @@
+{ "variants": { "": [
+  { "model": "plaguecore:block/withered_leaves" },
+  { "model": "plaguecore:block/withered_leaves", "y":  90 },
+  { "model": "plaguecore:block/withered_leaves", "y": 180 },
+  { "model": "plaguecore:block/withered_leaves", "y": 270 }
+] } }

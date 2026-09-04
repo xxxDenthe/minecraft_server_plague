@@ -53,6 +53,8 @@ public final class BlockTransforms {
             case DESTROY_PLANT -> Blocks.AIR.defaultBlockState();
             case BLIGHTED_LEAVES -> PlagueBlocks.BLIGHTED_LEAVES.get().defaultBlockState()
                                        .setValue(LeavesBlock.PERSISTENT, Boolean.TRUE);
+            case WITHERED_LEAVES -> PlagueBlocks.WITHERED_LEAVES.get().defaultBlockState()
+                                       .setValue(LeavesBlock.PERSISTENT, Boolean.TRUE);
             case DESTROY_CROP  -> Blocks.AIR.defaultBlockState();
             case TRAMPLE_CROP  -> вытоптать(было);
             default            -> null;
@@ -121,7 +123,8 @@ public final class BlockTransforms {
         if (state.is(BlockTags.SMALL_FLOWERS) || state.is(BlockTags.TALL_FLOWERS)) {
             return BlockKind.FLOWER;
         }
-        if (state.is(BlockTags.LEAVES) || block == PlagueBlocks.BLIGHTED_LEAVES.get()) {
+        if (state.is(BlockTags.LEAVES) || block == PlagueBlocks.BLIGHTED_LEAVES.get()
+            || block == PlagueBlocks.WITHERED_LEAVES.get()) {
             return BlockKind.LEAVES;
         }
         // Ствол и доска разошлись: живое дерево гниёт целиком, а доска

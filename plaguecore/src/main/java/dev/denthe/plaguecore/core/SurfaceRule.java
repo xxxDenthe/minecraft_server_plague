@@ -41,6 +41,7 @@ public final class SurfaceRule {
         BLIGHTED_GRASS,
         BLIGHTED_TALL_GRASS,
         BLIGHTED_LEAVES,
+        WITHERED_LEAVES,
         TRAMPLE_CROP,
         DESTROY_CROP,
         DESTROY_PLANT,
@@ -77,8 +78,11 @@ public final class SurfaceRule {
             case GRASS  -> гниль ? PlagueAction.ROTTED_GRASS : PlagueAction.PODZOL;
             case DIRT   -> PlagueAction.ROTTED_DIRT;
             // Лоза на поверхности отменена решением владельца: она осталась
-            // только в пещерах. Листва гниёт и на этом останавливается.
-            case LEAVES -> PlagueAction.BLIGHTED_LEAVES;
+            // только в пещерах. Листва увядает в два шага: на косметике она
+            // ещё живая и заражённая, на Гнили — досуха мёртвая. Граница
+            // общая со стволом и камнем, чтобы дерево не выбивалось из леса.
+            case LEAVES -> гниль ? PlagueAction.WITHERED_LEAVES
+                                 : PlagueAction.BLIGHTED_LEAVES;
             // Камень на поверхности перерождается, а не обрастает: плёнка
             // пятнами на утёсе терялась из виду.
             case STONE  -> гниль ? PlagueAction.ROTTED_STONE : PlagueAction.NONE;
