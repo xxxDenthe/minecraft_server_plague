@@ -150,4 +150,74 @@ public final class PlagueConstants {
      * впятеро быстрее, чем на кромке.
      */
     public static float ANIMAL_INFECT_CHANCE = 0.04f;
+
+    // ── игрок ─────────────────────────────────────────────────────────
+    // Подсистема 2, спек 2026-09-04-zarazhenie-igroka-design.md.
+
+    /** Раз во сколько тиков пересчитывается заражённость игрока. */
+    public static int PLAYER_TICK_INTERVAL = 20;
+
+    /**
+     * Нижние границы стадий 1–4. Стадия 0 — всё, что ниже первой границы.
+     * Обязаны идти по возрастанию; за этим следит PlagueConfig.
+     */
+    public static int[] PLAYER_STAGE_THRESHOLDS = { 10, 30, 60, 90 };
+
+    /**
+     * Сколько очков заражённости даёт секунда в чанке уровня N.
+     * Индекс — уровень чанка 0–4. Нулевой отрицательный: чистый воздух лечит.
+     */
+    public static float[] PLAYER_EXPOSURE = { -0.05f, 0.01f, 0.04f, 0.10f, 0.20f };
+
+    /** Во сколько раз быстрее копится зараза под землёй. */
+    public static float PLAYER_UNDERGROUND_MULTIPLIER = 1.35f;
+
+    /**
+     * Временный штраф к максимуму здоровья по стадиям 0–4, в HP.
+     * Снимается вместе с лечением.
+     */
+    public static float[] PLAYER_STAGE_HEALTH = { 0f, 0f, 2f, 6f, 6f };
+
+    /** Во сколько раз слабее сытит еда начиная со стадии 1. */
+    public static float PLAYER_FOOD_MULTIPLIER = 0.5f;
+
+    /** Раз во сколько тиков стадия 4 бьёт игрока. 3600 тиков — три минуты. */
+    public static int PLAYER_STAGE4_DAMAGE_TICKS = 3600;
+
+    /** Сколько HP снимает удар стадии 4. */
+    public static float PLAYER_STAGE4_DAMAGE = 2f;
+
+    /** Раз во сколько тиков кашляет игрок каждой стадии 0–4. Ноль — не кашляет. */
+    public static int[] PLAYER_COUGH_TICKS = { 0, 600, 300, 200, 200 };
+
+    /** Шанс заразить соседа одним кашлем, по стадии кашляющего 0–4. */
+    public static float[] PLAYER_COUGH_CHANCE = { 0f, 0f, 0.35f, 0.50f, 0.50f };
+
+    /** Радиус кашля в блоках. Шесть, а не два: больного нельзя вести с собой. */
+    public static float PLAYER_COUGH_RADIUS = 6f;
+
+    /** Сколько очков получает сосед, которому не повезло. */
+    public static float PLAYER_COUGH_AMOUNT = 4f;
+
+    /** Сколько очков снимает N-й глоток отвара подряд. Последнее — для всех дальнейших. */
+    public static float[] PLAYER_BREW_STRENGTH = { 13f, 10f, 8f, 7f, 6f, 5f };
+
+    /** Через сколько тиков без глотка счётчик отваров обнуляется. 6000 — пять минут. */
+    public static int PLAYER_BREW_RESET_TICKS = 6000;
+
+    /** Выше этой стадии отвар не действует. Стадии 3 и 4 — только Клирик. */
+    public static int PLAYER_BREW_MAX_STAGE = 2;
+
+    /** Сколько HP навсегда снимает смерть на стадии 2+. */
+    public static float PLAYER_DEATH_PENALTY = 1f;
+
+    /** Пол постоянных потерь: ниже этого максимум здоровья не опускают смерти. */
+    public static float PLAYER_PERMANENT_FLOOR = 6f;
+
+    /**
+     * Жёсткий пол итогового максимума. Постоянные потери и временный штраф
+     * стадии складываются; без этого предела они складываются в ноль,
+     * и игрок умирает бесконечно при возрождении.
+     */
+    public static float PLAYER_HARD_FLOOR = 4f;
 }

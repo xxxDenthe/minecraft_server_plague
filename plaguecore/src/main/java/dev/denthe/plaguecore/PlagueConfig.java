@@ -72,6 +72,32 @@ public final class PlagueConfig {
     private static final ModConfigSpec.DoubleValue ПОЛ;
     private static final ModConfigSpec.DoubleValue МЕШКИ;
 
+    // ── игрок ─────────────────────────────────────────────────────────
+    private static final ModConfigSpec.IntValue ТИК_ИГРОКА;
+    private static final ModConfigSpec.IntValue[] ПОРОГ_СТАДИИ =
+        new ModConfigSpec.IntValue[4];
+    private static final ModConfigSpec.DoubleValue[] ЭКСПОЗИЦИЯ =
+        new ModConfigSpec.DoubleValue[5];
+    private static final ModConfigSpec.DoubleValue ПОД_ЗЕМЛЁЙ;
+    private static final ModConfigSpec.DoubleValue[] ЗДОРОВЬЕ_СТАДИИ =
+        new ModConfigSpec.DoubleValue[5];
+    private static final ModConfigSpec.DoubleValue ЕДА;
+    private static final ModConfigSpec.IntValue УРОН_КАЖДЫЕ;
+    private static final ModConfigSpec.DoubleValue УРОН_СТАДИИ_4;
+    private static final ModConfigSpec.IntValue[] КАШЕЛЬ_КАЖДЫЕ =
+        new ModConfigSpec.IntValue[5];
+    private static final ModConfigSpec.DoubleValue[] ШАНС_КАШЛЯ =
+        new ModConfigSpec.DoubleValue[5];
+    private static final ModConfigSpec.DoubleValue РАДИУС_КАШЛЯ;
+    private static final ModConfigSpec.DoubleValue ОЧКОВ_ЗА_КАШЕЛЬ;
+    private static final ModConfigSpec.DoubleValue[] СИЛА_ОТВАРА =
+        new ModConfigSpec.DoubleValue[6];
+    private static final ModConfigSpec.IntValue СБРОС_ОТВАРА;
+    private static final ModConfigSpec.IntValue ПОТОЛОК_ОТВАРА;
+    private static final ModConfigSpec.DoubleValue ШТРАФ_СМЕРТИ;
+    private static final ModConfigSpec.DoubleValue ПОЛ_ПОСТОЯННЫХ;
+    private static final ModConfigSpec.DoubleValue ЖЁСТКИЙ_ПОЛ;
+
     public static final ModConfigSpec SPEC;
 
     static {
@@ -196,6 +222,113 @@ public final class PlagueConfig {
                      "0 полностью отключает превращение.")
             .defineInRange("infectChance", окр(PlagueConstants.ANIMAL_INFECT_CHANCE), 0.0, 1.0);
 
+        СТРОИТЕЛЬ.pop().comment(
+            "Чума в самом игроке: как копится, чем бьёт, чем лечится.",
+            "Заражённость — число от 0 до 100. Стадия выводится из него."
+        ).push("player");
+
+        ТИК_ИГРОКА = СТРОИТЕЛЬ
+            .comment("Раз во сколько тиков пересчитывается заражённость. 20 — раз в секунду.")
+            .defineInRange("tickInterval", PlagueConstants.PLAYER_TICK_INTERVAL, 1, 200);
+
+        for (int с = 0; с < 4; с++) {
+            ПОРОГ_СТАДИИ[с] = СТРОИТЕЛЬ
+                .comment("С какого числа очков начинается стадия " + (с + 1) + ".")
+                .defineInRange("stage" + (с + 1) + "At",
+                    PlagueConstants.PLAYER_STAGE_THRESHOLDS[с], 1, 100);
+        }
+
+        for (int у = 0; у < 5; у++) {
+            ЭКСПОЗИЦИЯ[у] = СТРОИТЕЛЬ
+                .comment(у == 0
+                    ? "Очков заражённости за секунду в чистом чанке. Отрицательное: воздух лечит."
+                    : "Очков заражённости за секунду в чанке уровня " + у + ".")
+                .defineInRange("exposureLevel" + у,
+                    окр(PlagueConstants.PLAYER_EXPOSURE[у]), -5.0, 5.0);
+        }
+
+        ПОД_ЗЕМЛЁЙ = СТРОИТЕЛЬ
+            .comment("Во сколько раз быстрее копится зараза под землёй.")
+            .defineInRange("undergroundMultiplier",
+                окр(PlagueConstants.PLAYER_UNDERGROUND_MULTIPLIER), 1.0, 5.0);
+
+        for (int с = 0; с < 5; с++) {
+            ЗДОРОВЬЕ_СТАДИИ[с] = СТРОИТЕЛЬ
+                .comment("Сколько HP временно отнимает стадия " + с + ".")
+                .defineInRange("stage" + с + "HealthPenalty",
+                    окр(PlagueConstants.PLAYER_STAGE_HEALTH[с]), 0.0, 18.0);
+        }
+
+        ЕДА = СТРОИТЕЛЬ
+            .comment("Во сколько раз слабее сытит еда у больного. 0.5 — вдвое.")
+            .defineInRange("foodMultiplier",
+                окр(PlagueConstants.PLAYER_FOOD_MULTIPLIER), 0.0, 1.0);
+
+        УРОН_КАЖДЫЕ = СТРОИТЕЛЬ
+            .comment("Раз во сколько тиков стадия 4 бьёт игрока. 3600 — три минуты.")
+            .defineInRange("stage4DamageTicks",
+                PlagueConstants.PLAYER_STAGE4_DAMAGE_TICKS, 20, 72000);
+
+        УРОН_СТАДИИ_4 = СТРОИТЕЛЬ
+            .comment("Сколько HP снимает удар стадии 4. 2.0 — одно сердце.")
+            .defineInRange("stage4Damage",
+                окр(PlagueConstants.PLAYER_STAGE4_DAMAGE), 0.0, 20.0);
+
+        for (int с = 0; с < 5; с++) {
+            КАШЕЛЬ_КАЖДЫЕ[с] = СТРОИТЕЛЬ
+                .comment("Раз во сколько тиков кашляет игрок стадии " + с + ". Ноль — молчит.")
+                .defineInRange("stage" + с + "CoughTicks",
+                    PlagueConstants.PLAYER_COUGH_TICKS[с], 0, 72000);
+            ШАНС_КАШЛЯ[с] = СТРОИТЕЛЬ
+                .comment("Шанс заразить соседа одним кашлем на стадии " + с + ".")
+                .defineInRange("stage" + с + "CoughChance",
+                    окр(PlagueConstants.PLAYER_COUGH_CHANCE[с]), 0.0, 1.0);
+        }
+
+        РАДИУС_КАШЛЯ = СТРОИТЕЛЬ
+            .comment("Радиус кашля в блоках. Шесть: больного нельзя вести с собой.")
+            .defineInRange("coughRadius",
+                окр(PlagueConstants.PLAYER_COUGH_RADIUS), 0.0, 64.0);
+
+        ОЧКОВ_ЗА_КАШЕЛЬ = СТРОИТЕЛЬ
+            .comment("Сколько очков получает сосед, которому не повезло.")
+            .defineInRange("coughAmount",
+                окр(PlagueConstants.PLAYER_COUGH_AMOUNT), 0.0, 100.0);
+
+        for (int г = 0; г < 6; г++) {
+            СИЛА_ОТВАРА[г] = СТРОИТЕЛЬ
+                .comment(г < 5
+                    ? "Сколько очков снимает " + (г + 1) + "-й глоток отвара подряд."
+                    : "Сколько снимают шестой и все дальнейшие глотки подряд.")
+                .defineInRange("brewStrength" + (г + 1),
+                    окр(PlagueConstants.PLAYER_BREW_STRENGTH[г]), 0.0, 100.0);
+        }
+
+        СБРОС_ОТВАРА = СТРОИТЕЛЬ
+            .comment("Через сколько тиков без глотка счётчик обнуляется. 6000 — пять минут.")
+            .defineInRange("brewResetTicks",
+                PlagueConstants.PLAYER_BREW_RESET_TICKS, 0, 72000);
+
+        ПОТОЛОК_ОТВАРА = СТРОИТЕЛЬ
+            .comment("Выше этой стадии отвар не действует. 2: лихорадку лечит только Клирик.")
+            .defineInRange("brewMaxStage", PlagueConstants.PLAYER_BREW_MAX_STAGE, 0, 4);
+
+        ШТРАФ_СМЕРТИ = СТРОИТЕЛЬ
+            .comment("Сколько HP навсегда снимает смерть на стадии 2+. 1.0 — полсердца.")
+            .defineInRange("deathPenalty",
+                окр(PlagueConstants.PLAYER_DEATH_PENALTY), 0.0, 20.0);
+
+        ПОЛ_ПОСТОЯННЫХ = СТРОИТЕЛЬ
+            .comment("Ниже этого максимума здоровья смерти не опускают. 6.0 — три сердца.")
+            .defineInRange("permanentFloor",
+                окр(PlagueConstants.PLAYER_PERMANENT_FLOOR), 2.0, 20.0);
+
+        ЖЁСТКИЙ_ПОЛ = СТРОИТЕЛЬ
+            .comment("Итоговый максимум здоровья не опускается ниже этого никогда.",
+                "Сторожит сложение постоянных потерь со штрафом стадии.")
+            .defineInRange("hardFloor",
+                окр(PlagueConstants.PLAYER_HARD_FLOOR), 1.0, 20.0);
+
         SPEC = СТРОИТЕЛЬ.pop().build();
     }
 
@@ -245,9 +378,55 @@ public final class PlagueConfig {
         PlagueConstants.ANIMAL_CHECK_TICKS = ПРОВЕРКА_ЖИВОТНЫХ.get();
         PlagueConstants.ANIMAL_INFECT_CHANCE = ШАНС_ЗАРАЖЕНИЯ.get().floatValue();
 
+        boolean поправлено = false;
+
+        PlagueConstants.PLAYER_TICK_INTERVAL = ТИК_ИГРОКА.get();
+        PlagueConstants.PLAYER_UNDERGROUND_MULTIPLIER = ПОД_ЗЕМЛЁЙ.get().floatValue();
+        PlagueConstants.PLAYER_FOOD_MULTIPLIER = ЕДА.get().floatValue();
+        PlagueConstants.PLAYER_STAGE4_DAMAGE_TICKS = УРОН_КАЖДЫЕ.get();
+        PlagueConstants.PLAYER_STAGE4_DAMAGE = УРОН_СТАДИИ_4.get().floatValue();
+        PlagueConstants.PLAYER_COUGH_RADIUS = РАДИУС_КАШЛЯ.get().floatValue();
+        PlagueConstants.PLAYER_COUGH_AMOUNT = ОЧКОВ_ЗА_КАШЕЛЬ.get().floatValue();
+        PlagueConstants.PLAYER_BREW_RESET_TICKS = СБРОС_ОТВАРА.get();
+        PlagueConstants.PLAYER_BREW_MAX_STAGE = ПОТОЛОК_ОТВАРА.get();
+        PlagueConstants.PLAYER_DEATH_PENALTY = ШТРАФ_СМЕРТИ.get().floatValue();
+        PlagueConstants.PLAYER_PERMANENT_FLOOR = ПОЛ_ПОСТОЯННЫХ.get().floatValue();
+        PlagueConstants.PLAYER_HARD_FLOOR = ЖЁСТКИЙ_ПОЛ.get().floatValue();
+
+        // Пороги стадий обязаны идти по возрастанию, иначе стадия схлопнется
+        // и следующая никогда не наступит. Выправляем молча, как с фазами.
+        int[] пороги = new int[4];
+        int минимумПорога = 1;
+        for (int с = 0; с < 4; с++) {
+            int изФайла = ПОРОГ_СТАДИИ[с].get();
+            пороги[с] = Math.max(минимумПорога, изФайла);
+            if (пороги[с] != изФайла) поправлено = true;
+            минимумПорога = пороги[с] + 1;
+        }
+        PlagueConstants.PLAYER_STAGE_THRESHOLDS = пороги;
+
+        float[] экспозиция = new float[5];
+        float[] здоровьеСтадии = new float[5];
+        int[] кашельКаждые = new int[5];
+        float[] шансКашля = new float[5];
+        for (int с = 0; с < 5; с++) {
+            экспозиция[с] = ЭКСПОЗИЦИЯ[с].get().floatValue();
+            здоровьеСтадии[с] = ЗДОРОВЬЕ_СТАДИИ[с].get().floatValue();
+            кашельКаждые[с] = КАШЕЛЬ_КАЖДЫЕ[с].get();
+            шансКашля[с] = ШАНС_КАШЛЯ[с].get().floatValue();
+        }
+        PlagueConstants.PLAYER_EXPOSURE = экспозиция;
+        PlagueConstants.PLAYER_STAGE_HEALTH = здоровьеСтадии;
+        PlagueConstants.PLAYER_COUGH_TICKS = кашельКаждые;
+        PlagueConstants.PLAYER_COUGH_CHANCE = шансКашля;
+
+        float[] силаОтвара = new float[6];
+        for (int г = 0; г < 6; г++) силаОтвара[г] = СИЛА_ОТВАРА[г].get().floatValue();
+        PlagueConstants.PLAYER_BREW_STRENGTH = силаОтвара;
+
         float[] доли = new float[MaterializationMask.НАСТРАИВАЕМЫХ_УРОВНЕЙ];
         for (int i = 0; i < доли.length; i++) доли[i] = ДОЛЯ_УРОВНЯ[i].get().floatValue();
-        boolean поправлено = MaterializationMask.задатьДоли(доли);
+        поправлено |= MaterializationMask.задатьДоли(доли);
 
         for (int ф = 0; ф < PhaseTable.PHASE_COUNT; ф++) {
             int конец = КОНЕЦ_ФАЗЫ[ф] == null ? Integer.MAX_VALUE : КОНЕЦ_ФАЗЫ[ф].get();
