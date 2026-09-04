@@ -1,0 +1,6 @@
+# Конфиг мода Particular. У этого мода тоже есть светлячки — дублируют
+# светлячков SubtleEffects (см. config/subtle_effects/environment.toml).
+# Чтобы не спавнить их дважды, светлячки Particular просто выключены;
+# плотностью светлячков рулит один мод — SubtleEffects.
+[enabledEffects]
+    fireflies = false
