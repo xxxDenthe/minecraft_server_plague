@@ -82,10 +82,14 @@ export async function ensureJava({ major = 21, onProgress = null, fetchImpl = fe
 
   try {
     await fs.access(exe);
+    // `javac` есть только в JDK. У кого от старой версии лаунчера остался
+    // урезанный JRE (без jdk.random — см. заметку про краш при ночи), этой
+    // проверки не пройдёт и рантайм перекачается на полный JDK.
+    await fs.access(path.join(paths.runtime(), 'bin', 'javac.exe'));
     await checkJava(consoleExe, major);
     return exe;
   } catch {
-    // Нет, битая или не та версия — ставим заново.
+    // Нет, битая, не та версия или урезанный JRE — ставим заново.
   }
 
   onProgress?.(progressEvent({ stage: STAGES.JAVA, message: 'ищу Java 21' }));
