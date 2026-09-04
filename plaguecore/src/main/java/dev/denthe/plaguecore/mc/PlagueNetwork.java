@@ -122,6 +122,25 @@ public final class PlagueNetwork {
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
+    /**
+     * Стадия игрока на клиент. Одно число: клиенту незачем знать
+     * точную заражённость, а нам незачем её ему доверять.
+     */
+    public record Stage(int стадия) implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<Stage> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "stage"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Stage> CODEC =
+            StreamCodec.of(
+                (buf, s) -> buf.writeVarInt(s.стадия),
+                buf -> new Stage(buf.readVarInt()));
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
     @SubscribeEvent
     public static void зарегистрировать(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(VERSION);
@@ -129,6 +148,10 @@ public final class PlagueNetwork {
         registrar.playToClient(Snapshot.TYPE, Snapshot.CODEC,
             (payload, ctx) -> ctx.enqueueWork(
                 () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьСнимок(payload)));
+
+        registrar.playToClient(Stage.TYPE, Stage.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(
+                () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьСтадию(payload)));
 
         registrar.playToServer(Action.TYPE, Action.CODEC,
             (payload, ctx) -> ctx.enqueueWork(() -> {
@@ -178,5 +201,10 @@ public final class PlagueNetwork {
             st.night(), st.phase(), st.isPaused(),
             st.isTerrainInitialized(), st.epicenters().size(),
             g.levelsCopy()));
+    }
+
+    /** Сказать игроку его стадию. Шлётся при смене, а не каждый тик. */
+    public static void отправитьСтадию(ServerPlayer игрок, int стадия) {
+        PacketDistributor.sendToPlayer(игрок, new Stage(стадия));
     }
 }
