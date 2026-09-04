@@ -1,5 +1,12 @@
-// Своя JRE 21 (спек, раздел 7). На системную Java не полагаемся:
+// Своя Java 21 (спек, раздел 7). На системную Java не полагаемся:
 // на машине владельца их четыре, и команда `java` отвечает не той.
+//
+// Берём JDK, а не JRE. Минимальный JRE от Adoptium собран jlink'ом без
+// модуля `jdk.random` — а `plaguecore` на ночном тике вызывает
+// `RandomGeneratorFactory.of("Xoshiro256PlusPlus")`, которого без этого
+// модуля нет, и сервер падает при первой ночи (crash 2026-09-04).
+// JDK тяжелее (~200 МБ против ~45), но это единственная сборка Adoptium
+// со всеми стандартными модулями.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -19,7 +26,7 @@ const run = promisify(execFile);
 // проверяется тем же способом, что и всё остальное.
 const ASSETS_URL = (major) =>
   `https://api.adoptium.net/v3/assets/latest/${major}/hotspot` +
-  '?os=windows&architecture=x64&image_type=jre';
+  '?os=windows&architecture=x64&image_type=jdk';
 
 export async function fetchJavaRelease(major = 21, { fetchImpl = fetch } = {}) {
   const response = await fetchImpl(ASSETS_URL(major), { redirect: 'follow' });
@@ -114,7 +121,7 @@ export async function ensureJava({ major = 21, onProgress = null, fetchImpl = fe
   const version = await checkJava(consoleExe, major);
   onProgress?.(progressEvent({ stage: STAGES.JAVA, message: version }));
 
-  // Архив больше не нужен: 47 МБ на диске игрока за просто так.
+  // Архив больше не нужен: ~200 МБ на диске игрока за просто так.
   await fs.rm(archive, { force: true });
 
   return exe;
