@@ -32,7 +32,8 @@ import java.io.IOException;
  *     полноэкранный проход на AFTER_LEVEL.
  *  2. Туман — цвет в серый (ComputeFogColor), под землёй ещё и жёстко
  *     стянут ближе (RenderFog, только с cancel).
- *  3. Споровая взвесь — редкие частицы пепла вокруг игрока (ClientTick).
+ *  3. Споровая взвесь — редкие частицы пепла вокруг игрока (ClientTick),
+ *     и отдельно от неё — грибные споры вспышками у самой земли.
  *
  * ponytail: проход на AFTER_LEVEL без миксина. Цена — рука от первого
  * лица и HUD в грейд не попадают (рисуются позже). HUD и так должен
@@ -215,8 +216,6 @@ public final class ShadeClient {
     @SubscribeEvent
     static void onClientTick(ClientTickEvent.Post e) {
         if (!ShadeConfig.ENABLED.get()) return;
-        int rate = ShadeConfig.SPORE_RATE.get();
-        if (rate <= 0) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null || mc.isPaused()) return;
@@ -227,6 +226,10 @@ public final class ShadeClient {
         double py = mc.player.getEyeY();
         double pz = mc.player.getZ();
 
+        // Два независимых эффекта: если пепел выключен (sporeRate = 0),
+        // споры у земли всё равно должны работать сами по себе — раньше
+        // ранний return пепла глушил и их тоже.
+        int rate = ShadeConfig.SPORE_RATE.get();
         for (int i = 0; i < rate; i++) {
             double x = px + (rnd.nextDouble() - 0.5) * 30.0;
             double y = py + (rnd.nextDouble() - 0.5) * 16.0;
@@ -234,6 +237,30 @@ public final class ShadeClient {
             BlockPos pos = BlockPos.containing(x, y, z);
             if (!level.isLoaded(pos) || !level.getBlockState(pos).isAir()) continue;
             level.addParticle(ParticleTypes.WHITE_ASH, x, y, z, 0.0, 0.0, 0.0);
+        }
+
+        spawnGroundSpores(level, rnd, px, mc.player.getY(), pz);
+    }
+
+    /**
+     * Грибные споры у земли — второй, отдельный от пепла эффект: узкий пояс
+     * у ног игрока, не облако вокруг головы. Реже пепла и вспышками, а не
+     * ровным потоком (groundSporeChance), чтобы не слиться с ним в одну
+     * взвесь. Ванильная частица MYCELIUM — уже блёкло-серо-бурая, свою
+     * текстуру красить не пришлось.
+     */
+    private static void spawnGroundSpores(ClientLevel level, RandomSource rnd, double px, double py, double pz) {
+        int rate = ShadeConfig.GROUND_SPORE_RATE.get();
+        if (rate <= 0) return;
+        if (rnd.nextFloat() >= ShadeConfig.GROUND_SPORE_CHANCE.get().floatValue()) return;
+
+        for (int i = 0; i < rate; i++) {
+            double x = px + (rnd.nextDouble() - 0.5) * 20.0;
+            double y = py + rnd.nextDouble() * 2.0;
+            double z = pz + (rnd.nextDouble() - 0.5) * 20.0;
+            BlockPos pos = BlockPos.containing(x, y, z);
+            if (!level.isLoaded(pos) || !level.getBlockState(pos).isAir()) continue;
+            level.addParticle(ParticleTypes.MYCELIUM, x, y, z, 0.0, 0.0, 0.0);
         }
     }
 }

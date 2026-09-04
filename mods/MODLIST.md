@@ -8,7 +8,7 @@ Minecraft 1.21.1 · NeoForge · Create 6.0.10
 
 Всего модов: 99 сторонних + наш `plaguecore`
 
-Дата фиксации: 2026-09-03, пак обновлён 2026-09-04 (CustomSkinLoader; lmpc_shade 0.7.5)
+Дата фиксации: 2026-09-03, пак обновлён 2026-09-04 (CustomSkinLoader; lmpc_shade 0.8.0)
 
 ```
 AdvancementPlaques-1.21.1-neoforge-1.6.8.jar
@@ -116,7 +116,7 @@ zombieawareness-neoforge-1.21.0-1.13.2.jar
 ```
 plaguecore-0.1.0.jar
 lmpc_gmtools-0.16.0.jar
-lmpc_shade-0.7.5.jar
+lmpc_shade-0.8.0.jar
 ```
 
 Не качаются со стороны, собираются из исходников:

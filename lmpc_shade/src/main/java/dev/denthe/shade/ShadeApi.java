@@ -60,6 +60,8 @@ public final class ShadeApi {
         e("overcast",          "Небо", "Пасмурное небо",     BOOL,   0,   0,   false, ShadeConfig.SKY_OVERCAST);
         e("cloudHeight",       "Небо", "Высота облаков",     INT,    40,  320, false, ShadeConfig.CLOUD_HEIGHT);
         e("sporeRate",         "Небо", "Споровая взвесь",    INT,    0,   20,  true,  ShadeConfig.SPORE_RATE);
+        e("groundSporeRate",   "Небо", "Спор у земли",       INT,    0,   10,  true,  ShadeConfig.GROUND_SPORE_RATE);
+        e("groundSporeChance", "Небо", "Частота вспышек",    DOUBLE, 0,   1,   true,  ShadeConfig.GROUND_SPORE_CHANCE);
     }
 
     public static String[] ids()            { return M.keySet().toArray(new String[0]); }

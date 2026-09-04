@@ -42,6 +42,8 @@ public final class ShadeConfig {
     public static final ModConfigSpec.DoubleValue CAVE_FOG_TOP_Y;
 
     public static final ModConfigSpec.IntValue SPORE_RATE;
+    public static final ModConfigSpec.IntValue GROUND_SPORE_RATE;
+    public static final ModConfigSpec.DoubleValue GROUND_SPORE_CHANCE;
 
     public static final ModConfigSpec.BooleanValue SKY_OVERCAST;
     public static final ModConfigSpec.IntValue CLOUD_HEIGHT;
@@ -114,6 +116,14 @@ public final class ShadeConfig {
         b.push("spores");
         SPORE_RATE = b.comment("Споровая взвесь: частиц пепла в воздухе за тик вокруг игрока. 0 — выключено, 2 — редко.")
             .defineInRange("sporeRate", 2, 0, 20);
+        GROUND_SPORE_RATE = b.comment(
+                "Грибные споры у земли — второй, отдельный от пепла эффект: частицы за одну",
+                "вспышку (см. groundSporeChance), в узком поясе у ног игрока. 0 — выключено.")
+            .defineInRange("groundSporeRate", 1, 0, 10);
+        GROUND_SPORE_CHANCE = b.comment(
+                "Как часто вообще бывает вспышка спор у земли: доля тиков. 0 — никогда,",
+                "1 — каждый тик (часто). По умолчанию редко — не должно мельтешить.")
+            .defineInRange("groundSporeChance", 0.05, 0.0, 1.0);
         b.pop();
 
         b.push("sky");
