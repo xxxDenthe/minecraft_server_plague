@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -43,6 +44,20 @@ public class ClericsBrewItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level мир, Player игрок, InteractionHand рука) {
         return ItemUtils.startUsingInstantly(мир, игрок, рука);
+    }
+
+    /**
+     * ПКМ по игроку — это «напоить», не «выпить самому». Без этого
+     * ваниль считает клик по сущности промахом и тут же откатывается
+     * на обычное использование предмета в руке: Клирик, целящийся
+     * в союзника, выпивал бутылку сам. {@link BrewTargeting}
+     * (клиент) и {@link ClassNetwork} (сервер) — единственный путь
+     * напоить кого-то этим предметом.
+     */
+    @Override
+    public InteractionResult interactLivingEntity(
+            ItemStack стопка, Player игрок, LivingEntity цель, InteractionHand рука) {
+        return цель instanceof Player ? InteractionResult.CONSUME : InteractionResult.PASS;
     }
 
     @Override
