@@ -6,9 +6,9 @@ Minecraft 1.21.1 · NeoForge · Create 6.0.10
 фиксация точных версий: по нему собирается идентичный набор у всех
 игроков и на сервере.
 
-Всего модов: 98 сторонних + наш `plaguecore`
+Всего модов: 99 сторонних + наш `plaguecore`
 
-Дата фиксации: 2026-09-03, пак обновлён 2026-09-03
+Дата фиксации: 2026-09-03, пак обновлён 2026-09-04 (добавлен CustomSkinLoader)
 
 ```
 AdvancementPlaques-1.21.1-neoforge-1.6.8.jar
@@ -37,6 +37,7 @@ createdeco-2.1.3.jar
 CreativeCore_NEOFORGE_v2.13.44_mc1.21.1.jar
 cristellib-neoforge-1.21.1-3.1.7.jar
 curios-neoforge-9.5.1+1.21.1.jar
+CustomSkinLoader_Universal-15.0.1.jar
 dungeons-and-taverns-v4.4.4.jar
 entity_model_features-3.3.3-1.21-neoforge.jar
 entity_texture_features-7.2.1-1.21-neoforge.jar

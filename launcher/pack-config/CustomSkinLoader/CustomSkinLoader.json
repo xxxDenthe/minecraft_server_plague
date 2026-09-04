@@ -1,0 +1,13 @@
+{
+  "version": "15.0.1",
+  "buildNumber": 99999,
+  "loadlist": [
+    { "name": "ElyBy", "type": "ElyByAPI", "root": "http://skinsystem.ely.by/textures/" },
+    { "name": "Mojang", "type": "MojangAPI" }
+  ],
+  "enableTransparentSkin": true,
+  "enableCape": true,
+  "cacheExpiry": 30,
+  "enableLocalProfileCache": true,
+  "enableCacheAutoClean": true
+}

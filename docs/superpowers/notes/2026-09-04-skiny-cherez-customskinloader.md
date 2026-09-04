@@ -2,7 +2,7 @@
 
 **Дата:** 2026-09-04
 **Относится к:** подсистема 6 (лаунчер) и модпак
-**Статус:** предложение на согласование с владельцем (правка пака — его половина)
+**Статус:** мод и конфиг добавлены (2026-09-04), осталось перезалить пак
 **Связано:** `2026-09-03-launcher-design.md` раздел 11 («Скины в
 offline-режиме не подгружаются автоматически… решается модом на скины»)
 
@@ -41,17 +41,33 @@ Microsoft — не нужны.
 слоя. Сам скин он не достаёт, `CustomSkinLoader` его не заменяет,
 конфликта между ними нет.
 
-## Что нужно сделать (территория владельца — пак)
+## Что уже сделано
 
-1. Добавить в пак `CustomSkinLoader` — **проверить актуальную сборку
-   под NeoForge 1.21.1** (у мода есть отдельные сборки Forge / Fabric /
-   NeoForge, версия важна).
-2. Положить в пак конфиг `CustomSkinLoader/CustomSkinLoader.json`:
-   порядок загрузчиков — `ely.by`, затем `mojang`; кэш включён.
-   Конфиг раздаётся тем же `publish-pack.js`, что и остальные конфиги
-   (нужно добавить `CustomSkinLoader` в `managedDirs` пака — сейчас там
-   только `mods`).
-3. Занести мод в `mods/MODLIST.md`.
+1. **Мод в паке:** `CustomSkinLoader_Universal-15.0.1.jar` лежит в
+   `mods/`, занесён в `mods/MODLIST.md` (99 сторонних модов). Сборка
+   `Universal` работает и на NeoForge 1.21.1. В версии 15.0.1 загрузчик
+   `ElyByAPI` встроен и есть в списке источников по умолчанию.
+2. **Конфиг:** `launcher/pack-config/CustomSkinLoader/CustomSkinLoader.json`
+   (версионируется). Порядок источников: `ElyBy`
+   (`http://skinsystem.ely.by/textures/`), затем `Mojang`.
+   `buildNumber` завышен намеренно — иначе мод считает конфиг устаревшим
+   и переписывает его при каждом запуске.
+
+## Что осталось (перезалить пак — нужен токен на запись, он у друга)
+
+```
+cp -r launcher/pack-config/* pack-build/
+node launcher/tools/publish-pack.js --repo xxxDenthe/minecraft_server_plague \
+     --tag pack --token <ghp_...> --managed mods,CustomSkinLoader
+```
+
+`--managed mods,CustomSkinLoader` — чтобы папка `CustomSkinLoader` попала
+в манифест (сейчас раздаётся только `mods`). Скрипт сам поднимет
+`packVersion` до 2; лаунчер у игроков дольёт `CustomSkinLoader.json` и
+сам джарник при следующем запуске. Пак-билд (`pack-build/mods/`) тоже
+надо обновить копией `mods/` — джарник CustomSkinLoader новый.
+
+Подробности про `pack-config/` — в `launcher/pack-config/README.md`.
 
 ## Что делает каждый игрок
 
