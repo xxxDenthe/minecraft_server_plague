@@ -13,7 +13,7 @@ const MC_VERSION = '1.21.1'; // целевая версия проекта, фи
 // Ссылки рядом со скином. Видеогайд владелец добавит позже — пока его
 // нет, кнопка выключена (без ложной активности, как остальные заготовки).
 const ELY_REGISTER_URL = 'https://account.ely.by/register';
-const SKIN_GUIDE_URL = null;
+const SKIN_GUIDE_URL = 'https://youtu.be/LfZQScLoYj8';
 
 export function createHome(store, actions) {
   const nickInput = el('input', {
