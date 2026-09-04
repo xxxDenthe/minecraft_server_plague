@@ -23,11 +23,14 @@ versionRange = "[${minecraft_version}]"
 ordering = "NONE"
 side = "BOTH"
 
-# Кулон Клирика — Curios-предмет. Необязательная зависимость: без Curios
-# мод грузится как обычно, просто кулона не будет (пак его ставит всегда).
+# Кулон Клирика — Curios-предмет: класс жёстко implements ICurioItem,
+# без Curios на classpath JVM не может загрузить сам класс предмета,
+# а с ним падает вся регистрация мода. Обязательная зависимость,
+# честно — не "optional с тихим отказом", каким задумывался мост
+# к plaguecore. Пак ставит Curios всегда.
 [[dependencies.${mod_id}]]
 modId = "curios"
-type = "optional"
+type = "required"
 versionRange = "[9.0.0,)"
 ordering = "AFTER"
 side = "BOTH"

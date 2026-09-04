@@ -1,5 +1,8 @@
 {
   "block.lmpc_classes.class_altar": "Altar of Calling",
   "item.lmpc_classes.clerics_pendant": "Cleric's Pendant",
-  "item.lmpc_classes.clerics_brew": "Cleric's Brew"
+  "item.lmpc_classes.clerics_brew": "Cleric's Brew",
+  "item.lmpc_classes.plague_bloom": "Plague Bloom",
+  "item.lmpc_classes.cleansing_agent": "Cleansing Agent",
+  "itemGroup.lmpc_classes": "Classes"
 }

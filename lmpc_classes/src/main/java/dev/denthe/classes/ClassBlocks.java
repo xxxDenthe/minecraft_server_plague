@@ -1,20 +1,15 @@
 package dev.denthe.classes;
 
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-/** Алтарь призвания — единственный блок мода. */
-@EventBusSubscriber(modid = LmpcClasses.MODID)
+/** Алтарь призвания — единственный блок мода. В творческую вкладку — {@link ClassCreativeTab}. */
 public final class ClassBlocks {
     private ClassBlocks() {}
 
@@ -36,12 +31,5 @@ public final class ClassBlocks {
     public static void register(IEventBus modEventBus) {
         БЛОКИ.register(modEventBus);
         ПРЕДМЕТЫ.register(modEventBus);
-    }
-
-    @SubscribeEvent
-    public static void вКреатив(BuildCreativeModeTabContentsEvent событие) {
-        if (событие.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
-            событие.accept(CLASS_ALTAR_ITEM);
-        }
     }
 }

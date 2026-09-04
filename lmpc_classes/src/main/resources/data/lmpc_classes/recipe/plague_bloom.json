@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "plaguecore:blighted_grass" },
+    { "item": "plaguecore:blighted_grass" },
+    { "item": "plaguecore:blighted_grass" },
+    { "item": "plaguecore:spore_sac" }
+  ],
+  "result": {
+    "id": "lmpc_classes:plague_bloom",
+    "count": 1
+  }
+}

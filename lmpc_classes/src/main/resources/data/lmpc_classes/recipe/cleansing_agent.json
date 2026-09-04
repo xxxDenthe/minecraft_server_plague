@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "lmpc_classes:plague_bloom" },
+    { "item": "lmpc_classes:plague_bloom" },
+    { "item": "minecraft:glass_bottle" }
+  ],
+  "result": {
+    "id": "lmpc_classes:cleansing_agent",
+    "count": 1
+  }
+}

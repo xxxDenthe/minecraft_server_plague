@@ -21,6 +21,7 @@ public class LmpcClasses {
         PlayerClassData.register(modEventBus);
         ClassBlocks.register(modEventBus);
         ClassItems.register(modEventBus);
+        ClassCreativeTab.register(modEventBus);
         ClassesConfig.зарегистрировать(modEventBus, container);
 
         if (PlagueBridge.доступен()) LOG.info("plaguecore найден, мост чумы подключён");

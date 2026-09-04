@@ -1,5 +1,8 @@
 {
   "block.lmpc_classes.class_altar": "Алтарь призвания",
   "item.lmpc_classes.clerics_pendant": "Кулон Клирика",
-  "item.lmpc_classes.clerics_brew": "Отвар Клирика"
+  "item.lmpc_classes.clerics_brew": "Отвар Клирика",
+  "item.lmpc_classes.plague_bloom": "Бутон чумы",
+  "item.lmpc_classes.cleansing_agent": "Очищающий реагент",
+  "itemGroup.lmpc_classes": "Классы"
 }
