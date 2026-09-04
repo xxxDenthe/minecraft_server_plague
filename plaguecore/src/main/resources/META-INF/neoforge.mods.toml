@@ -22,10 +22,7 @@ versionRange = "[${minecraft_version}]"
 ordering = "NONE"
 side = "BOTH"
 
-# Голос больного. Необязательно: без голосового чата мод грузится как обычно.
-[[dependencies.${mod_id}]]
-modId = "voicechat"
-type = "optional"
-versionRange = "[2.6,)"
-ordering = "NONE"
-side = "BOTH"
+# Зависимости от voicechat здесь нет намеренно. Плагин голоса находится
+# по аннотации @ForgeVoicechatPlugin и без мода просто не грузится,
+# а сам voicechat зовёт свою версию "1.21.1-2.6.22" — такую строку
+# проверка диапазонов читает как версию 1.21.1 и валит запуск игры.
