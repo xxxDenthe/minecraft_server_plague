@@ -1,8 +1,6 @@
-# Иконка приложения из логотипа LMPC.
-#
-# Логотип широкий («LMPC» в строку), иконка квадратная — вписываем по
-# ширине и центрируем по высоте на прозрачном фоне. Логотип не
-# перерисовываем (ассет владельца), только масштабируем.
+# Иконка приложения из ассета владельца (`lmpc-icon-src.png` — пиксельная
+# буква «L»). Вписываем целиком в квадрат по большей стороне, центрируем
+# на прозрачном фоне. Ассет не перерисовываем, только масштабируем.
 #
 # На выходе (оба в src/renderer/assets/ — папка build/ у нас в .gitignore):
 #   lmpc-icon.ico   — для electron-builder (exe + установщик), 7 размеров
@@ -11,7 +9,7 @@
 # Запуск:  powershell -File tools/make-icon.ps1
 
 param(
-  [string]$Src    = "$PSScriptRoot\..\src\renderer\assets\lmpc-logo.png",
+  [string]$Src    = "$PSScriptRoot\..\src\renderer\assets\lmpc-icon-src.png",
   [string]$IcoOut = "$PSScriptRoot\..\src\renderer\assets\lmpc-icon.ico",
   [string]$PngOut = "$PSScriptRoot\..\src\renderer\assets\lmpc-icon.png"
 )
@@ -29,7 +27,8 @@ function Render([int]$S) {
   $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
   $g.PixelOffsetMode  = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
   $g.Clear([System.Drawing.Color]::Transparent)
-  $scale = ($S * 0.96) / $logo.Width
+  # вписываем целиком по большей стороне, с полями
+  $scale = ($S * 0.9) / [math]::Max($logo.Width, $logo.Height)
   $w = [int][math]::Round($logo.Width  * $scale)
   $h = [int][math]::Round($logo.Height * $scale)
   $g.DrawImage($logo, [int](($S - $w) / 2), [int](($S - $h) / 2), $w, $h)
