@@ -234,11 +234,12 @@ body:not(.ready) .shell { opacity: 0; }
   max-width: 380px;
   margin-right: auto;
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 8px;
 }
 
-.skin-links { display: flex; flex-direction: column; gap: 8px; flex: none; }
+/* Иконки прижаты к низу панели скина, столбиком, с заметным зазором. */
+.skin-links { display: flex; flex-direction: column; gap: 18px; flex: none; padding-bottom: 6px; }
 .skin-link {
   display: inline-flex;
   align-items: center;
