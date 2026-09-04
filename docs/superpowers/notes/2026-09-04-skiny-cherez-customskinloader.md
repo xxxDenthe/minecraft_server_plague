@@ -2,7 +2,7 @@
 
 **Дата:** 2026-09-04
 **Относится к:** подсистема 6 (лаунчер) и модпак
-**Статус:** мод и конфиг добавлены (2026-09-04), осталось перезалить пак
+**Статус:** готово (2026-09-04) — пак перезалит, `packVersion: 2`
 **Связано:** `2026-09-03-launcher-design.md` раздел 11 («Скины в
 offline-режиме не подгружаются автоматически… решается модом на скины»)
 
@@ -53,19 +53,24 @@ Microsoft — не нужны.
    `buildNumber` завышен намеренно — иначе мод считает конфиг устаревшим
    и переписывает его при каждом запуске.
 
-## Что осталось (перезалить пак — нужен токен на запись, он у друга)
+## Пак перезалит (2026-09-04)
+
+`packVersion: 2`, `managedDirs: [mods, CustomSkinLoader]`, 102 файла
+(101 мод + `CustomSkinLoader/CustomSkinLoader.json`). Залито владельцем
+через классический токен разово:
 
 ```
-cp -r launcher/pack-config/* pack-build/
 node launcher/tools/publish-pack.js --repo xxxDenthe/minecraft_server_plague \
      --tag pack --token <ghp_...> --managed mods,CustomSkinLoader
 ```
 
-`--managed mods,CustomSkinLoader` — чтобы папка `CustomSkinLoader` попала
-в манифест (сейчас раздаётся только `mods`). Скрипт сам поднимет
-`packVersion` до 2; лаунчер у игроков дольёт `CustomSkinLoader.json` и
-сам джарник при следующем запуске. Пак-билд (`pack-build/mods/`) тоже
-надо обновить копией `mods/` — джарник CustomSkinLoader новый.
+Игроки получат мод и конфиг сами при следующем запуске лаунчера.
+
+**Важно для будущих заливок:** `publish-pack.js` каждый раз собирает
+манифест заново из папок в `--managed`. Кто будет добавлять в пак
+конфиги (`config`, `kubejs`, …) — обязан держать `CustomSkinLoader`
+в списке: `--managed mods,CustomSkinLoader,config,...`. Иначе
+`CustomSkinLoader.json` выпадет из манифеста и у игроков сотрётся.
 
 Подробности про `pack-config/` — в `launcher/pack-config/README.md`.
 
