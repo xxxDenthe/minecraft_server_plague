@@ -56,8 +56,8 @@ Iceberg-1.21.1-neoforge-1.3.2.jar
 ImmersiveUI-NEOFORGE-0.3.3+1.21.1.jar
 InvMove-0.9.3+1.21.1-NeoForge.jar
 InvMoveCompats-0.5.0+1.21.8-NeoForge.jar
-Jade-1.21.1-NeoForge-15.10.6.jar
-JadeAddons-1.21.1-NeoForge-6.1.1.jar
+Jade-1.21.1-NeoForge-15.10.3.jar
+JadeAddons-1.21.1-NeoForge-6.1.0.jar
 jei-1.21.1-neoforge-19.51.0.418.jar
 kotlinforforge-5.12.0-all.jar
 krypton_fnp-neoforge-1.21.1-0.2.28.1-1.21.1.jar
