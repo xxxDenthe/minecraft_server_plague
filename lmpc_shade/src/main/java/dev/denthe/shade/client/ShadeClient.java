@@ -151,6 +151,11 @@ public final class ShadeClient {
         chain.setUniform("SkyG", skyColor[1]);
         chain.setUniform("SkyB", skyColor[2]);
         chain.setUniform("Overcast", overcastNow ? 1f : 0f);
+        // для линеаризации глубины в шейдере: near фиксированный у MC,
+        // far = дальность прорисовки × 4 (GameRenderer.getDepthFar)
+        float renderDist = mc.gameRenderer.getRenderDistance();
+        chain.setUniform("NearZ", 0.05f);
+        chain.setUniform("FarZ", Math.max(renderDist * 4f, 16f));
 
         float hf = healthFactor(mc);
         chain.setUniform("HealthFactor", hf);

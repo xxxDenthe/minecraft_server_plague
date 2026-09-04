@@ -17,6 +17,8 @@
         { "name": "SkyG", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "SkyB", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "Overcast", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "NearZ", "type": "float", "count": 1, "values": [ 0.05 ] },
+        { "name": "FarZ", "type": "float", "count": 1, "values": [ 1024.0 ] },
         { "name": "OutSize", "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
         { "name": "Time", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "Saturation", "type": "float", "count": 1, "values": [ 0.45 ] },
