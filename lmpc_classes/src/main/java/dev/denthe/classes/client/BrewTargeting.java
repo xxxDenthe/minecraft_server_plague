@@ -1,18 +1,15 @@
 package dev.denthe.classes.client;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.denthe.classes.ClassItems;
 import dev.denthe.classes.ClassNetwork;
 import dev.denthe.classes.ClassesConfig;
 import dev.denthe.classes.LmpcClasses;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -20,10 +17,11 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderHighlightEvent;
 import net.neoforged.neoforge.client.event.RenderNameTagEvent;
 import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.lang.reflect.Method;
 
 /**
  * Наведение Клирика на союзника с отваром в руке. Спек, раздел 4.
@@ -35,6 +33,16 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * сгорает. Полностью клиентское: сервер видит только готовый
  * {@link ClassNetwork.FeedRequest} и сам всё проверяет заново, этот
  * класс отвечает только за глаз и за то, когда его послать.
+ *
+ * Обводка — тот же визуальный эффект, что у зелья свечения (силуэт
+ * сквозь стены), но не через сеть: {@code Entity.setGlowingTag}
+ * рассчитан на серверный синк всем игрокам, здесь вместо него —
+ * рефлексия прямо на общий флаг сущности, только в локальной копии
+ * этого клиента. Видно исключительно Клирику, который целится;
+ * другие игроки и сервер об этом не знают. По просьбе владельца:
+ * честная, не просвечивающая обводка по модельке потребовала бы
+ * миксина в рендер сущности — решили не заводить, дистанция и так
+ * 1.5 блока.
  */
 @EventBusSubscriber(value = Dist.CLIENT, modid = LmpcClasses.MODID)
 public final class BrewTargeting {
@@ -58,6 +66,7 @@ public final class BrewTargeting {
         if (новаяЦель != цель) {
             сброситьЦель();
             цель = новаяЦель;
+            if (цель != null) обвести(цель, true);
         }
         if (цель == null) return;
 
@@ -111,6 +120,7 @@ public final class BrewTargeting {
     }
 
     private static void сброситьЦель() {
+        if (цель != null) обвести(цель, false);
         цель = null;
         прогресс = 0;
         позицияПриСтарте = null;
@@ -136,24 +146,26 @@ public final class BrewTargeting {
         событие.setContent(Component.literal(бар.toString()).withStyle(ChatFormatting.GREEN));
     }
 
-    /**
-     * Обводка модельки цели. Никакого просвечивания сквозь стены —
-     * рисуем обычной, проверяемой на глубину линией, тем же приёмом,
-     * что ваниль рисует рамку на блоке под прицелом ({@code
-     * LevelRenderer.renderHitOutline}): событие уже само срабатывает
-     * только когда цель реально видна (это тот же {@code hitResult},
-     * на котором стоит крестик), поэтому дополнительных проверок
-     * видимости не нужно — только пересчитать бокс в координаты
-     * относительно камеры, как делает вся отрисовка уровня.
-     */
-    @SubscribeEvent
-    public static void обводка(RenderHighlightEvent.Entity событие) {
-        if (событие.getTarget().getEntity() != цель) return;
+    // ── обводка ───────────────────────────────────────────────────────
 
-        Vec3 камера = событие.getCamera().getPosition();
-        AABB бокс = цель.getBoundingBox().inflate(0.05).move(-камера.x, -камера.y, -камера.z);
+    private static Method методОбщегоФлага;
+    private static boolean методИскался;
 
-        VertexConsumer линии = событие.getMultiBufferSource().getBuffer(RenderType.lines());
-        LevelRenderer.renderLineBox(событие.getPoseStack(), линии, бокс, 1.0f, 0.85f, 0.35f, 1.0f);
+    private static void обвести(Entity сущность, boolean включить) {
+        if (!методИскался) {
+            методИскался = true;
+            try {
+                методОбщегоФлага = Entity.class.getDeclaredMethod("setSharedFlag", int.class, boolean.class);
+                методОбщегоФлага.setAccessible(true);
+            } catch (ReflectiveOperationException e) {
+                методОбщегоФлага = null;
+            }
+        }
+        if (методОбщегоФлага == null) return;
+        try {
+            методОбщегоФлага.invoke(сущность, 6, включить);
+        } catch (ReflectiveOperationException e) {
+            // молчим — без обводки взаимодействие всё равно работает
+        }
     }
 }
