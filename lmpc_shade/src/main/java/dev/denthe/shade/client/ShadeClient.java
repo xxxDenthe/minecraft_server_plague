@@ -1,6 +1,7 @@
 package dev.denthe.shade.client;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.systems.RenderSystem;
 import dev.denthe.shade.LmpcShade;
 import dev.denthe.shade.ShadeConfig;
 import net.minecraft.client.Camera;
@@ -57,10 +58,20 @@ public final class ShadeClient {
     private static float pulsePhase;   // фаза сердцебиения, накапливаем сами (переменный темп)
     private static boolean fogHookLogged;
 
+    // Цвет тумана этого кадра, снятый на AFTER_SKY (тогда getShaderFogColor
+    // ещё держит небесный цвет — до FOG_TERRAIN). Им шейдер заливает дырку
+    // от SkyType.NONE, чтобы Fancy выглядел как Fabulous.
+    private static final float[] skyColor = { 0f, 0f, 0f };
+    private static boolean overcastNow;
+
     // --- цветокоррекция кадра -----------------------------------------
 
     @SubscribeEvent
     static void onRenderStage(RenderLevelStageEvent e) {
+        if (e.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {
+            captureSky();
+            return;
+        }
         if (e.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
         if (broken || !ShadeConfig.ENABLED.get()) return;
 
@@ -74,6 +85,25 @@ public final class ShadeClient {
         pushUniforms(mc, partialTick);
         chain.process(partialTick);
         main.bindWrite(false);
+    }
+
+    /**
+     * На AFTER_SKY снимаем цвет тумана кадра. Позже (AFTER_LEVEL) уходит
+     * в юниформы SkyR/G/B, шейдер закрывает им дырку от SkyType.NONE.
+     * getShaderFogColor() возвращает внутренний массив — копируем сразу.
+     */
+    private static void captureSky() {
+        Minecraft mc = Minecraft.getInstance();
+        overcastNow = ShadeConfig.ENABLED.get()
+            && ShadeConfig.SKY_OVERCAST.get()
+            && mc.level != null
+            && mc.level.dimensionType().hasSkyLight();
+        if (!overcastNow) return;
+
+        float[] fog = RenderSystem.getShaderFogColor();
+        skyColor[0] = fog[0];
+        skyColor[1] = fog[1];
+        skyColor[2] = fog[2];
     }
 
     private static boolean ensureChain(Minecraft mc, RenderTarget main) {
@@ -116,6 +146,11 @@ public final class ShadeClient {
         chain.setUniform("Posterize", ShadeConfig.POSTERIZE.get().floatValue());
         chain.setUniform("NightFactor", nightFactor(mc, partialTick));
         chain.setUniform("NightDarkness", ShadeConfig.NIGHT_DARKNESS.get().floatValue());
+
+        chain.setUniform("SkyR", skyColor[0]);
+        chain.setUniform("SkyG", skyColor[1]);
+        chain.setUniform("SkyB", skyColor[2]);
+        chain.setUniform("Overcast", overcastNow ? 1f : 0f);
 
         float hf = healthFactor(mc);
         chain.setUniform("HealthFactor", hf);

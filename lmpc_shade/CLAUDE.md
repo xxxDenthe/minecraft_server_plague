@@ -140,6 +140,20 @@ MC/NeoForge из общего кэша на `D:`; своя папка `build/` �
 
 `0.МИНОР.0` — фичи, `0.МИНОР.ПАТЧ` — исправления (как `lmpc_gmtools`).
 
+- **0.7.1** — фикс: пасмурное небо (`SkyType.NONE`) рисовалось чёрным
+  в графике Fancy (`graphicsMode:1`) — дырку от убранного купола никто
+  не заливал. Теперь пост-шейдер `plague.fsh` берёт из `plague.json`
+  aux-таргет `minecraft:main:depth` и на пикселях с глубиной 1.0
+  (ничего не нарисовано) заливает цветом тумана. Цвет снимается
+  `ShadeClient.captureSky()` на `RenderLevelStageEvent.AFTER_SKY` через
+  `RenderSystem.getShaderFogColor()` (там он ещё держит небесный цвет,
+  до `FOG_TERRAIN`) и уходит юниформами `SkyR/G/B`, `Overcast`.
+  Результат идентичен тому, что показывает Fabulous в любом режиме
+  графики. Причина всплыла на сборке из нашего лаунчера — у владельца
+  в Modrinth стоял Fabulous. Заметка
+  `docs/superpowers/notes/2026-09-04-krash-nochyu-jdk-random.md`.
+  **Не проверено вживую глазами** (GUI-автоматизация лаунчера не
+  сработала) — сверено с исходниками MC 1.21.1.
 - **0.7.0** — серверная синхронизация. `side = BOTH`, `ShadeServerState`
   (`SavedData`), `/lmpcshade set|reset` (право 2), пакет `ShadeNet.Sync`,
   `ShadeSync` на клиенте (серверные значения поверх локальных, откат при

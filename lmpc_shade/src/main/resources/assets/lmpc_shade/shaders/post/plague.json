@@ -4,7 +4,10 @@
         {
             "name": "lmpc_shade:plague",
             "intarget": "minecraft:main",
-            "outtarget": "swap"
+            "outtarget": "swap",
+            "auxtargets": [
+                { "name": "DepthSampler", "id": "minecraft:main:depth" }
+            ]
         },
         {
             "name": "blit",

@@ -1,6 +1,12 @@
 #version 150
 
 uniform sampler2D DiffuseSampler;
+uniform sampler2D DepthSampler;   // глубина сцены: 1.0 = ничего не нарисовано (небо)
+
+uniform float SkyR;          // цвет тумана этого кадра, покомпонентно —
+uniform float SkyG;          // тот же, что показывает Fabulous в дырке неба
+uniform float SkyB;
+uniform float Overcast;      // 1 — заливать дырку от SkyType.NONE, 0 — не трогать
 
 uniform float Time;          // 0..1, оборот за 20 тиков (ставит PostPass сам) — зерно
 
@@ -29,6 +35,16 @@ float hash12(vec2 p) {
 void main() {
     vec4 c = texture(DiffuseSampler, texCoord);
     vec3 rgb = c.rgb;
+    float alpha = c.a;
+
+    // Пасмурное небо (overcast) убирает купол через SkyType.NONE. В графике
+    // Fabulous дырку закрывает цвет тумана, в Fancy — ничем (чёрное). Здесь
+    // заливаем её тем же цветом тумана и дальше грейдим как весь кадр —
+    // получается то же, что в Fabulous, в любом режиме графики.
+    if (Overcast > 0.5 && texture(DepthSampler, texCoord).r >= 1.0) {
+        rgb = vec3(SkyR, SkyG, SkyB);
+        alpha = 1.0;
+    }
 
     float luma = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
 
@@ -88,5 +104,5 @@ void main() {
         rgb = floor(rgb * Posterize + 0.5) / Posterize;
     }
 
-    fragColor = vec4(clamp(rgb, 0.0, 1.0), c.a);
+    fragColor = vec4(clamp(rgb, 0.0, 1.0), alpha);
 }

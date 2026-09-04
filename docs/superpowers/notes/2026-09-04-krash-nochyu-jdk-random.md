@@ -59,8 +59,10 @@ number generator algorithm "Xoshiro256PlusPlus" is available
 стоял Fabulous, в инстансе нашего лаунчера — Fancy по умолчанию.
 Подтверждено: смена `graphicsMode` на 2 небо чинит.
 
-Фикс — на решение владельца (`lmpc_shade` — его половина):
-- мод сам заливает небо цветом тумана в Fancy (фуллскрин-квад на
-  `RenderLevelStageEvent.AFTER_SKY`), либо
-- лаунчер кладёт дефолтный `options.txt` с `graphicsMode:2` при первом
-  запуске (Fabulous имеет свои минусы — навязывать восьмерым спорно).
+**Исправлено в `lmpc_shade` 0.7.1.** Пост-шейдер `plague.fsh` берёт
+aux-таргет `minecraft:main:depth` и на пикселях с глубиной 1.0 (ничего
+не нарисовано — дырка от `SkyType.NONE`) заливает цветом тумана,
+снятым на `RenderLevelStageEvent.AFTER_SKY` (`getShaderFogColor()`).
+Выглядит как Fabulous в любом режиме графики. Не проверено глазами
+(GUI-автоматизация лаунчера не сработала), сверено с исходниками MC.
+`graphicsMode` навязывать не стали. Джар 0.7.1 в паке (`packVersion` 3).
