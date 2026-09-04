@@ -12,8 +12,10 @@
   "block.plaguecore.withered_leaves": "Иссохшая листва",
   "entity.plaguecore.infected_cow": "Заражённая корова",
   "entity.plaguecore.infected_pig": "Заражённая свинья",
+  "entity.plaguecore.mutated_zombie": "Мутировавший зомби",
   "item.plaguecore.infected_cow_spawn_egg": "Яйцо призыва заражённой коровы",
   "item.plaguecore.infected_pig_spawn_egg": "Яйцо призыва заражённой свиньи",
+  "item.plaguecore.mutated_zombie_spawn_egg": "Яйцо призыва мутировавшего зомби",
   "item.plaguecore.plague_brew": "Отвар от чумы",
   "itemGroup.plaguecore": "Чума"
 }

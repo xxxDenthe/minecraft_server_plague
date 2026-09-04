@@ -41,6 +41,20 @@ public final class PlagueEntities {
             .clientTrackingRange(10)
             .build("infected_cow"));
 
+    /**
+     * Мутировавший зомби. Хитбокс ванильный, один в один зомбиный: наросты
+     * торчат за его пределы, но расширять коробку под них незачем — по ним
+     * не бьют, они украшение, а разошедшийся с моделью хитбокс потом
+     * ловится тяжело.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<MutatedZombie>> MUTATED_ZOMBIE =
+        СУЩНОСТИ.register("mutated_zombie", () -> EntityType.Builder
+            .of(MutatedZombie::new, MobCategory.MONSTER)
+            .sized(0.6F, 1.95F)
+            .eyeHeight(1.74F)
+            .clientTrackingRange(8)
+            .build("mutated_zombie"));
+
     public static void register(IEventBus modEventBus) {
         СУЩНОСТИ.register(modEventBus);
     }
@@ -49,5 +63,6 @@ public final class PlagueEntities {
     public static void атрибуты(EntityAttributeCreationEvent событие) {
         событие.put(INFECTED_PIG.get(), InfectedAnimal.атрибутыСвиньи().build());
         событие.put(INFECTED_COW.get(), InfectedAnimal.атрибутыКоровы().build());
+        событие.put(MUTATED_ZOMBIE.get(), MutatedZombie.атрибуты().build());
     }
 }

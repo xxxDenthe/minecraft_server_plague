@@ -215,6 +215,11 @@ public final class PlagueBlocks {
             свойства -> new DeferredSpawnEggItem(
                 PlagueEntities.INFECTED_COW, 0x3E3A36, 0x5C3A5C, свойства));
 
+    public static final DeferredItem<DeferredSpawnEggItem> MUTATED_ZOMBIE_SPAWN_EGG =
+        ПРЕДМЕТЫ.registerItem("mutated_zombie_spawn_egg",
+            свойства -> new DeferredSpawnEggItem(
+                PlagueEntities.MUTATED_ZOMBIE, 0x2A272F, 0x5C3A5C, свойства));
+
     /**
      * Отвар от чумы. Не блок, но живёт здесь же: заводить отдельный
      * DeferredRegister ради одного предмета — лишний файл на пустом месте,
