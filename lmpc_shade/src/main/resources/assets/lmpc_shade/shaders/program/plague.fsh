@@ -46,16 +46,23 @@ void main() {
     float alpha = c.a;
 
     // Пасмурное небо (overcast) убирает купол через SkyType.NONE. В Fabulous
-    // дырку закрывает цвет тумана, в Fancy — ничем (чёрное). Заливаем её тем
-    // же цветом тумана, а заодно уводим в него всё у края прорисовки —
-    // иначе дальние облака чернеют (тёмные грани + ночное крушение ниже).
-    // FarZ = renderDistance*4, поэтому 0.20..0.25·FarZ ≈ 0.8..1.0 дальности.
-    float sky = 0.0;
+    // дырку закрывает цвет тумана, в Fancy — ничем (чёрное). Заливаем ТОЛЬКО
+    // саму дырку (глубина ровно 1.0 — ничего не нарисовано). Облака не
+    // трогаем: их MC сам уводит в цвет тумана по дальности.
+    //
+    // far — «далёкость» пикселя, 0 вблизи (где ставят факелы) .. 1 у неба.
+    // Ею глушим ночное крушение (dark ниже) для неба и дальних облаков —
+    // иначе тусклые дальние облака проваливаются в чёрное.
+    float far = 0.0;
     if (Overcast > 0.5) {
         float depth = texture(DepthSampler, texCoord).r;
-        sky = depth >= 1.0 ? 1.0 : smoothstep(FarZ * 0.20, FarZ * 0.25, linearZ(depth));
-        rgb = mix(rgb, vec3(SkyR, SkyG, SkyB), sky);
-        alpha = max(alpha, sky);
+        if (depth >= 1.0) {
+            rgb = vec3(SkyR, SkyG, SkyB);
+            alpha = 1.0;
+            far = 1.0;
+        } else {
+            far = smoothstep(FarZ * 0.05, FarZ * 0.15, linearZ(depth));
+        }
     }
 
     float luma = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
@@ -79,8 +86,8 @@ void main() {
     rgb = mix(rgb, rgb * (tint / avg), TintStrength);
 
     // ночная тьма вне освещённых пятен: жёсткий провал по кривой.
-    // Небо и дальний край (sky) не крушим — там факелов не ставят.
-    float dark = NightFactor * pow(1.0 - lit, 1.5) * (1.0 - sky);
+    // Небо и дальние облака (far) не крушим — там факелов не ставят.
+    float dark = NightFactor * pow(1.0 - lit, 1.5) * (1.0 - far);
     rgb *= mix(1.0, NightDarkness, dark);
 
     // уют у огня: теплее и чуть ярче
