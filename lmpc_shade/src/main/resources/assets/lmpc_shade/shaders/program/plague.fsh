@@ -1,14 +1,6 @@
 #version 150
 
 uniform sampler2D DiffuseSampler;
-uniform sampler2D DepthSampler;   // глубина сцены: 1.0 = ничего не нарисовано (небо)
-
-uniform float SkyR;          // цвет тумана этого кадра, покомпонентно —
-uniform float SkyG;          // тот же, что показывает Fabulous в дырке неба
-uniform float SkyB;
-uniform float Overcast;      // 1 — заливать небо/дальний край цветом тумана, 0 — не трогать
-uniform float NearZ;         // ближняя плоскость проекции — для линеаризации глубины
-uniform float FarZ;          // дальняя плоскость (renderDistance * 4)
 
 uniform float Time;          // 0..1, оборот за 20 тиков (ставит PostPass сам) — зерно
 
@@ -34,36 +26,9 @@ float hash12(vec2 p) {
     return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-// глубина из буфера [0..1] → расстояние в блоках
-float linearZ(float d) {
-    float z = d * 2.0 - 1.0;
-    return (2.0 * NearZ * FarZ) / (FarZ + NearZ - z * (FarZ - NearZ));
-}
-
 void main() {
     vec4 c = texture(DiffuseSampler, texCoord);
     vec3 rgb = c.rgb;
-    float alpha = c.a;
-
-    // Пасмурное небо (overcast) убирает купол через SkyType.NONE. В Fabulous
-    // дырку закрывает цвет тумана, в Fancy — ничем (чёрное). Заливаем ТОЛЬКО
-    // саму дырку (глубина ровно 1.0 — ничего не нарисовано). Облака не
-    // трогаем: их MC сам уводит в цвет тумана по дальности.
-    //
-    // far — «далёкость» пикселя, 0 вблизи (где ставят факелы) .. 1 у неба.
-    // Ею глушим ночное крушение (dark ниже) для неба и дальних облаков —
-    // иначе тусклые дальние облака проваливаются в чёрное.
-    float far = 0.0;
-    if (Overcast > 0.5) {
-        float depth = texture(DepthSampler, texCoord).r;
-        if (depth >= 1.0) {
-            rgb = vec3(SkyR, SkyG, SkyB);
-            alpha = 1.0;
-            far = 1.0;
-        } else {
-            far = smoothstep(FarZ * 0.05, FarZ * 0.15, linearZ(depth));
-        }
-    }
 
     float luma = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
 
@@ -85,9 +50,8 @@ void main() {
     float avg = max((TintR + TintG + TintB) / 3.0, 1e-3);
     rgb = mix(rgb, rgb * (tint / avg), TintStrength);
 
-    // ночная тьма вне освещённых пятен: жёсткий провал по кривой.
-    // Небо и дальние облака (far) не крушим — там факелов не ставят.
-    float dark = NightFactor * pow(1.0 - lit, 1.5) * (1.0 - far);
+    // ночная тьма вне освещённых пятен: жёсткий провал по кривой
+    float dark = NightFactor * pow(1.0 - lit, 1.5);
     rgb *= mix(1.0, NightDarkness, dark);
 
     // уют у огня: теплее и чуть ярче
@@ -124,5 +88,5 @@ void main() {
         rgb = floor(rgb * Posterize + 0.5) / Posterize;
     }
 
-    fragColor = vec4(clamp(rgb, 0.0, 1.0), alpha);
+    fragColor = vec4(clamp(rgb, 0.0, 1.0), c.a);
 }

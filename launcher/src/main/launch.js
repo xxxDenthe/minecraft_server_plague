@@ -161,6 +161,15 @@ export async function launchGame({
   await fsp.mkdir(paths.instance(), { recursive: true });
   await fsp.mkdir(path.join(paths.root(), 'natives'), { recursive: true });
 
+  // Пак рассчитан на графику «Ультра» (Fabulous): lmpc_shade убирает
+  // небесный купол, и в «Детально» (Fancy) на его месте чёрная дыра.
+  // Ставим только при первом запуске; настройки игрока дальше не трогаем
+  // (options.txt в PROTECTED — синхронизация его не перезаписывает).
+  const optionsTxt = path.join(paths.instance(), 'options.txt');
+  if (!fs.existsSync(optionsTxt)) {
+    await fsp.writeFile(optionsTxt, 'graphicsMode:2\n', 'utf8');
+  }
+
   // Лог пишется на диск целиком: разбор чужого краша не должен
   // превращаться в переписку «пришли скриншот».
   const logFile = path.join(paths.root(), 'game.log');
