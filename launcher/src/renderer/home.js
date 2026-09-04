@@ -68,12 +68,8 @@ export function createHome(store, actions) {
       el('div', { class: 'home-skin' },
         createSkinBox(store),
         el('div', { class: 'skin-links' },
-          el('button', {
-            class: 'skin-link', type: 'button',
-            title: 'Регистрация на ely.by — чтобы поставить свой скин',
-            'aria-label': 'Регистрация на ely.by',
-            onclick: () => window.launcher.openLink(ELY_REGISTER_URL),
-          }, icon('userPlus', 17)),
+          // Порядок сверху вниз: видеогайд, затем регистрация ely.by
+          // (её владелец хочет самой нижней).
           el('button', {
             class: 'skin-link', type: 'button',
             disabled: !SKIN_GUIDE_URL,
@@ -81,6 +77,12 @@ export function createHome(store, actions) {
             'aria-label': 'Видеогайд по установке скина',
             onclick: () => SKIN_GUIDE_URL && window.launcher.openLink(SKIN_GUIDE_URL),
           }, icon('video', 17)),
+          el('button', {
+            class: 'skin-link', type: 'button',
+            title: 'Регистрация на ely.by — чтобы поставить свой скин',
+            'aria-label': 'Регистрация на ely.by',
+            onclick: () => window.launcher.openLink(ELY_REGISTER_URL),
+          }, icon('userPlus', 17)),
         ),
       ),
     ),

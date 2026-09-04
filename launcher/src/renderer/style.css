@@ -238,13 +238,24 @@ body:not(.ready) .shell { opacity: 0; }
   gap: 8px;
 }
 
-/* Иконки прижаты к низу панели скина, столбиком, с заметным зазором. */
-.skin-links { display: flex; flex-direction: column; gap: 18px; flex: none; padding-bottom: 6px; }
+/* Иконки прижаты к низу панели скина, столбиком, с заметным зазором.
+   Квадратные кнопки фиксированного размера и align-items: center —
+   чтобы обе стояли строго друг под другом. */
+.skin-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  flex: none;
+  padding-bottom: 6px;
+}
 .skin-link {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   background: transparent;
   border: var(--edge) solid transparent;
   border-radius: 2px;
@@ -252,6 +263,7 @@ body:not(.ready) .shell { opacity: 0; }
   cursor: pointer;
   transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
 }
+.skin-link svg { display: block; }
 .skin-link:hover:not(:disabled) { color: var(--text-hi); background: rgba(255, 255, 255, 0.03); }
 .skin-link:focus-visible { outline: none; border-color: var(--cold); color: var(--text-hi); }
 .skin-link:disabled { color: var(--stone-1); opacity: 0.5; cursor: default; }
