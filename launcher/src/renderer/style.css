@@ -227,7 +227,36 @@ body:not(.ready) .shell { opacity: 0; }
 
 .console .logo { align-self: center; margin-bottom: 18px; }
 
-.home-spacer { min-width: 0; }
+/* Правая колонка — превью скина, зеркально боковой колонке слева. */
+.home-skin { min-width: 0; width: 100%; max-width: 380px; margin-right: auto; }
+
+.skin-box {
+  width: 210px;
+  background: var(--panel-bg);
+  border: var(--edge) solid var(--ink-4);
+  border-radius: 2px;
+  backdrop-filter: blur(3px);
+}
+.skin-body {
+  padding: 18px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.skin-canvas {
+  image-rendering: pixelated;
+  filter: drop-shadow(0 5px 16px rgba(0, 0, 0, 0.55));
+}
+.skin-caption {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--stone-2);
+}
 
 .field-label {
   font-size: 12px;

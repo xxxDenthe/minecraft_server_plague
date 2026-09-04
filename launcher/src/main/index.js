@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import * as paths from './paths.js';
 import { readConfig, writeConfig } from './config.js';
 import { play, watchForUpdates, gameLogFile } from './install.js';
+import { fetchSkinPng } from './skin.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -62,6 +63,8 @@ ipcMain.handle('log:open', () => shell.showItemInFolder(gameLogFile()));
 ipcMain.handle('folder:open', () => shell.openPath(paths.instance()));
 
 ipcMain.handle('discord:open', () => shell.openExternal(DISCORD_URL));
+
+ipcMain.handle('skin:fetch', (_event, nickname) => fetchSkinPng(nickname));
 
 ipcMain.handle('game:play', async (_event, { nickname, maxRamMb, minRamMb } = {}) => {
   if (running) return { started: false, reason: 'игра уже запущена' };

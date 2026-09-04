@@ -6,6 +6,7 @@ import { el, icon, logo } from './ui.js';
 import { State } from './state.js';
 import { createProgress } from './progress.js';
 import { createNews } from './news.js';
+import { createSkinBox } from './skin.js';
 
 const MC_VERSION = '1.21.1'; // целевая версия проекта, фиксированная
 
@@ -14,7 +15,12 @@ export function createHome(store, actions) {
     class: 'nick-input', id: 'nick', type: 'text', maxLength: 16,
     autocomplete: 'off', spellcheck: false, placeholder: 'Введите ваш никнейм',
     value: store.get().nickname || '',
-    oninput: () => { playBtn.disabled = !canPlay(); },
+    oninput: () => {
+      playBtn.disabled = !canPlay();
+      // В хранилище — чтобы окошко скина обновилось за никнеймом.
+      // В конфиг ник по-прежнему пишется только при запуске.
+      store.set({ nickname: nickInput.value });
+    },
     onkeydown: (e) => { if (e.key === 'Enter' && canPlay()) startPlay(); },
   });
 
@@ -54,7 +60,7 @@ export function createHome(store, actions) {
         playBtn,
         progress,
       ),
-      el('div', { class: 'home-spacer' }),
+      el('div', { class: 'home-skin' }, createSkinBox(store)),
     ),
     el('footer', { class: 'home-foot' }, versionInfo),
   );

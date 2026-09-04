@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('launcher', {
   openLog: () => ipcRenderer.invoke('log:open'),
   openFolder: () => ipcRenderer.invoke('folder:open'),
   openDiscord: () => ipcRenderer.invoke('discord:open'),
+  fetchSkin: (nickname) => ipcRenderer.invoke('skin:fetch', nickname),
 
   onProgress: on('progress'),
   onLog: on('log'),
