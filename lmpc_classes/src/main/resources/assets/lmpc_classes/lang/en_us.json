@@ -5,5 +5,76 @@
   "item.lmpc_classes.plague_bloom": "Plague Bloom",
   "item.lmpc_classes.cleansing_agent": "Cleansing Agent",
   "item.lmpc_classes.class_codex": "Codex of Calling",
-  "itemGroup.lmpc_classes": "Classes"
+  "itemGroup.lmpc_classes": "Classes",
+
+  "class.lmpc_classes.none": "No calling",
+  "class.lmpc_classes.none.role": "Empty hands: no bonuses, no penalties",
+
+  "class.lmpc_classes.cleric": "Cleric",
+  "class.lmpc_classes.cleric.role": "The party's healer in the late stages of the plague",
+  "class.lmpc_classes.cleric.lore": "Brew and prayer are powerless where the plague takes its due — but the Cleric stays close when every other remedy has stopped working. A steady hand and a voice right at your ear sometimes matter more than any recipe.",
+  "class.lmpc_classes.cleric.ability.1": "The pendant in the necklace slot slows infection; on a Cleric it is twice as strong as on anyone else.",
+  "class.lmpc_classes.cleric.ability.2": "The improved brew cures at any stage. In other hands the bottle is simply wasted.",
+  "class.lmpc_classes.cleric.ability.3": "Feed an ally: stand right next to them and hold right-click while looking at them.",
+  "class.lmpc_classes.cleric.mastery": "Mastery grows with every successful cure; healing an ally is worth twice healing yourself.",
+
+  "class.lmpc_classes.smith": "Smith",
+  "class.lmpc_classes.smith.role": "Defence technician, keeps the surface Purifiers running",
+  "class.lmpc_classes.smith.lore": "While others run from the Blight, the Smith builds what keeps it at arm's length. A machine never tires and never fears — but it is hungry, and without its keeper it rusts like any abandoned mechanism.",
+  "class.lmpc_classes.smith.ability.1": "Gear in hand and on the body slowly repairs itself — a machine with a keeper does not rust.",
+  "class.lmpc_classes.smith.mastery": "Mastery grows from working at the anvil.",
+
+  "class.lmpc_classes.farmer": "Farmer",
+  "class.lmpc_classes.farmer.role": "Turns the run for plague reagents into husbandry",
+  "class.lmpc_classes.farmer.lore": "What grows as a wild bush in the Blight is a risk for anyone who goes after it empty-handed. The Farmer has tamed it: the same thing comes up in rows on the farm plot, safe and predictable, like any other harvest.",
+  "class.lmpc_classes.farmer.ability.1": "Every dish is more filling: a share of its own nutrition is added on top.",
+  "class.lmpc_classes.farmer.mastery": "Mastery grows with every fully grown crop harvested.",
+
+  "class.lmpc_classes.chronicler": "Chronicler",
+  "class.lmpc_classes.chronicler.role": "Scout and the party's eyes",
+  "class.lmpc_classes.chronicler.lore": "The Chronicler goes where nobody else wants to look, and writes down what was seen — in case they do not come back. Every photograph and every line will one day be the only testimony that any of this was here.",
+  "class.lmpc_classes.chronicler.ability.1": "Sees the exact plague stage and infection points — their own and everyone nearby.",
+  "class.lmpc_classes.chronicler.mastery": "Mastery grows for every minute spent near someone infected.",
+
+  "gui.lmpc_classes.close": "Close",
+  "gui.lmpc_classes.altar.title": "Altar of Calling",
+  "gui.lmpc_classes.altar.current": "Your calling: %1$s, tier %2$s",
+  "gui.lmpc_classes.altar.current_none": "No calling yet",
+  "gui.lmpc_classes.altar.ready": "You can change class now",
+  "gui.lmpc_classes.altar.locked": "You can change class in %s min.",
+  "gui.lmpc_classes.altar.same": "That is already your calling.",
+  "gui.lmpc_classes.altar.yours": "yours",
+
+  "gui.lmpc_classes.codex.title": "Codex of Calling",
+  "gui.lmpc_classes.codex.abilities": "What it does",
+  "gui.lmpc_classes.codex.mastery": "Mastery: %1$s of %2$s",
+  "gui.lmpc_classes.codex.tier": "tier %s",
+  "gui.lmpc_classes.codex.tier_next": "To the next tier: %s",
+  "gui.lmpc_classes.codex.tier_max": "There is nowhere higher to go.",
+
+  "hud.lmpc_classes.chronicle": "Chronicle",
+  "hud.lmpc_classes.entry": "%1$s — stage %2$s · %3$s",
+  "hud.lmpc_classes.unknown": "%1$s — no data",
+  "hud.lmpc_classes.feed_hint": "⚕ Hold right-click to feed",
+
+  "tooltip.lmpc_classes.clerics_brew.gate": "Only works in a Cleric's hands.",
+  "tooltip.lmpc_classes.clerics_brew.feed": "Can be fed to an ally at arm's length by holding right-click.",
+
+  "msg.lmpc_classes.switch.done": "Your calling: %s.",
+  "msg.lmpc_classes.switch.already": "You already are %s.",
+  "msg.lmpc_classes.switch.cooldown": "You can change class in %s min.",
+
+  "msg.lmpc_classes.brew.not_cleric": "Only a Cleric knows how to use this.",
+  "msg.lmpc_classes.brew.cooldown": "The brew has not settled yet: %s min.",
+
+  "msg.lmpc_classes.feed.not_cleric": "Only a Cleric can feed the brew to someone.",
+  "msg.lmpc_classes.feed.too_far": "Too far away — you must stand right next to them.",
+  "msg.lmpc_classes.feed.no_brew": "No brew in hand.",
+  "msg.lmpc_classes.feed.target_cooldown": "%1$s cannot drink the brew yet: %2$s min.",
+  "msg.lmpc_classes.feed.done": "Gave the brew to %s.",
+  "msg.lmpc_classes.feed.received": "%s gave you the brew.",
+
+  "msg.lmpc_classes.admin.status": "%1$s: %2$s, mastery %3$s (tier %4$s)",
+  "msg.lmpc_classes.admin.set": "%1$s: class %2$s",
+  "msg.lmpc_classes.admin.mastery": "%1$s: mastery %2$s (tier %3$s)"
 }

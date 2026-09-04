@@ -23,7 +23,9 @@ public class ClassCodexItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level мир, Player игрок, InteractionHand рука) {
         ItemStack стопка = игрок.getItemInHand(рука);
         if (мир.isClientSide()) {
-            dev.denthe.classes.client.ClassCodexScreen.открыть(PlayerClassData.данные(игрок).класс);
+            // Класс экран читает сам: вложение синкается с 0.6.0, а передавать
+            // его сюда значило бы прочитать один раз и не заметить смену.
+            dev.denthe.classes.client.ClassCodexScreen.открыть();
         }
         return InteractionResultHolder.success(стопка);
     }

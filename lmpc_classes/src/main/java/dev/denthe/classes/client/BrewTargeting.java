@@ -133,7 +133,8 @@ public final class BrewTargeting {
 
         событие.setCanRender(TriState.TRUE);
         if (!Minecraft.getInstance().options.keyUse.isDown() || отправлено) {
-            событие.setContent(Component.literal("⚕ ПКМ — напоить").withStyle(ChatFormatting.GOLD));
+            событие.setContent(Component.translatable("hud.lmpc_classes.feed_hint")
+                .withStyle(ChatFormatting.GOLD));
             return;
         }
 

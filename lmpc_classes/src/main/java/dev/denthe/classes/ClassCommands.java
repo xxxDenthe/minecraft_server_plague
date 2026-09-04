@@ -1,5 +1,6 @@
 package dev.denthe.classes;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
@@ -19,9 +20,10 @@ import java.util.Locale;
  *
  * {@code /lmpcclasses choose <класс>} — настоящий путь смены: себе,
  * с проверкой кулдауна и срезом мастерства (раздел 2.1). Её шлёт экран
- * алтаря призвания. {@code /lmpcclasses class <кто> <класс>} — админский
- * обход обоих правил для проверки на живом сервере, тем же приёмом,
- * что `/plague setlevel`/`/plague player` в plaguecore.
+ * алтаря призвания. {@code /lmpcclasses class <кто> [класс]} и
+ * {@code /lmpcclasses mastery <кто> <число>} — админский обход правил
+ * для проверки на живом сервере, тем же приёмом, что
+ * `/plague setlevel`/`/plague player` в plaguecore.
  */
 @EventBusSubscriber(modid = LmpcClasses.MODID)
 public final class ClassCommands {
@@ -33,21 +35,27 @@ public final class ClassCommands {
 
         var выбор = Commands.literal("choose");
         for (PlayerClassData.Класс к : PlayerClassData.Класс.values()) {
-            выбор.then(Commands.literal(к.name().toLowerCase(Locale.ROOT))
-                .executes(c -> выбрать(c, к)));
+            выбор.then(Commands.literal(имя(к)).executes(c -> выбрать(c, к)));
         }
         корень.then(выбор);
 
         var ктоДляКласса = Commands.argument("who", EntityArgument.player())
-            .requires(s -> s.hasPermission(2))
             .executes(ClassCommands::показать);
         for (PlayerClassData.Класс к : PlayerClassData.Класс.values()) {
-            ктоДляКласса.then(Commands.literal(к.name().toLowerCase(Locale.ROOT))
-                .executes(c -> выставить(c, к)));
+            ктоДляКласса.then(Commands.literal(имя(к)).executes(c -> выставить(c, к)));
         }
         корень.then(Commands.literal("class").requires(s -> s.hasPermission(2)).then(ктоДляКласса));
 
+        корень.then(Commands.literal("mastery").requires(s -> s.hasPermission(2))
+            .then(Commands.argument("who", EntityArgument.player())
+                .then(Commands.argument("value", IntegerArgumentType.integer(0, ClassMastery.МАКСИМУМ))
+                    .executes(ClassCommands::выставитьМастерство))));
+
         event.getDispatcher().register(корень);
+    }
+
+    private static String имя(PlayerClassData.Класс класс) {
+        return класс.name().toLowerCase(Locale.ROOT);
     }
 
     /** Настоящая смена: себе, с кулдауном и срезом мастерства. */
@@ -55,19 +63,30 @@ public final class ClassCommands {
             throws CommandSyntaxException {
         ServerPlayer игрок = c.getSource().getPlayerOrException();
         PlayerClassData д = PlayerClassData.данные(игрок);
+
+        // Выбрать тот же класс, что уже есть, — не «смена». Раньше это
+        // молча жгло кулдаун и срезало 70% мастерства: достаточно было
+        // ткнуть в свою же строку в алтаре.
+        if (д.класс == класс) {
+            c.getSource().sendFailure(Component.translatable(
+                "msg.lmpc_classes.switch.already", ClassLore.заголовок(класс)));
+            return 0;
+        }
+
         long кулдаунТики = ClassesConfig.кулдаунСменыТики();
         long сейчас = игрок.level().getGameTime();
-
-        if (!ClassSwitch.можноСменить(д.последняяСменаТик, сейчас, кулдаунТики)) {
-            long осталосьТиков = кулдаунТики - (сейчас - д.последняяСменаТик);
-            c.getSource().sendFailure(Component.literal(
-                "Класс можно сменить через " + (осталосьТиков / 1200 + 1) + " мин."));
+        long осталось = ClassSwitch.осталосьТиков(д.последняяСменаТик, сейчас, кулдаунТики);
+        if (осталось > 0) {
+            c.getSource().sendFailure(Component.translatable(
+                "msg.lmpc_classes.switch.cooldown", ClassSwitch.минутОсталось(осталось)));
             return 0;
         }
 
         д.сменитьКласс(класс, сейчас, ClassesConfig.доляМастерстваПриСмене());
+        PlayerClassData.синхронизировать(игрок);
         выдатьГримуарЕслиНадо(игрок);
-        c.getSource().sendSuccess(() -> Component.literal("Класс: " + класс), false);
+        c.getSource().sendSuccess(
+            () -> Component.translatable("msg.lmpc_classes.switch.done", ClassLore.заголовок(класс)), false);
         return 1;
     }
 
@@ -87,20 +106,42 @@ public final class ClassCommands {
     private static int показать(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
         ServerPlayer кто = EntityArgument.getPlayer(c, "who");
         PlayerClassData д = PlayerClassData.данные(кто);
-        c.getSource().sendSuccess(() -> Component.literal(
-            кто.getGameProfile().getName() + ": класс " + д.класс + ", мастерство " + д.мастерство), false);
+        c.getSource().sendSuccess(() -> Component.translatable(
+            "msg.lmpc_classes.admin.status",
+            кто.getGameProfile().getName(), ClassLore.заголовок(д.класс), д.мастерство, д.тир()), false);
         return 1;
     }
 
-    /** Админский обход кулдауна и среза мастерства — для проверки. */
+    /**
+     * Админский обход кулдауна и среза мастерства — для проверки.
+     * Кулдаун нарочно не ставится: раньше админская выдача класса
+     * запирала игроку смену на полчаса, хотя смысл команды —
+     * наоборот, быстро перебрать классы на живом сервере.
+     */
     private static int выставить(CommandContext<CommandSourceStack> c, PlayerClassData.Класс класс)
             throws CommandSyntaxException {
         ServerPlayer кто = EntityArgument.getPlayer(c, "who");
         PlayerClassData д = PlayerClassData.данные(кто);
         д.класс = класс;
-        д.последняяСменаТик = кто.level().getGameTime();
-        c.getSource().sendSuccess(() -> Component.literal(
-            кто.getGameProfile().getName() + ": класс " + класс), true);
+        д.последняяСменаТик = -1L;
+        PlayerClassData.синхронизировать(кто);
+        выдатьГримуарЕслиНадо(кто);
+        c.getSource().sendSuccess(() -> Component.translatable(
+            "msg.lmpc_classes.admin.set", кто.getGameProfile().getName(), ClassLore.заголовок(класс)), true);
+        return 1;
+    }
+
+    /** Выставить мастерство напрямую — единственный способ увидеть тиры 2 и 3 сразу. */
+    private static int выставитьМастерство(CommandContext<CommandSourceStack> c)
+            throws CommandSyntaxException {
+        ServerPlayer кто = EntityArgument.getPlayer(c, "who");
+        int значение = IntegerArgumentType.getInteger(c, "value");
+        PlayerClassData д = PlayerClassData.данные(кто);
+        д.мастерство = ClassMastery.прибавить(0, значение);
+        PlayerClassData.синхронизировать(кто);
+        c.getSource().sendSuccess(() -> Component.translatable(
+            "msg.lmpc_classes.admin.mastery",
+            кто.getGameProfile().getName(), д.мастерство, д.тир()), true);
         return 1;
     }
 }

@@ -5,5 +5,76 @@
   "item.lmpc_classes.plague_bloom": "Бутон чумы",
   "item.lmpc_classes.cleansing_agent": "Очищающий реагент",
   "item.lmpc_classes.class_codex": "Гримуар призвания",
-  "itemGroup.lmpc_classes": "Классы"
+  "itemGroup.lmpc_classes": "Классы",
+
+  "class.lmpc_classes.none": "Без класса",
+  "class.lmpc_classes.none.role": "Чистые руки: ни бонусов, ни штрафов",
+
+  "class.lmpc_classes.cleric": "Клирик",
+  "class.lmpc_classes.cleric.role": "Лекарь партии на поздних стадиях чумы",
+  "class.lmpc_classes.cleric.lore": "Отвар и молитва бессильны там, где чума берёт своё — но Клирик остаётся рядом, когда остальные лекарства уже не действуют. Твёрдая рука и голос у самого уха иногда решают больше, чем любой рецепт.",
+  "class.lmpc_classes.cleric.ability.1": "Кулон в слоте ожерелья снижает набор заражённости; у Клирика — вдвое сильнее, чем у прочих.",
+  "class.lmpc_classes.cleric.ability.2": "Улучшенный отвар лечит на любой стадии. В чужих руках бутылка пропадает впустую.",
+  "class.lmpc_classes.cleric.ability.3": "Напоить союзника: подойти вплотную и удерживать ПКМ, глядя на него.",
+  "class.lmpc_classes.cleric.mastery": "Мастерство растёт за каждое удачное лечение; за союзника — вдвое больше, чем за себя.",
+
+  "class.lmpc_classes.smith": "Кузнец",
+  "class.lmpc_classes.smith.role": "Техник обороны, держит Очистители поверхности",
+  "class.lmpc_classes.smith.lore": "Пока другие бегут от Гнили, Кузнец строит то, что держит её на расстоянии. Машина не устаёт и не боится — но она голодна, и без хозяина ржавеет так же, как любой брошенный механизм.",
+  "class.lmpc_classes.smith.ability.1": "Снаряжение в руках и на теле само чинится понемногу — у хозяина механизм не ржавеет.",
+  "class.lmpc_classes.smith.mastery": "Мастерство растёт от работы на наковальне.",
+
+  "class.lmpc_classes.farmer": "Фермер",
+  "class.lmpc_classes.farmer.role": "Превращает поход за сырьём чумы в хозяйство",
+  "class.lmpc_classes.farmer.lore": "То, что растёт диким кустом в Гнили — риск для тех, кто идёт за ним с пустыми руками. Фермер приручил его: то же самое всходит рядами на его грядке, безопасно и предсказуемо, как любой урожай.",
+  "class.lmpc_classes.farmer.ability.1": "Любое блюдо сытнее: сверх обычного добавляется доля от его же сытности.",
+  "class.lmpc_classes.farmer.mastery": "Мастерство растёт за каждую собранную созревшую культуру.",
+
+  "class.lmpc_classes.chronicler": "Летописец",
+  "class.lmpc_classes.chronicler.role": "Разведчик и глаза партии",
+  "class.lmpc_classes.chronicler.lore": "Летописец идёт туда, куда остальные не хотят смотреть, и записывает, что видел — на случай, если сам не вернётся. Каждый снимок и каждая строка когда-нибудь станут единственным свидетельством того, что здесь было.",
+  "class.lmpc_classes.chronicler.ability.1": "Видит точную стадию и очки заражённости — свои и всех, кто рядом.",
+  "class.lmpc_classes.chronicler.mastery": "Мастерство растёт за каждую минуту рядом с заражённым.",
+
+  "gui.lmpc_classes.close": "Закрыть",
+  "gui.lmpc_classes.altar.title": "Алтарь призвания",
+  "gui.lmpc_classes.altar.current": "Твоё призвание: %1$s, тир %2$s",
+  "gui.lmpc_classes.altar.current_none": "Призвания пока нет",
+  "gui.lmpc_classes.altar.ready": "Сменить класс можно сейчас",
+  "gui.lmpc_classes.altar.locked": "Сменить класс можно через %s мин.",
+  "gui.lmpc_classes.altar.same": "Это и есть твоё призвание.",
+  "gui.lmpc_classes.altar.yours": "твой",
+
+  "gui.lmpc_classes.codex.title": "Гримуар призвания",
+  "gui.lmpc_classes.codex.abilities": "Что умеет",
+  "gui.lmpc_classes.codex.mastery": "Мастерство: %1$s из %2$s",
+  "gui.lmpc_classes.codex.tier": "тир %s",
+  "gui.lmpc_classes.codex.tier_next": "До следующего тира: %s",
+  "gui.lmpc_classes.codex.tier_max": "Выше подниматься некуда.",
+
+  "hud.lmpc_classes.chronicle": "Летопись",
+  "hud.lmpc_classes.entry": "%1$s — стадия %2$s · %3$s",
+  "hud.lmpc_classes.unknown": "%1$s — нет данных",
+  "hud.lmpc_classes.feed_hint": "⚕ ПКМ — напоить",
+
+  "tooltip.lmpc_classes.clerics_brew.gate": "Действует только в руках Клирика.",
+  "tooltip.lmpc_classes.clerics_brew.feed": "Можно напоить союзника вплотную, удерживая ПКМ.",
+
+  "msg.lmpc_classes.switch.done": "Твоё призвание: %s.",
+  "msg.lmpc_classes.switch.already": "Ты и так %s.",
+  "msg.lmpc_classes.switch.cooldown": "Класс можно сменить через %s мин.",
+
+  "msg.lmpc_classes.brew.not_cleric": "Только Клирик знает, как этим пользоваться.",
+  "msg.lmpc_classes.brew.cooldown": "Отвар ещё не настоялся: %s мин.",
+
+  "msg.lmpc_classes.feed.not_cleric": "Поить отваром умеет только Клирик.",
+  "msg.lmpc_classes.feed.too_far": "Слишком далеко — нужно стоять вплотную.",
+  "msg.lmpc_classes.feed.no_brew": "Отвара в руке нет.",
+  "msg.lmpc_classes.feed.target_cooldown": "%1$s ещё не может пить отвар: %2$s мин.",
+  "msg.lmpc_classes.feed.done": "Напоил %s.",
+  "msg.lmpc_classes.feed.received": "%s напоил вас отваром.",
+
+  "msg.lmpc_classes.admin.status": "%1$s: %2$s, мастерство %3$s (тир %4$s)",
+  "msg.lmpc_classes.admin.set": "%1$s: класс %2$s",
+  "msg.lmpc_classes.admin.mastery": "%1$s: мастерство %2$s (тир %3$s)"
 }
