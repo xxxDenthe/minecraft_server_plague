@@ -10,6 +10,11 @@ import { createSkinBox } from './skin.js';
 
 const MC_VERSION = '1.21.1'; // целевая версия проекта, фиксированная
 
+// Ссылки рядом со скином. Видеогайд владелец добавит позже — пока его
+// нет, кнопка выключена (без ложной активности, как остальные заготовки).
+const ELY_REGISTER_URL = 'https://account.ely.by/register';
+const SKIN_GUIDE_URL = null;
+
 export function createHome(store, actions) {
   const nickInput = el('input', {
     class: 'nick-input', id: 'nick', type: 'text', maxLength: 16,
@@ -60,7 +65,24 @@ export function createHome(store, actions) {
         playBtn,
         progress,
       ),
-      el('div', { class: 'home-skin' }, createSkinBox(store)),
+      el('div', { class: 'home-skin' },
+        createSkinBox(store),
+        el('div', { class: 'skin-links' },
+          el('button', {
+            class: 'skin-link', type: 'button',
+            title: 'Регистрация на ely.by — чтобы поставить свой скин',
+            'aria-label': 'Регистрация на ely.by',
+            onclick: () => window.launcher.openLink(ELY_REGISTER_URL),
+          }, icon('userPlus', 17)),
+          el('button', {
+            class: 'skin-link', type: 'button',
+            disabled: !SKIN_GUIDE_URL,
+            title: SKIN_GUIDE_URL ? 'Видео: как поставить свой скин' : 'Видеогайд появится позже',
+            'aria-label': 'Видеогайд по установке скина',
+            onclick: () => SKIN_GUIDE_URL && window.launcher.openLink(SKIN_GUIDE_URL),
+          }, icon('video', 17)),
+        ),
+      ),
     ),
     el('footer', { class: 'home-foot' }, versionInfo),
   );

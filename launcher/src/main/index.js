@@ -66,6 +66,14 @@ ipcMain.handle('discord:open', () => shell.openExternal(DISCORD_URL));
 
 ipcMain.handle('skin:fetch', (_event, nickname) => fetchSkinPng(nickname));
 
+// Внешние ссылки со стороны нашего же окна (регистрация ely.by, видеогайд).
+// Проверка на https — чтобы опечатка в ссылке не открыла file:// или
+// неизвестную схему; удалённого контента, который мог бы это подсунуть,
+// в окне нет.
+ipcMain.handle('link:open', (_event, url) => {
+  if (typeof url === 'string' && /^https:\/\/\S+$/.test(url)) shell.openExternal(url);
+});
+
 ipcMain.handle('game:play', async (_event, { nickname, maxRamMb, minRamMb } = {}) => {
   if (running) return { started: false, reason: 'игра уже запущена' };
 

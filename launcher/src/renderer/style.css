@@ -228,7 +228,32 @@ body:not(.ready) .shell { opacity: 0; }
 .console .logo { align-self: center; margin-bottom: 18px; }
 
 /* Правая колонка — превью скина, зеркально боковой колонке слева. */
-.home-skin { min-width: 0; width: 100%; max-width: 380px; margin-right: auto; }
+.home-skin {
+  min-width: 0;
+  width: 100%;
+  max-width: 380px;
+  margin-right: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.skin-links { display: flex; flex-direction: column; gap: 8px; flex: none; }
+.skin-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: transparent;
+  border: var(--edge) solid transparent;
+  border-radius: 2px;
+  color: var(--stone-2);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+.skin-link:hover:not(:disabled) { color: var(--text-hi); background: rgba(255, 255, 255, 0.03); }
+.skin-link:focus-visible { outline: none; border-color: var(--cold); color: var(--text-hi); }
+.skin-link:disabled { color: var(--stone-1); opacity: 0.5; cursor: default; }
 
 .skin-box {
   width: 188px;
