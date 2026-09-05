@@ -57,14 +57,15 @@ class SurfaceRuleTest {
     }
 
     /**
-     * Доска — почти всегда чья-то постройка: её только обносит наростом.
-     * Превращать сруб игрока в гнилой лес мы не подписывались.
+     * Доска на Гнили гниёт, как и ствол: решение владельца отменило
+     * прежнее «доски только обрастают». Постройка внутри Гнили должна
+     * выглядеть съеденной чумой, а не облепленной плёнкой.
      */
     @Test
-    void доскиТолькоОбрастают() {
+    void доскиГниютНаГнили() {
         assertEquals(PlagueAction.NONE, SurfaceRule.actionFor(BlockKind.PLANKS, 2));
-        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.PLANKS, 3));
-        assertEquals(PlagueAction.COAT_GROWTH, SurfaceRule.actionFor(BlockKind.PLANKS, 4));
+        assertEquals(PlagueAction.ROTTED_PLANKS, SurfaceRule.actionFor(BlockKind.PLANKS, 3));
+        assertEquals(PlagueAction.ROTTED_PLANKS, SurfaceRule.actionFor(BlockKind.PLANKS, 4));
     }
 
     /**

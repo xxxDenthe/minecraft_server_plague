@@ -79,6 +79,18 @@ public final class PlagueBlocks {
             .mapColor(MapColor.COLOR_GRAY));
 
     /**
+     * Гнилая доска. Одна на все породы, как бревно и листва: чума
+     * не разбирает, из чего собран сруб.
+     *
+     * Обычный куб, без оси: доски в отличие от брёвен не повёрнуты.
+     * Свойства сняты с дубовой доски — прочность, звук, горючесть.
+     */
+    public static final DeferredBlock<Block> ROTTED_PLANKS = БЛОКИ.registerSimpleBlock(
+        "rotted_planks",
+        BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS)
+            .mapColor(MapColor.COLOR_GRAY));
+
+    /**
      * Заражённая листва. Одна на все породы: дуб, берёза, вишня и всё
      * прочее приходят в правило одним видом LEAVES и уходят этим блоком.
      * Так чума читается издалека одним цветом, а не палитрой леса.
@@ -189,6 +201,8 @@ public final class PlagueBlocks {
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_STONE);
     public static final DeferredItem<BlockItem> ROTTED_LOG_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_LOG);
+    public static final DeferredItem<BlockItem> ROTTED_PLANKS_ITEM =
+        ПРЕДМЕТЫ.registerSimpleBlockItem(ROTTED_PLANKS);
     public static final DeferredItem<BlockItem> BLIGHTED_GRASS_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(BLIGHTED_GRASS);
     public static final DeferredItem<BlockItem> BLIGHTED_TALL_GRASS_ITEM =

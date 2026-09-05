@@ -38,6 +38,7 @@ public final class SurfaceRule {
         ROTTED_DIRT,
         ROTTED_STONE,
         ROTTED_LOG,
+        ROTTED_PLANKS,
         BLIGHTED_GRASS,
         BLIGHTED_TALL_GRASS,
         BLIGHTED_LEAVES,
@@ -90,9 +91,10 @@ public final class SurfaceRule {
             // бревно, и целое дерево в мёртвом лесу выдавало, что чума
             // прошлась только по земле.
             case LOG    -> гниль ? PlagueAction.ROTTED_LOG : PlagueAction.NONE;
-            // Доски — почти всегда чья-то постройка. Их только обносит
-            // наростом: превращать сруб игрока в лес мы не подписывались.
-            case PLANKS -> гниль ? PlagueAction.COAT_GROWTH : PlagueAction.NONE;
+            // Доска гниёт вместе со стволом — решение владельца отменило
+            // прежний нарост. Внутри Гнили постройка должна выглядеть
+            // съеденной, а плёнка на стене этого не показывала.
+            case PLANKS -> гниль ? PlagueAction.ROTTED_PLANKS : PlagueAction.NONE;
             case CROP   -> гниль ? PlagueAction.DESTROY_CROP : PlagueAction.TRAMPLE_CROP;
             // Трава заражается с первого же уровня и дальше не меняется:
             // зелёные кустики посреди Гнили выдавали, что чума прошлась
