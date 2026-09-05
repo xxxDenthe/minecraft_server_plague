@@ -1,10 +1,14 @@
 package dev.denthe.plaguecore.mc;
 
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.denthe.plaguecore.PlagueConstants;
+import dev.denthe.plaguecore.PlagueConfig;
 import dev.denthe.plaguecore.PlagueCore;
+import dev.denthe.plaguecore.VoiceKnobs;
 import dev.denthe.plaguecore.core.PlagueGrid;
 import dev.denthe.plaguecore.core.SpreadEngine;
 import dev.denthe.plaguecore.core.StartGenerator;
@@ -94,7 +98,75 @@ public final class PlagueCommands {
                 .then(Commands.argument("value", FloatArgumentType.floatArg(0f, 100f))
                     .executes(PlagueCommands::выставитьИгроку))));
 
+        LiteralArgumentBuilder<CommandSourceStack> голос = Commands.literal("voice")
+            .executes(PlagueCommands::показатьГолос);
+        голос.then(Commands.literal("sync").executes(PlagueCommands::синхронизироватьГолос));
+        голос.then(Commands.literal("set")
+            .then(Commands.argument("knob", StringArgumentType.word())
+                .suggests((c, b) -> {
+                    for (VoiceKnobs.Ручка р : VoiceKnobs.ВСЕ) b.suggest(р.id());
+                    return b.buildFuture();
+                })
+                .then(Commands.argument("value", DoubleArgumentType.doubleArg())
+                    .executes(PlagueCommands::выставитьГолос))));
+        корень.then(голос);
+
         event.getDispatcher().register(корень);
+    }
+
+    // ── голос больного ────────────────────────────────────────────────
+    // Ручек дюжина, и подбираются они только слухом: покрутил — послушал.
+    // Поэтому команда не только правит живые числа, но и пишет их в файл:
+    // иначе подобранное за вечер пропадёт при первом перезапуске.
+
+    private static int показатьГолос(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack s = ctx.getSource();
+        s.sendSuccess(() -> Component.literal("=== Голос больного ==="), false);
+        for (VoiceKnobs.Ручка р : VoiceKnobs.ВСЕ) {
+            String уровень = р.уровень() < 0 ? "общее"
+                : "стадия " + (PlagueConstants.VOICE_MIN_STAGE + р.уровень())
+                  + (р.уровень() == PlagueConstants.VOICE_LEVELS - 1 ? "+" : "");
+            String строка = String.format(java.util.Locale.ROOT, "  %-11s %7.3f   %s (%s)",
+                р.id(), VoiceKnobs.прочитать(р.id()), р.подпись(), уровень);
+            s.sendSuccess(() -> Component.literal(строка), false);
+        }
+        s.sendSuccess(() -> Component.literal(
+            "Менять: /plague voice set <ручка> <число>. Пишется в конфиг сразу."), false);
+        синхронизироватьГолос(ctx);
+        return VoiceKnobs.ВСЕ.length;
+    }
+
+    /**
+     * Молча отдать ползункам панели GM то, что стоит на сервере.
+     * Без этого они показывали бы конфиг клиента, а голос считается
+     * на сервере — и цифры разошлись бы.
+     */
+    private static int синхронизироватьГолос(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer кому = ctx.getSource().getPlayer();
+        if (кому != null) PlagueNetwork.отправитьГолос(кому);
+        return 1;
+    }
+
+    private static int выставитьГолос(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        String id = StringArgumentType.getString(ctx, "knob");
+        double значение = DoubleArgumentType.getDouble(ctx, "value");
+        VoiceKnobs.Ручка р = VoiceKnobs.найти(id);
+        if (р == null) {
+            ctx.getSource().sendFailure(Component.literal("Нет такой ручки: " + id));
+            return 0;
+        }
+        if (!PlagueConfig.выставитьГолос(id, значение)) {
+            ctx.getSource().sendFailure(Component.literal("Не удалось записать " + id));
+            return 0;
+        }
+        double стало = VoiceKnobs.прочитать(id);
+        ctx.getSource().sendSuccess(() -> Component.literal(String.format(
+            java.util.Locale.ROOT, "%s = %.3f (%s)", id, стало, р.подпись())), true);
+        синхронизироватьГолос(ctx);
+        return 1;
     }
 
     private static ServerLevel мир(CommandSourceStack src) {

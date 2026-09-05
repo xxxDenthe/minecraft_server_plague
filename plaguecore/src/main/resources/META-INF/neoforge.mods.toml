@@ -22,6 +22,15 @@ versionRange = "[${minecraft_version}]"
 ordering = "NONE"
 side = "BOTH"
 
+# GeckoLib рисует и анимирует Сердце чумы. Без него мод грузиться
+# не должен: сердце — цель всей сессии, а не украшение.
+[[dependencies.${mod_id}]]
+modId = "geckolib"
+type = "required"
+versionRange = "[4.9,5.0)"
+ordering = "AFTER"
+side = "BOTH"
+
 # Зависимости от voicechat здесь нет намеренно. Плагин голоса находится
 # по аннотации @ForgeVoicechatPlugin и без мода просто не грузится,
 # а сам voicechat зовёт свою версию "1.21.1-2.6.22" — такую строку

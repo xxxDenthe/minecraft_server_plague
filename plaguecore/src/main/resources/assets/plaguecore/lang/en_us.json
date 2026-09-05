@@ -13,9 +13,12 @@
   "entity.plaguecore.infected_cow": "Infected Cow",
   "entity.plaguecore.infected_pig": "Infected Pig",
   "entity.plaguecore.mutated_zombie": "Mutated Zombie",
+  "entity.plaguecore.rotten_heart": "Plague Heart",
   "item.plaguecore.infected_cow_spawn_egg": "Infected Cow Spawn Egg",
   "item.plaguecore.infected_pig_spawn_egg": "Infected Pig Spawn Egg",
   "item.plaguecore.mutated_zombie_spawn_egg": "Mutated Zombie Spawn Egg",
   "item.plaguecore.plague_brew": "Plague Brew",
-  "itemGroup.plaguecore": "Plague"
+  "item.plaguecore.rotten_heart_spawn_egg": "Plague Heart Spawn Egg",
+  "itemGroup.plaguecore": "Plague",
+  "subtitles.plaguecore.player_cough": "Coughing"
 }

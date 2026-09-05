@@ -39,6 +39,9 @@ public final class PlagueConfig {
     private static final ModConfigSpec.DoubleValue МНОЖИТЕЛЬ_СНА;
     private static final ModConfigSpec.IntValue ПРИБАВКА_СНА;
 
+    // ── Сердце чумы ───────────────────────────────────────────────────
+    private static final ModConfigSpec.DoubleValue ЗДОРОВЬЕ_СЕРДЦА;
+
     // ── фазы ──────────────────────────────────────────────────────────
     private static final ModConfigSpec.IntValue[] КОНЕЦ_ФАЗЫ =
         new ModConfigSpec.IntValue[PhaseTable.PHASE_COUNT];
@@ -97,6 +100,20 @@ public final class PlagueConfig {
     private static final ModConfigSpec.DoubleValue ШТРАФ_СМЕРТИ;
     private static final ModConfigSpec.DoubleValue ПОЛ_ПОСТОЯННЫХ;
     private static final ModConfigSpec.DoubleValue ЖЁСТКИЙ_ПОЛ;
+
+    // ── голос ─────────────────────────────────────────────────────────
+    private static final ModConfigSpec.IntValue МИН_СТАДИЯ;
+    private static final ModConfigSpec.DoubleValue ЧАСТОТА_ДРОЖИ;
+    private static final ModConfigSpec.DoubleValue[] ПОЛУТОНОВ =
+        new ModConfigSpec.DoubleValue[PlagueConstants.VOICE_LEVELS];
+    private static final ModConfigSpec.DoubleValue[] ГЛУХОТА =
+        new ModConfigSpec.DoubleValue[PlagueConstants.VOICE_LEVELS];
+    private static final ModConfigSpec.DoubleValue[] ХРИП =
+        new ModConfigSpec.DoubleValue[PlagueConstants.VOICE_LEVELS];
+    private static final ModConfigSpec.DoubleValue[] ДЫХАНИЕ =
+        new ModConfigSpec.DoubleValue[PlagueConstants.VOICE_LEVELS];
+    private static final ModConfigSpec.DoubleValue[] ДРОЖЬ =
+        new ModConfigSpec.DoubleValue[PlagueConstants.VOICE_LEVELS];
 
     public static final ModConfigSpec SPEC;
 
@@ -329,6 +346,63 @@ public final class PlagueConfig {
             .defineInRange("hardFloor",
                 окр(PlagueConstants.PLAYER_HARD_FLOOR), 1.0, 20.0);
 
+        СТРОИТЕЛЬ.pop().comment(
+            "Голос больного в Simple Voice Chat. Подбирается только слухом,",
+            "поэтому числа тут, а не в коде: правь на живом сервере и слушай.",
+            "Быстрее всего — командой /plague voice, она пишет сюда же.",
+            "level1 — первая испорченная стадия (minStage), level2 — все выше.",
+            "Разбор эффекта — docs/superpowers/notes/2026-09-05-golos-i-kashel.md"
+        ).push("voice");
+
+        МИН_СТАДИЯ = СТРОИТЕЛЬ
+            .comment("С какой стадии портить голос. Ниже неё речь обычная.")
+            .defineInRange("minStage", PlagueConstants.VOICE_MIN_STAGE, 1, 4);
+
+        ЧАСТОТА_ДРОЖИ = СТРОИТЕЛЬ
+            .comment("Частота дрожи в герцах. 5–7 — человеческий озноб, выше — робот.")
+            .defineInRange("tremorHz", окр(PlagueConstants.VOICE_TREMOR_HZ), 0.5, 15.0);
+
+        for (int у = 0; у < PlagueConstants.VOICE_LEVELS; у++) {
+            СТРОИТЕЛЬ.push("level" + (у + 1));
+
+            ПОЛУТОНОВ[у] = СТРОИТЕЛЬ
+                .comment("На сколько полутонов опустить голос.",
+                    "Главная примета болезни: отёкшие связки звучат ниже.",
+                    "Выше 4 начинается демон, а не больной.")
+                .defineInRange("semitones", окр(PlagueConstants.VOICE_SEMITONES[у]), 0.0, 8.0);
+
+            ГЛУХОТА[у] = СТРОИТЕЛЬ
+                .comment("Сила фильтра низких частот, 0..1: меньше — глуше.",
+                    "Ниже 0.2 голос звучит уже не больным, а сломанным микрофоном.")
+                .defineInRange("muffle", окр(PlagueConstants.VOICE_MUFFLE[у]), 0.05, 1.0);
+
+            ХРИП[у] = СТРОИТЕЛЬ
+                .comment("Жёсткость мягкого ограничения: больше — сильнее хрип.")
+                .defineInRange("rasp", окр(PlagueConstants.VOICE_RASP[у]), 1.0, 8.0);
+
+            ДЫХАНИЕ[у] = СТРОИТЕЛЬ
+                .comment("Громкость дыхания как доля от громкости голоса.",
+                    "Шум идёт по огибающей, поэтому в паузах речи тихо.")
+                .defineInRange("breath", окр(PlagueConstants.VOICE_BREATH[у]), 0.0, 1.5);
+
+            ДРОЖЬ[у] = СТРОИТЕЛЬ
+                .comment("Глубина дрожи, 0..1. Выше 0.4 звучит как обрыв связи.")
+                .defineInRange("tremor", окр(PlagueConstants.VOICE_TREMOR[у]), 0.0, 0.8);
+
+            СТРОИТЕЛЬ.pop();
+        }
+
+        СТРОИТЕЛЬ.pop().comment(
+            "Сердце чумы: цель всей сессии.",
+            "Дизайн — docs/superpowers/specs/2026-09-05-serdce-chumy-design.md"
+        ).push("heart");
+
+        ЗДОРОВЬЕ_СЕРДЦА = СТРОИТЕЛЬ
+            .comment("Здоровье Сердца. Двадцать кусков модели делят его поровну:",
+                "при 200 каждый кусок отваливается за 10 урона.",
+                "Правка доходит до уже поставленных Сердец после перезахода в мир.")
+            .defineInRange("health", окр(PlagueConstants.HEART_HEALTH), 20.0, 4000.0);
+
         SPEC = СТРОИТЕЛЬ.pop().build();
     }
 
@@ -344,6 +418,43 @@ public final class PlagueConfig {
     }
 
     /**
+     * Записать ручку голоса в файл. Значение сразу уходит и в живые
+     * константы: перечитывание файла придёт своим чередом, а слышать
+     * правку надо в ту же секунду, пока GM крутит ползунок.
+     *
+     * @return false, если такой ручки нет
+     */
+    public static boolean выставитьГолос(String id, double значение) {
+        VoiceKnobs.Ручка р = VoiceKnobs.найти(id);
+        if (р == null) return false;
+        double v = Math.max(р.минимум(), Math.min(р.максимум(), значение));
+
+        ModConfigSpec.ConfigValue<?> ячейка = ячейкаГолоса(id, р.уровень());
+        if (ячейка instanceof ModConfigSpec.IntValue целая) {
+            целая.set((int) Math.round(v));
+        } else if (ячейка instanceof ModConfigSpec.DoubleValue дробная) {
+            дробная.set(Math.round(v * 10000.0) / 10000.0);
+        } else {
+            return false;
+        }
+        SPEC.save();
+        VoiceKnobs.записать(id, v);
+        return true;
+    }
+
+    private static ModConfigSpec.ConfigValue<?> ячейкаГолоса(String id, int уровень) {
+        if (id.equals("minStage")) return МИН_СТАДИЯ;
+        if (id.equals("tremorHz")) return ЧАСТОТА_ДРОЖИ;
+        if (уровень < 0 || уровень >= PlagueConstants.VOICE_LEVELS) return null;
+        if (id.startsWith("semitones")) return ПОЛУТОНОВ[уровень];
+        if (id.startsWith("muffle")) return ГЛУХОТА[уровень];
+        if (id.startsWith("rasp")) return ХРИП[уровень];
+        if (id.startsWith("breath")) return ДЫХАНИЕ[уровень];
+        if (id.startsWith("tremor")) return ДРОЖЬ[уровень];
+        return null;
+    }
+
+    /**
      * Умолчание в файл — округлённым. Числа у нас float, а конфиг хранит
      * double, и без округления владелец видел бы в файле 0.10000000149.
      */
@@ -353,6 +464,8 @@ public final class PlagueConfig {
 
     /** Переписать игровые числа значениями из файла. */
     private static void применить() {
+        PlagueConstants.HEART_HEALTH = ЗДОРОВЬЕ_СЕРДЦА.get().floatValue();
+
         PlagueConstants.START_EPICENTERS = ОЧАГИ.get();
         PlagueConstants.START_INFECTION_PERCENT = СТАРТОВАЯ_ДОЛЯ.get().floatValue();
         PlagueConstants.SCAR_NIGHTS = НОЧЕЙ_ШРАМА.get();
@@ -415,6 +528,28 @@ public final class PlagueConfig {
             кашельКаждые[с] = КАШЕЛЬ_КАЖДЫЕ[с].get();
             шансКашля[с] = ШАНС_КАШЛЯ[с].get().floatValue();
         }
+        PlagueConstants.VOICE_MIN_STAGE = МИН_СТАДИЯ.get();
+        PlagueConstants.VOICE_TREMOR_HZ = ЧАСТОТА_ДРОЖИ.get().floatValue();
+
+        int уровней = PlagueConstants.VOICE_LEVELS;
+        float[] полутонов = new float[уровней];
+        float[] глухота = new float[уровней];
+        float[] хрип = new float[уровней];
+        float[] дыхание = new float[уровней];
+        float[] дрожь = new float[уровней];
+        for (int у = 0; у < уровней; у++) {
+            полутонов[у] = ПОЛУТОНОВ[у].get().floatValue();
+            глухота[у] = ГЛУХОТА[у].get().floatValue();
+            хрип[у] = ХРИП[у].get().floatValue();
+            дыхание[у] = ДЫХАНИЕ[у].get().floatValue();
+            дрожь[у] = ДРОЖЬ[у].get().floatValue();
+        }
+        PlagueConstants.VOICE_SEMITONES = полутонов;
+        PlagueConstants.VOICE_MUFFLE = глухота;
+        PlagueConstants.VOICE_RASP = хрип;
+        PlagueConstants.VOICE_BREATH = дыхание;
+        PlagueConstants.VOICE_TREMOR = дрожь;
+
         PlagueConstants.PLAYER_EXPOSURE = экспозиция;
         PlagueConstants.PLAYER_STAGE_HEALTH = здоровьеСтадии;
         PlagueConstants.PLAYER_COUGH_TICKS = кашельКаждые;

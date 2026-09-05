@@ -6,7 +6,6 @@ import dev.denthe.plaguecore.core.InfectionMath;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -51,12 +50,14 @@ public final class PlagueCough {
     /**
      * Звук и частицы.
      *
-     * ponytail: звук ванильный, с пониженным тоном — своего сэмпла кашля
-     * у нас пока нет. Заменить на свой, когда владелец запишет.
+     * Сэмплов семь, вариант выбирает сам Minecraft. Тон гуляет на
+     * ±6 % от броска к броску: два кашля подряд не должны звучать
+     * как один файл, проигранный дважды.
      */
     private static void кашлянуть(ServerLevel мир, ServerPlayer больной) {
+        float тон = 0.94f + мир.random.nextFloat() * 0.12f;
         мир.playSound(null, больной.getX(), больной.getY(), больной.getZ(),
-            SoundEvents.PLAYER_BREATH, SoundSource.PLAYERS, 1.2f, 0.6f);
+            PlagueSounds.PLAYER_COUGH.get(), SoundSource.PLAYERS, 1.0f, тон);
         мир.sendParticles(ParticleTypes.SNEEZE,
             больной.getX(), больной.getEyeY() - 0.1, больной.getZ(),
             12, 0.25, 0.15, 0.25, 0.02);

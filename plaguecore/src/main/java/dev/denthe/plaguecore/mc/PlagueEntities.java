@@ -55,6 +55,23 @@ public final class PlagueEntities {
             .clientTrackingRange(8)
             .build("mutated_zombie"));
 
+    /**
+     * Сердце чумы. Хитбокс под модель: она примерно 2.6 x 2.9 x 2.3 блока,
+     * и коробка меньше означала бы, что по торчащим корням не попасть.
+     *
+     * MobCategory.MISC, а не MONSTER: в естественном спавне Сердцу делать
+     * нечего, оно ставится рукой GM. Дальность видимости больше обычной —
+     * объект в три блока должен быть виден с другого конца зала.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<RottenHeart>> ROTTEN_HEART =
+        СУЩНОСТИ.register("rotten_heart", () -> EntityType.Builder
+            .of(RottenHeart::new, MobCategory.MISC)
+            .sized(2.6F, 2.9F)
+            .eyeHeight(1.5F)
+            .fireImmune()
+            .clientTrackingRange(16)
+            .build("rotten_heart"));
+
     public static void register(IEventBus modEventBus) {
         СУЩНОСТИ.register(modEventBus);
     }
@@ -64,5 +81,6 @@ public final class PlagueEntities {
         событие.put(INFECTED_PIG.get(), InfectedAnimal.атрибутыСвиньи().build());
         событие.put(INFECTED_COW.get(), InfectedAnimal.атрибутыКоровы().build());
         событие.put(MUTATED_ZOMBIE.get(), MutatedZombie.атрибуты().build());
+        событие.put(ROTTEN_HEART.get(), RottenHeart.атрибуты().build());
     }
 }

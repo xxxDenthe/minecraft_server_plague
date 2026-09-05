@@ -53,6 +53,11 @@ public final class PlagueEntityRenderers {
                 new CowModel<>(контекст.bakeLayer(ModelLayers.COW)), 0.7F, ТЕКСТУРА_КОРОВЫ));
 
         событие.registerEntityRenderer(PlagueEntities.MUTATED_ZOMBIE.get(), РендерерЗомби::new);
+
+        // Сердце рисует GeckoLib: у него своя геометрия, своя анимация
+        // и куски, которые прячутся по одному. Слой ванильной модели
+        // ему не нужен — GeckoLib читает geo.json сам.
+        событие.registerEntityRenderer(PlagueEntities.ROTTEN_HEART.get(), RottenHeartRenderer::new);
     }
 
     @SubscribeEvent

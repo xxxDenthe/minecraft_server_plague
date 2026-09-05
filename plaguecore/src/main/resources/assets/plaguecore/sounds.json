@@ -1,0 +1,15 @@
+{
+  "player_cough": {
+    "category": "player",
+    "subtitle": "subtitles.plaguecore.player_cough",
+    "sounds": [
+      { "name": "plaguecore:cough1", "attenuation_distance": 24 },
+      { "name": "plaguecore:cough2", "attenuation_distance": 24 },
+      { "name": "plaguecore:cough3", "attenuation_distance": 24 },
+      { "name": "plaguecore:cough4", "attenuation_distance": 24 },
+      { "name": "plaguecore:cough5", "attenuation_distance": 24 },
+      { "name": "plaguecore:cough6", "attenuation_distance": 24 },
+      { "name": "plaguecore:cough7", "attenuation_distance": 24 }
+    ]
+  }
+}

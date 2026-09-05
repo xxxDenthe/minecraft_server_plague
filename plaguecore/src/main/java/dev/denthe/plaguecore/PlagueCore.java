@@ -14,6 +14,7 @@ public class PlagueCore {
     public PlagueCore(IEventBus modEventBus, ModContainer container) {
         dev.denthe.plaguecore.mc.PlagueBlocks.register(modEventBus);
         dev.denthe.plaguecore.mc.PlagueEntities.register(modEventBus);
+        dev.denthe.plaguecore.mc.PlagueSounds.register(modEventBus);
         dev.denthe.plaguecore.mc.PlagueCreativeTab.register(modEventBus);
         dev.denthe.plaguecore.mc.PlayerPlagueData.register(modEventBus);
         PlagueConfig.зарегистрировать(modEventBus, container);

@@ -1,6 +1,7 @@
 package dev.denthe.plaguecore.mc;
 
 import dev.denthe.plaguecore.PlagueCore;
+import dev.denthe.plaguecore.VoiceKnobs;
 import dev.denthe.plaguecore.core.PlagueGrid;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -33,7 +34,7 @@ public final class PlagueNetwork {
     private PlagueNetwork() {}
 
     /** Версия протокола. Меняется, если поменяется формат пакетов. */
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";
 
     // ── номера действий ────────────────────────────────────────────────
     public static final int ACTION_REFRESH = 0;
@@ -141,6 +142,39 @@ public final class PlagueNetwork {
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
+    /**
+     * Ручки голоса на клиент — чтобы ползунки в панели мастера игры
+     * встали туда, где сервер их держит на самом деле. Значения идут
+     * массивом в порядке {@link VoiceKnobs#ВСЕ}: имена клиент знает сам
+     * из того же списка, гонять их по сети незачем.
+     */
+    public record Voice(float[] значения) implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<Voice> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "voice"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Voice> CODEC =
+            StreamCodec.of(
+                (buf, v) -> {
+                    buf.writeVarInt(v.значения.length);
+                    for (float з : v.значения) buf.writeFloat(з);
+                },
+                buf -> {
+                    float[] з = new float[buf.readVarInt()];
+                    for (int i = 0; i < з.length; i++) з[i] = buf.readFloat();
+                    return new Voice(з);
+                });
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /** Послать текущие ручки голоса одному игроку. */
+    public static void отправитьГолос(ServerPlayer кому) {
+        PacketDistributor.sendToPlayer(кому, new Voice(VoiceKnobs.снимок()));
+    }
+
     @SubscribeEvent
     public static void зарегистрировать(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(VERSION);
@@ -152,6 +186,10 @@ public final class PlagueNetwork {
         registrar.playToClient(Stage.TYPE, Stage.CODEC,
             (payload, ctx) -> ctx.enqueueWork(
                 () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьСтадию(payload)));
+
+        registrar.playToClient(Voice.TYPE, Voice.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(
+                () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьГолос(payload)));
 
         registrar.playToServer(Action.TYPE, Action.CODEC,
             (payload, ctx) -> ctx.enqueueWork(() -> {

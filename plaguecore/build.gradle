@@ -40,11 +40,21 @@ repositories {
         name = 'henkelmax'
         url = 'https://maven.maxhenkel.de/repository/public'
     }
+    // GeckoLib: анимация Сердца чумы. Джарник уже в паке (mods/MODLIST.md).
+    maven {
+        name = 'geckolib'
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+    }
 }
 
 dependencies {
     // compileOnly: сам голосовой чат лежит в паке, копию внутрь джарника не тащим
     compileOnly "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}"
+
+    // implementation, а не compileOnly как у voicechat: без GeckoLib
+    // в дев-запуске Сердце нечем рисовать. В джарник мода не попадает —
+    // NeoForge берёт его из папки mods.
+    implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
     testImplementation platform('org.junit:junit-bom:5.11.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -65,6 +75,19 @@ tasks.withType(JavaCompile).configureEach {
 // так что достаточно пробросить стандартный ввод.
 tasks.withType(JavaExec).configureEach {
     standardInput = System.in
+}
+
+// Послушать голос больного на своей записи, не поднимая сервер:
+//   ./gradlew voicePreview -Pwav="C:/путь/речь.wav"
+// Рядом с исходником лягут файлы -стадия3.wav и -стадия4.wav.
+tasks.register('voicePreview', JavaExec) {
+    group = 'plaguecore'
+    description = 'Прогнать WAV с речью через голос больного'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.denthe.plaguecore.core.SickVoiceCli'
+    args = project.hasProperty('wav')
+        ? (project.hasProperty('stage') ? [project.wav, project.stage] : [project.wav])
+        : []
 }
 
 processResources {

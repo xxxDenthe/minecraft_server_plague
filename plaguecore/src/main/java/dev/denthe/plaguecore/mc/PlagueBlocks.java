@@ -221,6 +221,15 @@ public final class PlagueBlocks {
                 PlagueEntities.MUTATED_ZOMBIE, 0x2A272F, 0x5C3A5C, свойства));
 
     /**
+     * Сердце чумы. Цвета — самый тёмный серый пака и фиолетовый акцент:
+     * по заметке о палитре Сердцу отведён самый заметный из них.
+     */
+    public static final DeferredItem<DeferredSpawnEggItem> ROTTEN_HEART_SPAWN_EGG =
+        ПРЕДМЕТЫ.registerItem("rotten_heart_spawn_egg",
+            свойства -> new DeferredSpawnEggItem(
+                PlagueEntities.ROTTEN_HEART, 0x2E2A28, 0x5C3A5C, свойства));
+
+    /**
      * Отвар от чумы. Не блок, но живёт здесь же: заводить отдельный
      * DeferredRegister ради одного предмета — лишний файл на пустом месте,
      * а творческая вкладка всё равно берёт содержимое из ПРЕДМЕТЫ целиком.
