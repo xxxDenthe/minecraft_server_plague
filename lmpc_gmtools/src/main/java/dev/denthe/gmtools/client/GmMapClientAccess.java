@@ -19,6 +19,15 @@ public final class GmMapClientAccess {
         GmMapData.updateMarks(payload.marks());
     }
 
+    /** Настройки Atmospherics от сервера: применяем у себя как есть. */
+    public static void acceptAtmo(GmNetwork.Atmo payload) {
+        if (payload.settings().isEmpty()) {
+            AtmoAccess.resetAll();
+            return;
+        }
+        payload.settings().forEach((path, value) -> AtmoAccess.set("atmo:" + path, value));
+    }
+
     public static void acceptInventory(GmNetwork.Inventory payload) {
         GmInvData.set(payload);
         Minecraft.getInstance().setScreen(new InventoryViewScreen(payload.name()));

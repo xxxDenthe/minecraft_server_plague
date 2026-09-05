@@ -816,57 +816,61 @@ public class GmPanelScreen extends Screen {
     }
 
     // ── Графика ───────────────────────────────────────────────────────────
-    // Живой редактор цветокора мода lmpc_shade. Значения дёргаются
-    // рефлексией через ShadeAccess — прямой зависимости между джарами нет.
-    // Ползунки меняют конфиг в памяти сразу, «Сохранить» пишет в файл.
+    // Живой редактор картинки мира: цветокор lmpc_shade и небо/туман
+    // Atmospherics в одних и тех же папках Кадр / Ночь / Туман / Небо.
+    // Значения дёргаются рефлексией через GradeAccess (фасад над
+    // ShadeAccess и AtmoAccess) — прямой зависимости между джарами нет.
+    // Ползунки меняют конфиг в памяти сразу, «Сохранить» пишет в файлы.
 
     private void initGraphics() {
-        if (!ShadeAccess.available()) return;
+        if (!GradeAccess.available()) return;
         String grp = section.folders[folder()];
         int x = contentX, y = contentY + 2, w = contentW;
-        for (String id : ShadeAccess.ids()) {
-            if (grp.equals(ShadeAccess.group(id))) {
+        for (String id : GradeAccess.ids()) {
+            if (grp.equals(GradeAccess.group(id))) {
                 y = addShadeControl(x, y, w, id);
             }
         }
         int by = contentY + contentH - 14;
         addRenderableWidget(Button.builder(Component.literal("Вернуть подобранные"), b -> {
             run("lmpcshade reset");
-            ShadeAccess.resetAll();
+            run("gmtools atmo reset");
+            GradeAccess.resetAll();
             rebuildWidgets();
         }).bounds(x, by, 128, 13).build());
         addRenderableWidget(Button.builder(Component.literal("Сохранить локально"),
-                b -> ShadeAccess.save())
+                b -> GradeAccess.save())
             .bounds(x + w - 108, by, 108, 13).build());
     }
 
     /**
-     * Отправить значение на сервер: он сохранит его в мире и разошлёт
-     * всем игрокам. Право проверяет сервер (OP). Локальный превью уже
-     * выставлен вызывающим — сервер потом пришлёт то же значение
-     * авторитетно. В одиночке идёт через встроенный сервер.
+     * Отправить значение на сервер: он сохранит его и разошлёт всем
+     * игрокам. Право проверяет сервер (OP). Какую команду слать —
+     * `/lmpcshade set` или `/gmtools atmo` — решает GradeAccess по
+     * идентификатору. Локальный превью уже выставлен вызывающим,
+     * сервер потом пришлёт то же значение авторитетно.
      */
     private void pushShade(String id, String value) {
-        run("lmpcshade set " + id + " " + value);
+        run(GradeAccess.pushCommand(id, value));
     }
 
     /** Кладёт виджет(ы) под один параметр, возвращает следующий y. */
     private int addShadeControl(int x, int y, int w, String id) {
-        String kind = ShadeAccess.kind(id);
-        String label = ShadeAccess.label(id) + (ShadeAccess.live(id) ? "" : " *");
+        String kind = GradeAccess.kind(id);
+        String label = GradeAccess.label(id) + (GradeAccess.live(id) ? "" : " *");
         switch (kind) {
             case "BOOL" -> {
                 addRenderableWidget(Button.builder(boolMsg(label, shadeBool(id)), b -> {
                     boolean nv = !shadeBool(id);
-                    ShadeAccess.set(id, nv);
+                    GradeAccess.set(id, nv);
                     pushShade(id, String.valueOf(nv));
                     b.setMessage(boolMsg(label, nv));
                 }).bounds(x, y, w, 13).build());
                 return y + ROW_H;
             }
             case "HEX" -> {
-                int[] rgb = parseHex(String.valueOf(ShadeAccess.get(id)));
-                String base = ShadeAccess.label(id);
+                int[] rgb = parseHex(String.valueOf(GradeAccess.get(id)));
+                String base = GradeAccess.label(id);
                 for (int ch = 0; ch < 3; ch++) {
                     addRenderableWidget(new HexChannelSlider(x, y + ch * ROW_H, w, 13,
                         base + " " + "RGB".charAt(ch), id, ch, rgb[ch]));
@@ -875,16 +879,17 @@ public class GmPanelScreen extends Screen {
             }
             default -> {
                 addRenderableWidget(new ShadeSlider(x, y, w, 13, label, id,
-                    ShadeAccess.min(id), ShadeAccess.max(id), "INT".equals(kind),
-                    ((Number) ShadeAccess.get(id)).doubleValue()));
+                    GradeAccess.min(id), GradeAccess.max(id), "INT".equals(kind),
+                    ((Number) GradeAccess.get(id)).doubleValue()));
                 return y + ROW_H;
             }
         }
     }
 
     private void renderGraphics(GuiGraphics g) {
-        if (!ShadeAccess.available()) {
-            g.drawString(font, "Мод lmpc_shade не найден в паке.", contentX, contentY + 4, DIM, false);
+        if (!GradeAccess.available()) {
+            g.drawString(font, "Ни lmpc_shade, ни Atmospherics не найдены в паке.",
+                contentX, contentY + 4, DIM, false);
             return;
         }
         g.drawString(font, "на сервере правки применяются у всех · * — после перезахода в мир",
@@ -892,7 +897,7 @@ public class GmPanelScreen extends Screen {
     }
 
     private static boolean shadeBool(String id) {
-        return Boolean.TRUE.equals(ShadeAccess.get(id));
+        return Boolean.TRUE.equals(GradeAccess.get(id));
     }
 
     private static Component boolMsg(String label, boolean v) {
@@ -944,7 +949,7 @@ public class GmPanelScreen extends Screen {
 
         @Override
         protected void applyValue() {
-            ShadeAccess.set(id, current());
+            GradeAccess.set(id, current());
         }
 
         @Override
@@ -968,7 +973,7 @@ public class GmPanelScreen extends Screen {
         }
 
         private String current() {
-            int[] rgb = parseHex(String.valueOf(ShadeAccess.get(id)));
+            int[] rgb = parseHex(String.valueOf(GradeAccess.get(id)));
             rgb[channel] = (int) Math.round(this.value * 255);
             return String.format(Locale.ROOT, "%02X%02X%02X", rgb[0], rgb[1], rgb[2]);
         }
@@ -980,7 +985,7 @@ public class GmPanelScreen extends Screen {
 
         @Override
         protected void applyValue() {
-            ShadeAccess.set(id, current());
+            GradeAccess.set(id, current());
         }
 
         @Override

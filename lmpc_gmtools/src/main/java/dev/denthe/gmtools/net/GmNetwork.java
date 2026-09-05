@@ -12,6 +12,8 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -26,7 +28,7 @@ import java.util.UUID;
 public final class GmNetwork {
     private GmNetwork() {}
 
-    private static final String VERSION = "4";
+    private static final String VERSION = "5";
 
     /**
      * dim: 0 — Обычный, 1 — Ад, 2 — Край, 3 — прочее (Ада и Края в игре
@@ -134,6 +136,38 @@ public final class GmNetwork {
         }
     }
 
+    /**
+     * Общие настройки Atmospherics: путь к полю → значение строкой.
+     * Сервер мода не знает (Atmospherics чисто клиентский), поэтому
+     * возит пары как есть, разбирает их клиент.
+     */
+    public record Atmo(Map<String, String> settings) implements CustomPacketPayload {
+
+        public static final Type<Atmo> TYPE = new Type<>(
+            ResourceLocation.fromNamespaceAndPath(GmTools.MODID, "atmo"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Atmo> CODEC = StreamCodec.of(
+            (buf, p) -> {
+                buf.writeVarInt(p.settings().size());
+                for (Map.Entry<String, String> e : p.settings().entrySet()) {
+                    buf.writeUtf(e.getKey(), 64);
+                    buf.writeUtf(e.getValue(), 32);
+                }
+            },
+            buf -> {
+                int n = buf.readVarInt();
+                if (n < 0 || n > 64) throw new IllegalArgumentException("настроек Atmospherics: " + n);
+                Map<String, String> m = new LinkedHashMap<>();
+                for (int i = 0; i < n; i++) m.put(buf.readUtf(64), buf.readUtf(32));
+                return new Atmo(m);
+            });
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
     @SubscribeEvent
     static void register(RegisterPayloadHandlersEvent event) {
         var r = event.registrar(VERSION);
@@ -143,5 +177,7 @@ public final class GmNetwork {
             () -> dev.denthe.gmtools.client.GmMapClientAccess.acceptInventory(payload)));
         r.playToClient(Marks.TYPE, Marks.CODEC, (payload, ctx) -> ctx.enqueueWork(
             () -> dev.denthe.gmtools.client.GmMapClientAccess.acceptMarks(payload)));
+        r.playToClient(Atmo.TYPE, Atmo.CODEC, (payload, ctx) -> ctx.enqueueWork(
+            () -> dev.denthe.gmtools.client.GmMapClientAccess.acceptAtmo(payload)));
     }
 }

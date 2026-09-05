@@ -45,6 +45,14 @@ public final class GmCommands {
             .then(Commands.literal("unmark")
                 .then(Commands.argument("name", StringArgumentType.greedyString())
                     .executes(c -> GmMarkers.remove(c.getSource(), StringArgumentType.getString(c, "name")))))
+            .then(Commands.literal("atmo")
+                .then(Commands.literal("reset")
+                    .executes(c -> GmAtmo.reset(c.getSource())))
+                .then(Commands.argument("path", StringArgumentType.word())
+                    .then(Commands.argument("value", StringArgumentType.word())
+                        .executes(c -> GmAtmo.set(c.getSource(),
+                            StringArgumentType.getString(c, "path"),
+                            StringArgumentType.getString(c, "value"))))))
             .then(Commands.literal("log")
                 .executes(c -> GmLog.print(c.getSource()))));
     }
