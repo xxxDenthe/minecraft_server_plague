@@ -16,10 +16,13 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.coordinates.ColumnPosArgument;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.border.WorldBorder;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -43,6 +46,13 @@ public final class PlagueCommands {
         корень.then(Commands.literal("gui").executes(PlagueCommands::экран));
 
         корень.then(Commands.literal("info").executes(PlagueCommands::info));
+
+        корень.then(Commands.literal("center")
+            .executes(PlagueCommands::показатьЦентр)
+            .then(Commands.argument("pos", ColumnPosArgument.columnPos())
+                .executes(ctx -> переместитьЦентр(ctx, false))
+                .then(Commands.literal("force")
+                    .executes(ctx -> переместитьЦентр(ctx, true)))));
 
         // Тайнопись: предохранитель мастера игры. Если команда завязла
         // и слово не угадывается — открыть руками, сессия важнее загадки.
@@ -233,6 +243,74 @@ public final class PlagueCommands {
         s.sendSuccess(() -> Component.literal(
             String.format("Под землёй не отрисовано: %d, в очереди сейчас: %d",
                 ждётПодЗемлёй, CaveMaterializer.длинаОчереди())), false);
+        return 1;
+    }
+
+    /** Где сейчас центр мира по мнению чумы. */
+    private static int показатьЦентр(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        PlagueState st = PlagueState.get(мир(ctx.getSource()));
+        PlagueGrid g = st.grid();
+        ctx.getSource().sendSuccess(() -> Component.literal(String.format(
+            "Центр чумы: чанк %d, %d (блок %d, %d). Сетка %d×%d, углы чанков %d,%d..%d,%d",
+            st.центрЧанкX(), st.центрЧанкZ(),
+            st.центрЧанкX() * 16 + 8, st.центрЧанкZ() * 16 + 8,
+            g.size(), g.size(),
+            g.originX(), g.originZ(),
+            g.originX() + g.size() - 1, g.originZ() + g.size() - 1)), false);
+        return 1;
+    }
+
+    /**
+     * Перенести центр мира: сетка чумы, граница мира и точка возрождения
+     * встают вокруг указанной точки.
+     *
+     * Три вещи ставятся одной командой намеренно. Разъехавшись хоть на
+     * чанк, они дают заражение за границей и спавн в углу карты — а
+     * заметно это станет только в игре, на живых людях.
+     *
+     * Сетка при переносе обнуляется, поэтому команда требует слова
+     * {@code force}, если чума уже посеяна.
+     */
+    private static int переместитьЦентр(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, boolean силой) {
+        ServerLevel level = мир(ctx.getSource());
+        PlagueState st = PlagueState.get(level);
+
+        if (!силой && st.grid().countInfected() > 0) {
+            ctx.getSource().sendFailure(Component.literal(String.format(
+                "Чума уже посеяна: %d заражённых чанков. Перенос центра сотрёт их "
+                + "вместе с очагами и разметкой местности. Если точно надо — "
+                + "допишите force в конец команды.", st.grid().countInfected())));
+            return 0;
+        }
+
+        var pos = ColumnPosArgument.getColumnPos(ctx, "pos");
+        int цx = pos.x() >> 4;
+        int цz = pos.z() >> 4;
+        st.переместитьЦентр(цx, цz);
+
+        // Середина центрального чанка: так сетка и граница мира соосны.
+        double блокX = цx * 16 + 8;
+        double блокZ = цz * 16 + 8;
+
+        WorldBorder граница = level.getWorldBorder();
+        граница.setCenter(блокX, блокZ);
+        граница.setSize(PlagueConstants.WORLD_SIZE_BLOCKS);
+
+        BlockPos спавн = new BlockPos((int) блокX,
+            level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) блокX, (int) блокZ),
+            (int) блокZ);
+        level.setDefaultSpawnPos(спавн, 0f);
+
+        int размечено = TerrainInitializer.initialize(level, st);
+
+        ctx.getSource().sendSuccess(() -> Component.literal(String.format(
+            "Центр мира: чанк %d, %d (блок %d, %d, спавн на высоте %d).%n"
+            + "Граница мира %d блоков, местность размечена (%d чанков), сетка чумы пуста.%n"
+            + "Дальше: /plague generate 0.05",
+            цx, цz, (int) блокX, (int) блокZ, спавн.getY(),
+            PlagueConstants.WORLD_SIZE_BLOCKS, размечено)), true);
         return 1;
     }
 

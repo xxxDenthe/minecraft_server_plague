@@ -151,6 +151,28 @@ public class PlagueState extends SavedData {
         if (epicenters.remove(packed)) setDirty();
     }
 
+    /** Чанк, вокруг которого построена сетка. Совпадает с центром карты в GUI. */
+    public int центрЧанкX() { return grid.originX() + grid.size() / 2; }
+
+    public int центрЧанкZ() { return grid.originZ() + grid.size() / 2; }
+
+    /**
+     * Перенести сетку на новый центр мира.
+     *
+     * Сетка строится заново и пустой: старые уровни считались под другой
+     * рельеф, а множители местности в новом месте другие — переносить их
+     * значило бы врать движку распространения всю сессию. Очаги стираются,
+     * местность помечается неразмеченной; после переноса нужен
+     * {@code TerrainInitializer} и {@code /plague generate}.
+     */
+    public void переместитьЦентр(int центрЧанкX, int центрЧанкZ) {
+        int size = PlagueConstants.GRID_SIZE_CHUNKS;
+        this.grid = new PlagueGrid(size, центрЧанкX - size / 2, центрЧанкZ - size / 2);
+        this.epicenters.clear();
+        this.terrainInitialized = false;
+        setDirty();
+    }
+
     public long lastProcessedDay() { return lastProcessedDay; }
 
     public void setLastProcessedDay(long day) { this.lastProcessedDay = day; }

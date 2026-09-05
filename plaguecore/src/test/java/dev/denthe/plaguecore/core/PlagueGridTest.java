@@ -109,4 +109,26 @@ class PlagueGridTest {
         assertEquals(3, copy[idx]);
         assertEquals(1, g.getLevel(0, 0));
     }
+
+    /**
+     * Сетка, сдвинутая под произвольный центр мира (/plague center),
+     * кладёт центральный чанк ровно в среднюю ячейку — иначе карта
+     * в /plague gui рисовала бы центр не по центру, а граница мира
+     * не совпадала бы с сеткой.
+     */
+    @Test
+    void центральныйЧанкПопадаетВСереднююЯчейку() {
+        int размер = PlagueConstants.GRID_SIZE_CHUNKS;
+        for (int центр : new int[] { 0, 125, -125, 1000 }) {
+            PlagueGrid g = new PlagueGrid(размер, центр - размер / 2, центр - размер / 2);
+            int середина = (размер / 2) * размер + (размер / 2);
+            assertEquals(середина, g.index(центр, центр));
+            assertEquals(центр, g.chunkXOf(середина));
+            assertEquals(центр, g.chunkZOf(середина));
+            // 1000 блоков границы мира влезают в сетку целиком
+            assertTrue(g.contains(центр - 31, центр - 31));
+            assertTrue(g.contains(центр + 31, центр + 31));
+            assertFalse(g.contains(центр - 32, центр));
+        }
+    }
 }
