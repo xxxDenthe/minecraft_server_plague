@@ -8,6 +8,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.player.Player;
 
@@ -37,6 +39,11 @@ import java.util.UUID;
  * на игрока, а не на мир: одиночка в глуши не должен спасаться тем, что
  * лимит выел кто-то другой на другом конце карты.
  *
+ * <p><b>Выводок идёт на игрока сразу.</b> Это не обычный ночной спавн,
+ * который бродит, пока на кого-нибудь не наткнётся: мешок отвечает на то,
+ * что человек заночевал в гнили, и кучка должна искать. Цель ставится
+ * прямо при появлении — {@link #натравить}.
+ *
  * <p>Скелеты ванильные намеренно: своя мутировавшая версия потребовала бы
  * модели, текстуры и рендерера, а ванильный скелет ещё и сгорает на
  * рассвете — выводок убирает себя сам, и мир не засоряется.
@@ -53,6 +60,20 @@ public final class SporeSpawner {
 
     /** Сколько раз пробуем найти место одному мобу, прежде чем бросить. */
     private static final int ПОПЫТОК_НА_МОБА = 12;
+
+    /**
+     * Дальность, с которой выводок идёт на игрока, в блоках.
+     *
+     * Выставляется мобу как {@code FOLLOW_RANGE}, и без этого цель
+     * не держалась бы: ванильный зомби видит на 35 блоков, скелет —
+     * на 16, а всё, что дальше, ИИ забывает в тот же тик. Мешок вполне
+     * может оказаться в полусотне блоков от людей, и без прибавки
+     * «кучка сразу идёт атаковать» выглядело бы сломанным.
+     *
+     * Больше {@link #ПОИСК_ИГРОКА} ставить бессмысленно: дальше него
+     * выводка не бывает вовсе.
+     */
+    private static final double АГРО_ДАЛЬНОСТЬ = 64.0;
 
     /**
      * Сколько кучек уже вылезло этой ночью у каждого игрока.
@@ -99,9 +120,9 @@ public final class SporeSpawner {
         int было = кучекЗаНочь.getOrDefault(игрок.getUUID(), 0);
         if (было >= PlagueConstants.SPAWN_MAX_GROUPS_PER_NIGHT) return false;
 
-        int вышло = насыпать(уровень, мешок, ГСЧ,
+        int вышло = насыпать(уровень, мешок, ГСЧ, игрок,
                              PlagueEntities.MUTATED_ZOMBIE.get(), PlagueConstants.SPAWN_ZOMBIES)
-                  + насыпать(уровень, мешок, ГСЧ,
+                  + насыпать(уровень, мешок, ГСЧ, игрок,
                              EntityType.SKELETON, PlagueConstants.SPAWN_SKELETONS);
         if (вышло == 0) return false;
 
@@ -124,7 +145,7 @@ public final class SporeSpawner {
 
     /** Выпустить сколько получится мобов одного вида. Возвращает сколько вышло. */
     private static int насыпать(ServerLevel уровень, BlockPos мешок, RandomSource ГСЧ,
-                                EntityType<? extends Mob> тип, int сколько) {
+                                Player цель, EntityType<? extends Mob> тип, int сколько) {
         int вышло = 0;
         for (int i = 0; i < сколько; i++) {
             BlockPos место = найтиМесто(уровень, мешок, ГСЧ);
@@ -137,9 +158,32 @@ public final class SporeSpawner {
             моб.finalizeSpawn(уровень, уровень.getCurrentDifficultyAt(место),
                               MobSpawnType.NATURAL, null);
             уровень.addFreshEntity(моб);
+            натравить(моб, цель);
             вышло++;
         }
         return вышло;
+    }
+
+    /**
+     * Пустить моба сразу на игрока, а не ждать, пока тот попадётся на глаза.
+     *
+     * Выводок — не случайный ночной спавн, а ответ мира на то, что человек
+     * заночевал в гнили: он должен искать, а не бродить. Цель ставится
+     * после добавления в мир — до этого у моба ещё нет уровня, и ИИ
+     * сбросил бы её на первом же тике.
+     *
+     * Прибавка дальности обязательна вместе с целью: без неё ванильный
+     * ИИ забывает игрока дальше 35 блоков (у скелета — 16) в тот же тик,
+     * и вся затея выглядела бы сломанной.
+     */
+    private static void натравить(Mob моб, Player цель) {
+        if (моб.distanceTo(цель) > АГРО_ДАЛЬНОСТЬ) return;
+
+        AttributeInstance дальность = моб.getAttribute(Attributes.FOLLOW_RANGE);
+        if (дальность != null && дальность.getBaseValue() < АГРО_ДАЛЬНОСТЬ) {
+            дальность.setBaseValue(АГРО_ДАЛЬНОСТЬ);
+        }
+        моб.setTarget(цель);
     }
 
     /**
