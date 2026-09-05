@@ -84,5 +84,19 @@
   "msg.lmpc_classes.bloom.not_farmer": "Only the Farmer knows how to plant a bloom.",
   "msg.lmpc_classes.tune.value": "%1$s = %2$s",
   "msg.lmpc_classes.tune.set": "%1$s is now %2$s",
-  "msg.lmpc_classes.tune.failed": "Could not change %s: config not loaded, or the value is out of range."
+  "msg.lmpc_classes.tune.failed": "Could not change %s: config not loaded, or the value is out of range.",
+  "block.lmpc_classes.andesite_purifier": "Andesite Purifier",
+  "class.lmpc_classes.smith.ability.2": "Andesite purifier: once a night it cleanses its own chunk, if turning and fuelled with reagent.",
+  "class.lmpc_classes.smith.ability.3": "The purifier runs stronger while a Smith is online - its power scales with their tier.",
+  "msg.lmpc_classes.purifier.no_power": "The purifier stands still - no rotation.",
+  "msg.lmpc_classes.purifier.no_reagent": "The purifier has no reagent.",
+  "msg.lmpc_classes.purifier.working": "Purifier running. Reagent: %1$s, party tier: %2$s",
+  "msg.lmpc_classes.purifier.no_smith": "no Smith",
+  "hud.lmpc_classes.snapshot": "Snapshot: %s",
+  "hud.lmpc_classes.chunk": "Infection here: %s",
+  "hud.lmpc_classes.chunk_unknown": "Local infection unknown",
+  "class.lmpc_classes.chronicler.ability.2": "The exact infection level of the ground you are looking at.",
+  "class.lmpc_classes.chronicler.ability.3": "A camera click reveals the infection map around you to the whole party for minutes.",
+  "msg.lmpc_classes.snapshot.cooldown": "The film is not ready yet: %s min.",
+  "msg.lmpc_classes.snapshot.no_data": "Nothing to photograph: the plague is not tracked here."
 }

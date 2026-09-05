@@ -84,5 +84,19 @@
   "msg.lmpc_classes.bloom.not_farmer": "Сажать бутон умеет только Фермер.",
   "msg.lmpc_classes.tune.value": "%1$s = %2$s",
   "msg.lmpc_classes.tune.set": "%1$s теперь %2$s",
-  "msg.lmpc_classes.tune.failed": "Не удалось изменить %s: конфиг не загружен или значение вне допустимых границ."
+  "msg.lmpc_classes.tune.failed": "Не удалось изменить %s: конфиг не загружен или значение вне допустимых границ.",
+  "block.lmpc_classes.andesite_purifier": "Андезитовый очиститель",
+  "class.lmpc_classes.smith.ability.2": "Андезитовый очиститель: раз за ночь чистит свой чанк, если крутится и заряжен реагентом.",
+  "class.lmpc_classes.smith.ability.3": "Очиститель работает сильнее, пока в игре есть Кузнец — сила растёт с его тиром.",
+  "msg.lmpc_classes.purifier.no_power": "Очиститель стоит без вращения.",
+  "msg.lmpc_classes.purifier.no_reagent": "В очистителе нет реагента.",
+  "msg.lmpc_classes.purifier.working": "Очиститель работает. Реагента: %1$s, тир партии: %2$s",
+  "msg.lmpc_classes.purifier.no_smith": "без Кузнеца",
+  "hud.lmpc_classes.snapshot": "Снимок: %s",
+  "hud.lmpc_classes.chunk": "Здесь заражение: %s",
+  "hud.lmpc_classes.chunk_unknown": "Заражение местности неизвестно",
+  "class.lmpc_classes.chronicler.ability.2": "Точный уровень заражения местности там, куда смотришь.",
+  "class.lmpc_classes.chronicler.ability.3": "Щелчок камерой открывает всей партии карту заражения вокруг — на несколько минут.",
+  "msg.lmpc_classes.snapshot.cooldown": "Плёнка ещё не готова: %s мин.",
+  "msg.lmpc_classes.snapshot.no_data": "Снимать нечего: чума здесь не считается."
 }

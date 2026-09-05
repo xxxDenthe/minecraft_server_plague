@@ -36,11 +36,13 @@ public final class ChroniclerHud {
     private static final int ЖИВЁТ_ТИКОВ = 60;
 
     private static List<ClassNetwork.Insight.Запись> записи = List.of();
+    private static int уровеньЧанка = -1;
     private static long обновленоТик = Long.MIN_VALUE;
 
     /** Пришёл свежий обзор. Зовётся из {@code ClassNetwork} уже в потоке клиента. */
     public static void принять(ClassNetwork.Insight пакет) {
         записи = пакет.записи();
+        уровеньЧанка = пакет.уровеньЧанка();
         Minecraft mc = Minecraft.getInstance();
         обновленоТик = mc.level == null ? Long.MIN_VALUE : mc.level.getGameTime();
     }
@@ -54,12 +56,14 @@ public final class ChroniclerHud {
         GuiGraphics графика = событие.getGuiGraphics();
         Component заголовок = Component.translatable("hud.lmpc_classes.chronicle");
 
-        int ширина = mc.font.width(заголовок);
+        Component местность = строкаМестности();
+
+        int ширина = Math.max(mc.font.width(заголовок), mc.font.width(местность));
         for (ClassNetwork.Insight.Запись з : записи) {
             ширина = Math.max(ширина, mc.font.width(строка(з)));
         }
         ширина += 8;
-        int высота = 8 + (записи.size() + 1) * (mc.font.lineHeight + 1);
+        int высота = 8 + (записи.size() + 2) * (mc.font.lineHeight + 1);
 
         графика.fill(4, 4, 4 + ширина, 4 + высота, 0x88120E08);
         графика.renderOutline(4, 4, ширина, высота, 0x66B8942F);
@@ -73,6 +77,21 @@ public final class ChroniclerHud {
             графика.drawString(mc.font, строка(з), 8, y, цветСтадии(з.стадия(), з.этоЯ()), false);
             y += mc.font.lineHeight + 1;
         }
+
+        графика.drawString(mc.font, местность, 8, y, 0xA89878, false);
+    }
+
+    /**
+     * Заражение чанка, на который Летописец смотрит, точным числом.
+     * Это и есть обещанная спеком замена «округлённой строки» Jade:
+     * плагина к Jade нет — он потребовал бы жёсткой зависимости на
+     * чужой API, а Jade в этом паке уже один раз ронял клиент
+     * (заметка 2026-09-05-jade-otkachen-radi-zhazhdy).
+     */
+    private static Component строкаМестности() {
+        return уровеньЧанка < 0
+            ? Component.translatable("hud.lmpc_classes.chunk_unknown")
+            : Component.translatable("hud.lmpc_classes.chunk", уровеньЧанка);
     }
 
     /** «Ник — стадия 2 · 41». Неизвестные числа показываем прочерком, а не нулём. */

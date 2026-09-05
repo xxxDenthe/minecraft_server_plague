@@ -32,7 +32,8 @@ public final class ClassLore {
         return switch (класс) {
             case CLERIC -> 3;
             case FARMER -> 3;
-            case SMITH, CHRONICLER -> 1;
+            case SMITH -> 3;
+            case CHRONICLER -> 3;
             case NONE -> 0;
         };
     }

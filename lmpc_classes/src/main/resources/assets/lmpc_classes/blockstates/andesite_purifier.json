@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "lmpc_classes:block/andesite_purifier"
+    }
+  }
+}

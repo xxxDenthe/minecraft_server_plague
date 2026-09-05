@@ -20,6 +20,7 @@ public class LmpcClasses {
     public LmpcClasses(IEventBus modEventBus, ModContainer container) {
         PlayerClassData.register(modEventBus);
         ClassBlocks.register(modEventBus);
+        ClassBlockEntities.register(modEventBus);
         ClassItems.register(modEventBus);
         ClassCreativeTab.register(modEventBus);
         ClassesConfig.зарегистрировать(modEventBus, container);

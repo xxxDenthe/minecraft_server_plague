@@ -11,6 +11,8 @@ import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
@@ -196,11 +198,28 @@ public final class ClassPassives {
             if (з.стадия() > 0) естьЗаражённый = true;
         }
 
-        PacketDistributor.sendToPlayer(летописец, new ClassNetwork.Insight(List.copyOf(записи)));
+        PacketDistributor.sendToPlayer(летописец,
+            new ClassNetwork.Insight(List.copyOf(записи), уровеньПодПрицелом(летописец)));
 
         if (естьЗаражённый && сейчас % ClassSwitch.ТИКОВ_В_МИНУТЕ == 0) {
             PlayerClassData.прибавитьМастерство(летописец, ClassesConfig.летописецМастерствоВМинуту());
         }
+    }
+
+    /**
+     * Уровень заражения чанка, на который Летописец смотрит; если ни
+     * во что не целится — того, где стоит. Это и есть обещанная спеком
+     * «точная цифра вместо округлённой строки»: интеграции с Jade нет
+     * (плагин требовал бы жёсткой зависимости на его API, а Jade в этом
+     * паке уже один раз ронял клиент), поэтому число показывает
+     * собственная панель Летописца.
+     */
+    private static int уровеньПодПрицелом(ServerPlayer летописец) {
+        HitResult попадание = летописец.pick(48.0, 0f, false);
+        BlockPos точка = попадание.getType() == HitResult.Type.BLOCK
+            ? ((BlockHitResult) попадание).getBlockPos()
+            : летописец.blockPosition();
+        return PlagueBridge.уровеньЧанкаВ(летописец.serverLevel(), точка);
     }
 
     private static ClassNetwork.Insight.Запись запись(ServerPlayer игрок, boolean этоЯ) {

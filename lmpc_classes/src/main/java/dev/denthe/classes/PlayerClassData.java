@@ -47,25 +47,34 @@ public class PlayerClassData {
     /** Мировой тик, когда снова можно пить улучшенный отвар. −1 — готов сейчас. */
     public long отварГотовТик = -1L;
 
+    /** Мировой тик, когда Летописец снова может сделать снимок. −1 — готов сейчас. */
+    public long снимокГотовТик = -1L;
+
     public PlayerClassData() {}
 
-    public PlayerClassData(Класс класс, long последняяСменаТик, int мастерство, long отварГотовТик) {
+    public PlayerClassData(
+            Класс класс, long последняяСменаТик, int мастерство,
+            long отварГотовТик, long снимокГотовТик) {
         this.класс = класс;
         this.последняяСменаТик = последняяСменаТик;
         this.мастерство = мастерство;
         this.отварГотовТик = отварГотовТик;
+        this.снимокГотовТик = снимокГотовТик;
     }
 
     public static final Codec<PlayerClassData> CODEC = RecordCodecBuilder.create(и -> и.group(
         Codec.STRING.xmap(PlayerClassData::классПоИмени, Класс::name).fieldOf("class").forGetter(д -> д.класс),
         Codec.LONG.fieldOf("lastSwitchTick").forGetter(д -> д.последняяСменаТик),
         Codec.INT.fieldOf("mastery").forGetter(д -> д.мастерство),
-        Codec.LONG.fieldOf("brewReadyTick").forGetter(д -> д.отварГотовТик)
+        Codec.LONG.fieldOf("brewReadyTick").forGetter(д -> д.отварГотовТик),
+        // Поле появилось в 0.7.0. Необязательное — иначе разбор старого
+        // сейва падал бы, а класс и мастерство игрока в нём настоящие.
+        Codec.LONG.optionalFieldOf("snapshotReadyTick", -1L).forGetter(д -> д.снимокГотовТик)
     ).apply(и, PlayerClassData::new));
 
     /**
      * Сетевой кодек синка. Пишем руками, а не через {@code
-     * ByteBufCodecs.fromCodec(CODEC)}: четыре скалярных поля дешевле
+     * ByteBufCodecs.fromCodec(CODEC)}: пять скалярных полей дешевле
      * гонять числами, чем NBT-деревом, а порядковый номер класса
      * при чтении всё равно приходится зажимать в диапазон — пакет
      * приходит с сервера, но версии модов могут разойтись.
@@ -76,11 +85,13 @@ public class PlayerClassData {
             буфер.writeLong(д.последняяСменаТик);
             буфер.writeInt(д.мастерство);
             буфер.writeLong(д.отварГотовТик);
+            буфер.writeLong(д.снимокГотовТик);
         },
         буфер -> new PlayerClassData(
             классПоНомеру(буфер.readByte()),
             буфер.readLong(),
             буфер.readInt(),
+            буфер.readLong(),
             буфер.readLong()));
 
     /** Неизвестное имя класса (старый сейв, чужая версия) — не краш, а NONE. */

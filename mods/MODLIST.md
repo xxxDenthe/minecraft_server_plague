@@ -117,7 +117,7 @@ zombieawareness-neoforge-1.21.0-1.13.2.jar
 plaguecore-0.1.0.jar
 lmpc_gmtools-0.16.0.jar
 lmpc_shade-0.8.0.jar
-lmpc_classes-0.6.1.jar
+lmpc_classes-0.7.0.jar
 ```
 
 Не качаются со стороны, собираются из исходников:

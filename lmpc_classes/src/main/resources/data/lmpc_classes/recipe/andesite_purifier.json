@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "AAA",
+    "CGC",
+    "AIA"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:polished_andesite"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "G": {
+      "item": "lmpc_classes:cleansing_agent"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "lmpc_classes:andesite_purifier",
+    "count": 1
+  }
+}

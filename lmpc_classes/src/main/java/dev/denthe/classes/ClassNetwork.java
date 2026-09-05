@@ -44,7 +44,7 @@ import java.util.UUID;
 public final class ClassNetwork {
     private ClassNetwork() {}
 
-    private static final String VERSION = "2";
+    private static final String VERSION = "3";
 
     /** Клиент закончил канал наведения — просит напоить цель. */
     public record FeedRequest(UUID targetId) implements CustomPacketPayload {
@@ -64,7 +64,7 @@ public final class ClassNetwork {
      * Обзор Летописца: кто рядом и насколько заражён. Отправляется
      * только Летописцам и только пока есть что показать.
      */
-    public record Insight(List<Запись> записи) implements CustomPacketPayload {
+    public record Insight(List<Запись> записи, int уровеньЧанка) implements CustomPacketPayload {
 
         /**
          * @param имя          ник игрока
@@ -83,6 +83,7 @@ public final class ClassNetwork {
         public static final StreamCodec<RegistryFriendlyByteBuf, Insight> CODEC =
             StreamCodec.of(
                 (buf, x) -> {
+                    buf.writeVarInt(x.уровеньЧанка + 1);
                     buf.writeVarInt(x.записи.size());
                     for (Запись з : x.записи) {
                         buf.writeUtf(з.имя(), 32);
@@ -92,13 +93,61 @@ public final class ClassNetwork {
                     }
                 },
                 buf -> {
+                    int уровень = buf.readVarInt() - 1;
                     int сколько = Math.min(buf.readVarInt(), МАКС_ЗАПИСЕЙ);
                     List<Запись> список = new ArrayList<>(сколько);
                     for (int i = 0; i < сколько; i++) {
                         список.add(new Запись(
                             buf.readUtf(32), buf.readVarInt() - 1, buf.readFloat(), buf.readBoolean()));
                     }
-                    return new Insight(List.copyOf(список));
+                    return new Insight(List.copyOf(список), уровень);
+                });
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /**
+     * Снимок Летописца: точные уровни заражения чанков вокруг точки
+     * съёмки. Спек, раздел 7 — эффект достаётся <b>всей партии</b>,
+     * а не только автору снимка, поэтому пакет уходит всем.
+     *
+     * Сетка передаётся плоским массивом байт стороной {@code сторона}
+     * чанков: это десятки байт, дешевле любой структуры и ровно то,
+     * что рисует экран.
+     *
+     * @param чанкX   чанк левого верхнего угла сетки
+     * @param чанкZ   чанк левого верхнего угла сетки
+     * @param сторона сторона квадрата в чанках
+     * @param уровни  уровни 0..5 построчно; −1 закодирован как 0xFF
+     * @param тиков   сколько снимок живёт на экране
+     * @param автор   ник Летописца — снимок подписан, это лоровая вещь
+     */
+    public record Snapshot(int чанкX, int чанкZ, int сторона, byte[] уровни, int тиков, String автор)
+            implements CustomPacketPayload {
+
+        /** Потолок на размер пакета: 21×21 чанка — треть мира, больше незачем. */
+        public static final int МАКС_СТОРОНА = 21;
+
+        public static final Type<Snapshot> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(LmpcClasses.MODID, "snapshot"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Snapshot> CODEC =
+            StreamCodec.of(
+                (buf, x) -> {
+                    buf.writeVarInt(x.чанкX);
+                    buf.writeVarInt(x.чанкZ);
+                    buf.writeVarInt(x.сторона);
+                    buf.writeByteArray(x.уровни);
+                    buf.writeVarInt(x.тиков);
+                    buf.writeUtf(x.автор, 32);
+                },
+                buf -> {
+                    int x = buf.readVarInt();
+                    int z = buf.readVarInt();
+                    int сторона = Math.min(buf.readVarInt(), МАКС_СТОРОНА);
+                    byte[] уровни = buf.readByteArray(МАКС_СТОРОНА * МАКС_СТОРОНА);
+                    return new Snapshot(x, z, сторона, уровни, buf.readVarInt(), buf.readUtf(32));
                 });
 
         @Override
@@ -120,10 +169,17 @@ public final class ClassNetwork {
         // пришёл, то есть только на клиенте.
         registrar.playToClient(Insight.TYPE, Insight.CODEC,
             (payload, ctx) -> ctx.enqueueWork(() -> приняли(payload)));
+
+        registrar.playToClient(Snapshot.TYPE, Snapshot.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(() -> принялиСнимок(payload)));
     }
 
     private static void приняли(Insight payload) {
         dev.denthe.classes.client.ChroniclerHud.принять(payload);
+    }
+
+    private static void принялиСнимок(Snapshot payload) {
+        dev.denthe.classes.client.SnapshotHud.принять(payload);
     }
 
     private static void напоить(ServerPlayer клирик, UUID targetId) {

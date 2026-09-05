@@ -6,6 +6,7 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -114,6 +115,28 @@ public final class ClassesConfig {
         .comment("Мастерство Кузнеца за одну работу на наковальне (из 100).")
         .defineInRange("smithMasteryPerRepair", 2, 0, 100);
 
+    private static final ModConfigSpec.DoubleValue ОЧИСТИТЕЛЬ_СИЛА = СТРОИТЕЛЬ
+        .comment("Вероятность, что андезитовый очиститель снимет уровень заражения за ночь.",
+                 "Это cleansePower из спека ядра 10.1, для партии без Кузнеца.",
+                 "С Кузнецом растёт по тиру его мастерства (masteryPowerPerTier).")
+        .defineInRange("purifierCleansePower", 0.35, 0.0, 1.0);
+
+    private static final ModConfigSpec.DoubleValue ОЧИСТИТЕЛЬ_СОПРОТИВЛЕНИЕ = СТРОИТЕЛЬ
+        .comment("На сколько очиститель поднимает сопротивление чанка за ночь (0..1).",
+                 "0.25 — число из спека ядра 10.1. Сопротивление само тает без работы.")
+        .defineInRange("purifierResistanceGain", 0.25, 0.0, 1.0);
+
+    private static final ModConfigSpec.DoubleValue ОЧИСТИТЕЛЬ_МИН_СКОРОСТЬ = СТРОИТЕЛЬ
+        .comment("Минимальная скорость вращения соседнего механизма Create, об/мин.",
+                 "8 — то, что даёт одно водяное колесо через вал: спек требует,",
+                 "чтобы первый тир собирался без понимания передач и стресса.",
+                 "0 — очиститель работает вообще без питания (для проверки).")
+        .defineInRange("purifierMinSpeed", 8.0, 0.0, 256.0);
+
+    private static final ModConfigSpec.IntValue КУЗНЕЦ_МАСТЕРСТВО_ЗА_ОЧИСТКУ = СТРОИТЕЛЬ
+        .comment("Мастерство лучшего Кузнеца партии за удачную ночную очистку чанка (из 100).")
+        .defineInRange("smithMasteryPerCleanse", 3, 0, 100);
+
     // ── Фермер (спек, раздел 6) ───────────────────────────────────────
 
     private static final ModConfigSpec.DoubleValue ФЕРМЕР_БОНУС_ЕДЫ = СТРОИТЕЛЬ
@@ -153,6 +176,30 @@ public final class ClassesConfig {
     private static final ModConfigSpec.IntValue ЛЕТОПИСЕЦ_МАСТЕРСТВО_В_МИНУТУ = СТРОИТЕЛЬ
         .comment("Мастерство Летописца за минуту рядом хотя бы с одним заражённым (из 100).")
         .defineInRange("chroniclerMasteryPerMinute", 1, 0, 100);
+
+    private static final ModConfigSpec.IntValue СНИМОК_ДЛИТЕЛЬНОСТЬ = СТРОИТЕЛЬ
+        .comment("Сколько минут снимок Летописца держится на экране у всей партии.")
+        .defineInRange("chroniclerSnapshotMinutes", 5, 1, 60);
+
+    private static final ModConfigSpec.IntValue СНИМОК_КУЛДАУН = СТРОИТЕЛЬ
+        .comment("Кулдаун снимка Летописца, в минутах. Сокращается тиром мастерства.")
+        .defineInRange("chroniclerSnapshotCooldownMinutes", 15, 0, 240);
+
+    private static final ModConfigSpec.IntValue СНИМОК_РАДИУС = СТРОИТЕЛЬ
+        .comment("Радиус снимка в чанках у первого тира. Растёт с тиром мастерства.",
+                 "4 — квадрат 9 на 9 чанков вокруг Летописца.")
+        .defineInRange("chroniclerSnapshotRadiusChunks", 4, 1, 10);
+
+    private static final ModConfigSpec.IntValue ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_СНИМОК = СТРОИТЕЛЬ
+        .comment("Мастерство Летописца за один снимок (из 100).")
+        .defineInRange("chroniclerMasteryPerSnapshot", 3, 0, 100);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> КАМЕРЫ = СТРОИТЕЛЬ
+        .comment("Предметы, щелчок которыми Летописец считает снимком.",
+                 "По умолчанию — камера мода exposure. Жёсткой зависимости на него нет,",
+                 "поэтому список правится файлом, а не пересборкой мода.")
+        .defineListAllowEmpty("chroniclerCameraItems",
+            List.of("exposure:camera"), () -> "", о -> о instanceof String);
 
     public static final ModConfigSpec SPEC = СТРОИТЕЛЬ.build();
 
@@ -236,6 +283,30 @@ public final class ClassesConfig {
         return КУЗНЕЦ_МАСТЕРСТВО_ЗА_РЕМОНТ.get();
     }
 
+    /**
+     * Вероятность снять уровень заражения за ночь для тира партии.
+     * Тир 0 — Кузнеца в игре нет: работает базовая сила, «уровень,
+     * доступный без класса» из спека классов 2.1.
+     */
+    public static float очистительСила(int тирПартии) {
+        float база = ОЧИСТИТЕЛЬ_СИЛА.get().floatValue();
+        return тирПартии <= 0 ? база : база * силаТира(тирПартии);
+    }
+
+    /** Прирост сопротивления чанка за ночь работы очистителя. */
+    public static float очистительСопротивление() {
+        return ОЧИСТИТЕЛЬ_СОПРОТИВЛЕНИЕ.get().floatValue();
+    }
+
+    /** Минимальная скорость вращения, при которой очиститель считается запитанным. */
+    public static float очистительМинСкорость() {
+        return ОЧИСТИТЕЛЬ_МИН_СКОРОСТЬ.get().floatValue();
+    }
+
+    public static int кузнецМастерствоЗаОчистку() {
+        return КУЗНЕЦ_МАСТЕРСТВО_ЗА_ОЧИСТКУ.get();
+    }
+
     /** Доп. насыщение Фермера, долей от сытности блюда, для тира. */
     public static double фермерБонусЕды(int тир) {
         return ФЕРМЕР_БОНУС_ЕДЫ.get() * силаТира(тир);
@@ -269,6 +340,30 @@ public final class ClassesConfig {
         return ЛЕТОПИСЕЦ_МАСТЕРСТВО_В_МИНУТУ.get();
     }
 
+    /** Сколько тиков снимок живёт на экране. */
+    public static int снимокЖивётТики() {
+        return СНИМОК_ДЛИТЕЛЬНОСТЬ.get() * 1200;
+    }
+
+    /** Кулдаун снимка для тира Летописца, в тиках. */
+    public static long снимокКулдаунТики(int тир) {
+        return Math.round(СНИМОК_КУЛДАУН.get() * 1200L * (double) кулдаунТира(тир));
+    }
+
+    /** Радиус снимка в чанках для тира. */
+    public static int снимокРадиусЧанков(int тир) {
+        return Math.max(1, Math.round(СНИМОК_РАДИУС.get() * силаТира(тир)));
+    }
+
+    public static int летописецМастерствоЗаСнимок() {
+        return ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_СНИМОК.get();
+    }
+
+    /** Идентификаторы предметов-камер, щелчок которыми считается снимком. */
+    public static Set<String> камерыЛетописца() {
+        return Set.copyOf(КАМЕРЫ.get());
+    }
+
     // ── правка чисел прямо в игре ─────────────────────────────────────
 
     /**
@@ -300,6 +395,10 @@ public final class ClassesConfig {
         НАСТРАИВАЕМЫЕ.put("clericMasteryPerCure", КЛИРИК_МАСТЕРСТВО_ЗА_ЛЕЧЕНИЕ);
         НАСТРАИВАЕМЫЕ.put("smithRepairIntervalTicks", КУЗНЕЦ_ИНТЕРВАЛ_РЕМОНТА);
         НАСТРАИВАЕМЫЕ.put("smithMasteryPerRepair", КУЗНЕЦ_МАСТЕРСТВО_ЗА_РЕМОНТ);
+        НАСТРАИВАЕМЫЕ.put("purifierCleansePower", ОЧИСТИТЕЛЬ_СИЛА);
+        НАСТРАИВАЕМЫЕ.put("purifierResistanceGain", ОЧИСТИТЕЛЬ_СОПРОТИВЛЕНИЕ);
+        НАСТРАИВАЕМЫЕ.put("purifierMinSpeed", ОЧИСТИТЕЛЬ_МИН_СКОРОСТЬ);
+        НАСТРАИВАЕМЫЕ.put("smithMasteryPerCleanse", КУЗНЕЦ_МАСТЕРСТВО_ЗА_ОЧИСТКУ);
         НАСТРАИВАЕМЫЕ.put("farmerFoodBonus", ФЕРМЕР_БОНУС_ЕДЫ);
         НАСТРАИВАЕМЫЕ.put("farmerMasteryPerHarvest", ФЕРМЕР_МАСТЕРСТВО_ЗА_УРОЖАЙ);
         НАСТРАИВАЕМЫЕ.put("farmerBloomGrowthDivisor", ФЕРМЕР_ДЕЛИТЕЛЬ_РОСТА);
@@ -307,6 +406,10 @@ public final class ClassesConfig {
         НАСТРАИВАЕМЫЕ.put("farmerBloomWildMinLevel", ФЕРМЕР_ДИКИЙ_УРОВЕНЬ);
         НАСТРАИВАЕМЫЕ.put("chroniclerInsightRadius", ЛЕТОПИСЕЦ_РАДИУС);
         НАСТРАИВАЕМЫЕ.put("chroniclerMasteryPerMinute", ЛЕТОПИСЕЦ_МАСТЕРСТВО_В_МИНУТУ);
+        НАСТРАИВАЕМЫЕ.put("chroniclerSnapshotMinutes", СНИМОК_ДЛИТЕЛЬНОСТЬ);
+        НАСТРАИВАЕМЫЕ.put("chroniclerSnapshotCooldownMinutes", СНИМОК_КУЛДАУН);
+        НАСТРАИВАЕМЫЕ.put("chroniclerSnapshotRadiusChunks", СНИМОК_РАДИУС);
+        НАСТРАИВАЕМЫЕ.put("chroniclerMasteryPerSnapshot", ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_СНИМОК);
     }
 
     /** Имена настраиваемых чисел, в порядке объявления. */

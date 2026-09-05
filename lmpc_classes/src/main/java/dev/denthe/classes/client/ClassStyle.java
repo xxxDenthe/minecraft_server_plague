@@ -46,11 +46,9 @@ public final class ClassStyle {
         return 0xFF000000 | (цвет(класс) & 0xFFFFFF);
     }
 
-    private static final String[] РИМСКИЕ = { "I", "II", "III", "IV" };
-
-    /** Римская цифра 1..4; вне диапазона — само число. */
+    /** Римская цифра 1..4; вне диапазона — само число. Общая с сервером, {@link ClassMastery}. */
     public static String римская(int номер) {
-        return номер >= 1 && номер <= РИМСКИЕ.length ? РИМСКИЕ[номер - 1] : Integer.toString(номер);
+        return ClassMastery.римская(номер);
     }
 
     /** Данные локального игрока; {@code null}, если игрока ещё нет. */

@@ -39,6 +39,20 @@ public final class ClassBlocks {
         PlagueBloomCropBlock::new,
         BlockBehaviour.Properties.ofFullCopy(Blocks.WHEAT).mapColor(MapColor.COLOR_PURPLE));
 
+    /**
+     * Андезитовый очиститель поверхности — первый тир из спека ядра,
+     * раздел 10.1. Ставить может кто угодно: это прямое требование
+     * спека, чтобы компания без Create не выпадала из защиты. Класс
+     * входит через мастерство партии, а не через право поставить блок.
+     */
+    public static final DeferredBlock<PurifierBlock> ANDESITE_PURIFIER = БЛОКИ.registerBlock(
+        "andesite_purifier",
+        PurifierBlock::new,
+        BlockBehaviour.Properties.ofFullCopy(Blocks.POLISHED_ANDESITE).mapColor(MapColor.STONE));
+
+    public static final DeferredItem<BlockItem> ANDESITE_PURIFIER_ITEM =
+        ПРЕДМЕТЫ.registerSimpleBlockItem(ANDESITE_PURIFIER);
+
     public static void register(IEventBus modEventBus) {
         БЛОКИ.register(modEventBus);
         ПРЕДМЕТЫ.register(modEventBus);
