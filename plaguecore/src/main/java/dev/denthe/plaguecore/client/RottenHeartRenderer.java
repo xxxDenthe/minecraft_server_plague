@@ -2,6 +2,7 @@ package dev.denthe.plaguecore.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import dev.denthe.plaguecore.PlagueConstants;
 import dev.denthe.plaguecore.core.HeartDecay;
 import dev.denthe.plaguecore.mc.RottenHeart;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -28,6 +29,12 @@ public class RottenHeartRenderer extends GeoEntityRenderer<RottenHeart> {
                           MultiBufferSource буферы, VertexConsumer вершины,
                           boolean повторно, float частичныйТик,
                           int свет, int наложение, int цвет) {
+
+        // Размер берём каждый кадр, а не в конструкторе: рендер строится
+        // один раз при запуске клиента, а число правят в конфиге на живом
+        // сервере — так оно доходит без перезапуска игры.
+        this.scaleWidth = PlagueConstants.HEART_SCALE;
+        this.scaleHeight = PlagueConstants.HEART_SCALE;
 
         int маска = сердце.маскаКусков();
         for (int кусок = 0; кусок < HeartDecay.КУСКОВ; кусок++) {

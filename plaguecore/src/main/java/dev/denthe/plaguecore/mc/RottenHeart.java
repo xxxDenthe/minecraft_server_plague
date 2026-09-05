@@ -14,8 +14,10 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -209,6 +211,16 @@ public class RottenHeart extends Mob implements GeoEntity {
     @Override
     protected void registerGoals() {
         // Целей нет намеренно: Сердце не двигается и никого не ищет.
+    }
+
+    /**
+     * Хитбокс растёт вместе с картинкой. Иначе крупное Сердце ловило бы
+     * удары только по своей исходной середине, а рендер рисовал бы куски
+     * там, куда попасть нельзя.
+     */
+    @Override
+    protected EntityDimensions getDefaultDimensions(Pose поза) {
+        return super.getDefaultDimensions(поза).scale(PlagueConstants.HEART_SCALE);
     }
 
     @Override

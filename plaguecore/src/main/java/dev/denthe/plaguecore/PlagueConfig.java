@@ -41,6 +41,7 @@ public final class PlagueConfig {
 
     // ── Сердце чумы ───────────────────────────────────────────────────
     private static final ModConfigSpec.DoubleValue ЗДОРОВЬЕ_СЕРДЦА;
+    private static final ModConfigSpec.DoubleValue РАЗМЕР_СЕРДЦА;
 
     // ── фазы ──────────────────────────────────────────────────────────
     private static final ModConfigSpec.IntValue[] КОНЕЦ_ФАЗЫ =
@@ -403,6 +404,13 @@ public final class PlagueConfig {
                 "Правка доходит до уже поставленных Сердец после перезахода в мир.")
             .defineInRange("health", окр(PlagueConstants.HEART_HEALTH), 20.0, 4000.0);
 
+        РАЗМЕР_СЕРДЦА = СТРОИТЕЛЬ
+            .comment("Во сколько раз Сердце крупнее исходной модели.",
+                "1.0 — как в Блокбенче, 1.5 — заметно больше игрока.",
+                "Растёт и картинка, и хитбокс.",
+                "Правка доходит до уже поставленных Сердец после перезахода в мир.")
+            .defineInRange("scale", окр(PlagueConstants.HEART_SCALE), 0.5, 6.0);
+
         SPEC = СТРОИТЕЛЬ.pop().build();
     }
 
@@ -465,6 +473,7 @@ public final class PlagueConfig {
     /** Переписать игровые числа значениями из файла. */
     private static void применить() {
         PlagueConstants.HEART_HEALTH = ЗДОРОВЬЕ_СЕРДЦА.get().floatValue();
+        PlagueConstants.HEART_SCALE = РАЗМЕР_СЕРДЦА.get().floatValue();
 
         PlagueConstants.START_EPICENTERS = ОЧАГИ.get();
         PlagueConstants.START_INFECTION_PERCENT = СТАРТОВАЯ_ДОЛЯ.get().floatValue();
