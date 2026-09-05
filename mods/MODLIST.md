@@ -127,7 +127,7 @@ zombieawareness-neoforge-1.21.0-1.13.2.jar
 
 ```
 plaguecore-0.1.0.jar      ядро чумы, сервер + клиент
-lmpc_gmtools-0.18.0.jar   панель мастера игры
+lmpc_gmtools-0.18.1.jar   панель мастера игры
 lmpc_shade-0.9.0.jar      цветокор, тьма, туман
 lmpc_classes-0.7.2.jar    четыре класса, требует curios
 ```

@@ -53,8 +53,12 @@ final class AtmoAccess {
         e("clouds.nightDarkening", "Ночь", "Atmo: облака ночью темнее", DOUBLE, 0, 1);
         e("weather.fogNightColorDarkening", "Ночь", "Atmo: туман ночью темнее", DOUBLE, 0, 1);
 
-        e("masterEnabled",                    "Небо", "Atmo: весь мод",          BOOL,   0, 0);
-        e("sky.fogBlendStrength",             "Небо", "Atmo: небо в туман",      DOUBLE, 0, 1);
+        // Цвета неба здесь нет и не будет: небо в этом мире всегда ровно
+        // серое, его тон задан пресетом config/ambientfog/biome_fog.json.
+        // Поэтому наружу не выведены ни masterEnabled (выключение мода
+        // возвращает ванильную синеву), ни sky.fogBlendStrength (меняет,
+        // насколько купол берёт цвет тумана). Мастер крутит плотность,
+        // облака и звёзды — но не тон неба.
         e("clouds.storeModeCloudLayerHeight", "Небо", "Atmo: высота облаков",    DOUBLE, 40, 320);
         e("clouds.storeModeCloudOpacity",     "Небо", "Atmo: плотность облаков", DOUBLE, 0, 1);
         e("clouds.fogColorMixStrength",       "Небо", "Atmo: облака в цвет тумана", DOUBLE, 0, 1);
