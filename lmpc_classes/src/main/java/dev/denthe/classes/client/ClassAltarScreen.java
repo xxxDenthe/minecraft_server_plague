@@ -6,8 +6,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 import java.util.Locale;
 
@@ -34,7 +36,7 @@ import java.util.Locale;
  */
 public class ClassAltarScreen extends Screen {
 
-    private static final int ШИРИНА = 280;
+    private static final int ШИРИНА = 320;
     private static final int ВЫСОТА_СТРОКИ = 26;
     private static final int ОТСТУП = 10;
     private static final int ВЫСОТА_ШАПКИ = 44;
@@ -163,10 +165,23 @@ public class ClassAltarScreen extends Screen {
         return false;
     }
 
+    /** Роль класса; у «без класса» своя строка, лора у него нет. */
+    private static Component роль(PlayerClassData.Класс класс) {
+        return класс == PlayerClassData.Класс.NONE
+            ? Component.translatable("class.lmpc_classes.none.role")
+            : ClassLore.роль(класс);
+    }
+
     /**
      * Строка списка: цветная засечка класса, название, роль мелким
      * шрифтом. Ванильной серой кнопки нет — переопределён только
      * {@code renderWidget}, клики и наведение остались от {@link Button}.
+     *
+     * <p>В 0.6.1 по замечаниям с живого экрана: пометка «твой» больше
+     * не наезжает на длинное название (место под неё резервируется,
+     * и обрезается имя, а не соседняя надпись), а обрезанная роль
+     * доступна целиком во всплывающей подсказке — вместе со списком
+     * способностей, ради которого раньше приходилось лезть в гримуар.
      */
     private class СтрокаКласса extends Button {
         private final PlayerClassData.Класс класс;
@@ -175,6 +190,16 @@ public class ClassAltarScreen extends Screen {
             super(x, y, ширина, ВЫСОТА_СТРОКИ - 2, ClassLore.заголовок(класс),
                 b -> выбрать(класс), DEFAULT_NARRATION);
             this.класс = класс;
+            setTooltip(Tooltip.create(подсказка(класс)));
+        }
+
+        /** Полная роль плюс «что умеет» — то, что не влезло в строку. */
+        private Component подсказка(PlayerClassData.Класс класс) {
+            MutableComponent текст = роль(класс).copy();
+            for (Component способность : ClassLore.способности(класс)) {
+                текст.append(Component.literal("\n· ")).append(способность);
+            }
+            return текст;
         }
 
         @Override
@@ -190,29 +215,36 @@ public class ClassAltarScreen extends Screen {
             графика.fill(getX(), getY(), getX() + 3, getY() + getHeight(), ClassStyle.заливка(класс));
 
             int x = getX() + 9;
+            int правый = getX() + getWidth() - 4;
+
+            // Место под пометку отводится до отрисовки имени. Раньше обе
+            // надписи считали ширину порознь и на длинных названиях
+            // налезали друг на друга.
+            Component пометка = Component.translatable("gui.lmpc_classes.altar.yours");
+            int подПометку = свой ? font.width(пометка) + 6 : 0;
+
             int цветИмени = заперто && !свой ? ClassStyle.ЧЕРНИЛА_ПОГАШЕННЫЕ : акцент;
             Component имя = getMessage().copy().withStyle(свой ? ChatFormatting.BOLD : ChatFormatting.RESET);
-            графика.drawString(font, имя, x, getY() + 3, цветИмени, false);
+            графика.drawString(font, обрезать(имя, правый - x - подПометку), x, getY() + 3, цветИмени, false);
 
             if (свой) {
-                графика.drawString(font, Component.translatable("gui.lmpc_classes.altar.yours"),
-                    getX() + getWidth() - font.width(
-                        Component.translatable("gui.lmpc_classes.altar.yours")) - 4,
-                    getY() + 3, акцент, false);
+                графика.drawString(font, пометка, правый - font.width(пометка), getY() + 3, акцент, false);
             }
 
-            Component роль = класс == PlayerClassData.Класс.NONE
-                ? Component.translatable("class.lmpc_classes.none.role")
-                : ClassLore.роль(класс);
-            графика.drawString(font, обрезать(роль, getWidth() - 12),
+            графика.drawString(font, обрезать(роль(класс), правый - x),
                 x, getY() + 13, ClassStyle.ЧЕРНИЛА_ПОГАШЕННЫЕ, false);
         }
 
-        /** Роли длиннее строки укорачиваем многоточием — перенос сломал бы сетку списка. */
+        /**
+         * Длинный текст укорачиваем многоточием — перенос сломал бы
+         * сетку списка. Целиком он есть в подсказке при наведении,
+         * поэтому обрезка ничего не прячет насовсем.
+         */
         private Component обрезать(Component текст, int ширина) {
             String строка = текст.getString();
             if (font.width(строка) <= ширина) return текст;
-            return Component.literal(font.plainSubstrByWidth(строка, ширина - font.width("…")) + "…");
+            return Component.literal(font.plainSubstrByWidth(строка, ширина - font.width("…")) + "…")
+                .setStyle(текст.getStyle());
         }
     }
 }

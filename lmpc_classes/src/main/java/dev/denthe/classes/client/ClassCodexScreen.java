@@ -15,6 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,21 +25,23 @@ import java.util.List;
  * страница — оглавление из четырёх классов, правая — заголовок,
  * роль, лор, способности и, у своего класса, мастерство.
  *
- * **Что изменилось в 0.6.0.**
+ * <p><b>Что изменилось в 0.6.1 — по замечаниям с живого экрана.</b>
  * <ul>
- * <li>Мастерство наконец настоящее. Раньше экран читал вложение
- *     на клиенте, куда оно не синкалось, и честно показывал ноль
- *     любому игроку любого класса; заодно гримуар всегда открывался
- *     на Клирике, потому что свой класс читался оттуда же.</li>
- * <li>Появился тир (I–III), засечки порогов на полосе и строка
- *     «сколько до следующего» — без них число 73 ничего не значило.</li>
- * <li>Появился раздел способностей: до этого книга про классы
- *     не говорила, что классы, собственно, делают.</li>
- * <li>Стрелки ← → листают вкладки, как страницы.</li>
+ * <li>Отступы больше не «на глаз». Границы бумаги внутри картинки
+ *     ({@link #ЛИСТ_Л} и соседи) сняты замером самой текстуры, поля
+ *     считаются из них. Старое {@code ОТСТУП_НИЗ = 16} уводило текст
+ *     на пять пикселей под деревянную обложку: бумага кончается
+ *     на 448-м текселе, а не на 469-м.</li>
+ * <li>Разворот тянется под окно, а не заперт на 360 пикселях. На
+ *     мелком масштабе интерфейса книга больше и колонка текста шире,
+ *     на крупном кнопка «Закрыть» перестала свисать за нижний край
+ *     экрана — она теперь внизу левой страницы, внутри книги.</li>
+ * <li>Правая страница прокручивается колесом. Лор Клирика со всеми
+ *     тремя способностями не влезал ни в какой разумный разворот,
+ *     и старый код молча обрывал текст на полуслове ранним
+ *     {@code return}. Теперь непоместившееся достаётся прокруткой,
+ *     а на поле страницы видна закладка с положением.</li>
  * </ul>
- *
- * Отступы внутри картинки подобраны на глаз по референсу, не измерены
- * пиксель в пиксель — поправить после первого взгляда в игре.
  */
 public class ClassCodexScreen extends Screen {
     private static final ResourceLocation ФОН_ТЕКСТУРА =
@@ -46,14 +49,24 @@ public class ClassCodexScreen extends Screen {
     private static final int ТЕКСТУРА_Ш = 736;
     private static final int ТЕКСТУРА_В = 490;
 
-    private static final int ШИРИНА = 360;
-    private static final int ВЫСОТА = Math.round(ШИРИНА * (float) ТЕКСТУРА_В / ТЕКСТУРА_Ш);
+    /**
+     * Границы бумаги внутри картинки разворота, в текселях. Замерены
+     * по самому файлу (край светлой заливки), а не подобраны на глаз:
+     * корешок сидит не по центру (365 из 368), а снизу у книги толстая
+     * тень, из-за которой симметричные отступы промахиваются.
+     */
+    private static final int ЛИСТ_Л = 26;
+    private static final int ЛИСТ_П = 705;
+    private static final int ЛИСТ_В = 21;
+    private static final int ЛИСТ_Н = 448;
+    private static final int КОРЕШОК_Л = 360;
+    private static final int КОРЕШОК_П = 371;
 
-    // Отступы внутри картинки разворота — на глаз, доля от размера книги.
-    private static final int ОТСТУП_КРАЙ = 18;
-    private static final int ОТСТУП_КОРЕШОК = 12;
-    private static final int ОТСТУП_ВЕРХ = 16;
-    private static final int ОТСТУП_НИЗ = 16;
+    /** Поле от края бумаги до текста, в текселях (около шести экранных пикселей). */
+    private static final int ПОЛЕ = 12;
+
+    private static final int МИН_ШИРИНА = 300;
+    private static final int МАКС_ШИРИНА = 460;
 
     /** Вкладки — только настоящие классы: «без класса» не глава книги. */
     private static final PlayerClassData.Класс[] ВКЛАДКИ = {
@@ -64,6 +77,10 @@ public class ClassCodexScreen extends Screen {
     };
 
     private PlayerClassData.Класс открытаяВкладка;
+
+    /** Сдвиг правой страницы вверх, пиксели. Предел пересчитывается при отрисовке. */
+    private int прокрутка;
+    private int пределПрокрутки;
 
     private ClassCodexScreen() {
         super(Component.translatable("gui.lmpc_classes.codex.title"));
@@ -81,24 +98,45 @@ public class ClassCodexScreen extends Screen {
         return д == null ? PlayerClassData.Класс.NONE : д.класс;
     }
 
-    private int левый() { return (width - ШИРИНА) / 2; }
-    private int верхний() { return (height - ВЫСОТА) / 2; }
-    private int корешок() { return левый() + ШИРИНА / 2; }
+    /**
+     * Разворот занимает столько, сколько даёт окно, но не больше
+     * {@link #МАКС_ШИРИНА}: на крупном масштабе интерфейса книга
+     * упиралась в края экрана, на мелком — зря оставалась крошечной.
+     */
+    private int ширина() {
+        int поВысоте = (height - 16) * ТЕКСТУРА_Ш / ТЕКСТУРА_В;
+        return Math.max(МИН_ШИРИНА, Math.min(Math.min(width - 16, поВысоте), МАКС_ШИРИНА));
+    }
+
+    private int высота() { return ширина() * ТЕКСТУРА_В / ТЕКСТУРА_Ш; }
+
+    private int левый() { return (width - ширина()) / 2; }
+    private int верхний() { return (height - высота()) / 2; }
+
+    /** Тексель картинки в экранный X. Вся раскладка книги считается только так. */
+    private int пX(int тексель) { return левый() + тексель * ширина() / ТЕКСТУРА_Ш; }
+
+    private int пY(int тексель) { return верхний() + тексель * высота() / ТЕКСТУРА_В; }
+
+    private int верхТекста() { return пY(ЛИСТ_В + ПОЛЕ); }
+    private int дноТекста() { return пY(ЛИСТ_Н - ПОЛЕ); }
 
     @Override
     protected void init() {
-        int леваяX = левый() + ОТСТУП_КРАЙ;
-        int y = верхний() + ОТСТУП_ВЕРХ + 8;
+        int x = пX(ЛИСТ_Л + ПОЛЕ);
+        int ширинаЛевой = пX(КОРЕШОК_Л - ПОЛЕ) - x;
+        int y = верхТекста() + 8;
 
         for (int i = 0; i < ВКЛАДКИ.length; i++) {
-            addRenderableWidget(new ВкладкаКнопка(
-                леваяX, y, корешок() - ОТСТУП_КОРЕШОК - леваяX, ВКЛАДКИ[i], ClassStyle.римская(i + 1)));
+            addRenderableWidget(new ВкладкаКнопка(x, y, ширинаЛевой, ВКЛАДКИ[i], ClassStyle.римская(i + 1)));
             y += 22;
         }
 
+        // Кнопка живёт внизу левой страницы, внутри книги: снаружи она
+        // свисала за край экрана на крупном масштабе интерфейса.
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.lmpc_classes.close"), b -> onClose())
-            .bounds(левый() + ШИРИНА / 2 - 40, верхний() + ВЫСОТА + 6, 80, 18)
+            .bounds(x + ширинаЛевой / 2 - 40, дноТекста() - 18, 80, 18)
             .build());
     }
 
@@ -116,8 +154,23 @@ public class ClassCodexScreen extends Screen {
         for (int i = 0; i < ВКЛАДКИ.length; i++) {
             if (ВКЛАДКИ[i] == открытаяВкладка) текущая = i;
         }
-        открытаяВкладка = ВКЛАДКИ[Math.floorMod(текущая + шаг, ВКЛАДКИ.length)];
+        листать(ВКЛАДКИ[Math.floorMod(текущая + шаг, ВКЛАДКИ.length)]);
         return true;
+    }
+
+    /** Новая глава открывается с начала: чужая прокрутка на ней бессмысленна. */
+    private void листать(PlayerClassData.Класс вкладка) {
+        открытаяВкладка = вкладка;
+        прокрутка = 0;
+    }
+
+    @Override
+    public boolean mouseScrolled(double мышьX, double мышьY, double сдвигX, double сдвигY) {
+        if (пределПрокрутки > 0) {
+            прокрутка = Math.max(0, Math.min(пределПрокрутки, прокрутка - (int) (сдвигY * 12)));
+            return true;
+        }
+        return super.mouseScrolled(мышьX, мышьY, сдвигX, сдвигY);
     }
 
     @Override
@@ -126,7 +179,7 @@ public class ClassCodexScreen extends Screen {
 
         графика.pose().pushPose();
         графика.pose().translate(левый(), верхний(), 0);
-        графика.pose().scale((float) ШИРИНА / ТЕКСТУРА_Ш, (float) ВЫСОТА / ТЕКСТУРА_В, 1f);
+        графика.pose().scale((float) ширина() / ТЕКСТУРА_Ш, (float) высота() / ТЕКСТУРА_В, 1f);
         графика.blit(ФОН_ТЕКСТУРА, 0, 0, 0, 0f, 0f, ТЕКСТУРА_Ш, ТЕКСТУРА_В, ТЕКСТУРА_Ш, ТЕКСТУРА_В);
         графика.pose().popPose();
 
@@ -134,80 +187,104 @@ public class ClassCodexScreen extends Screen {
         рисоватьПравуюСтраницу(графика);
     }
 
+    /** Готовая к отрисовке строка. {@code текст == null} — пустая строка-отбивка. */
+    private record Строка(FormattedCharSequence текст, int цвет, int сдвиг, boolean маркер) {}
+
+    private static final Строка ОТБИВКА = new Строка(null, 0, 0, false);
+
+    /**
+     * Вся правая страница раскладывается в плоский список строк до
+     * отрисовки. Так у страницы есть измеренная высота — без неё
+     * прокрутку не к чему прижимать, и прежний код вместо прокрутки
+     * просто обрывал текст первым {@code return} за нижним краем.
+     */
+    private List<Строка> собратьСтраницу(int ширина) {
+        List<Строка> строки = new ArrayList<>();
+        int акцент = ClassStyle.цвет(открытаяВкладка);
+
+        for (FormattedCharSequence с : font.split(ClassLore.роль(открытаяВкладка), ширина - 20)) {
+            строки.add(new Строка(с, ClassStyle.ЧЕРНИЛА_БЛЕДНЫЕ, 0, false));
+        }
+        строки.add(ОТБИВКА);
+
+        for (FormattedCharSequence с
+                : font.split(сАкцентомНаПервомСлове(ClassLore.лор(открытаяВкладка), акцент), ширина)) {
+            строки.add(new Строка(с, ClassStyle.ЧЕРНИЛА, 0, false));
+        }
+
+        List<Component> способности = ClassLore.способности(открытаяВкладка);
+        if (!способности.isEmpty()) {
+            строки.add(ОТБИВКА);
+            строки.add(new Строка(
+                Component.translatable("gui.lmpc_classes.codex.abilities")
+                    .withStyle(ChatFormatting.BOLD).getVisualOrderText(), акцент, 0, false));
+            for (Component способность : способности) {
+                boolean первая = true;
+                for (FormattedCharSequence с : font.split(способность, ширина - 8)) {
+                    строки.add(new Строка(с, ClassStyle.ЧЕРНИЛА, 7, первая));
+                    первая = false;
+                }
+            }
+        }
+
+        строки.add(ОТБИВКА);
+        for (FormattedCharSequence с : font.split(ClassLore.ростМастерства(открытаяВкладка), ширина)) {
+            строки.add(new Строка(с, ClassStyle.ЧЕРНИЛА_ПОГАШЕННЫЕ, 0, false));
+        }
+        return строки;
+    }
+
     private void рисоватьПравуюСтраницу(GuiGraphics графика) {
-        int x = корешок() + ОТСТУП_КОРЕШОК;
-        int правыйКрай = левый() + ШИРИНА - ОТСТУП_КРАЙ;
+        int x = пX(КОРЕШОК_П + ПОЛЕ);
+        int правыйКрай = пX(ЛИСТ_П - ПОЛЕ);
         int ширинаТекста = правыйКрай - x;
-        int y = верхний() + ОТСТУП_ВЕРХ;
-        int дно = верхний() + ВЫСОТА - ОТСТУП_НИЗ;
         int акцент = ClassStyle.цвет(открытаяВкладка);
         boolean свой = открытаяВкладка == свойКласс();
 
-        // Место под мастерство резервируем заранее: полоса внизу страницы
-        // не должна оказаться под лором, если лор длинный.
-        int дноТекста = свой ? дно - 30 : дно;
-
         Component заголовок = ClassLore.заголовок(открытаяВкладка);
-        нарисоватьПечать(графика, правыйКрай - 18, y - 2, акцент, заголовок.getString());
+        нарисоватьПечать(графика, правыйКрай - 16, верхТекста() - 2, акцент, заголовок.getString());
+        графика.drawString(font, заголовок.copy().withStyle(ChatFormatting.BOLD),
+            x, верхТекста(), акцент, false);
 
-        графика.drawString(font, заголовок.copy().withStyle(ChatFormatting.BOLD), x, y, акцент, false);
-        y += 14;
+        // Полоса мастерства прибита к низу страницы: она не должна
+        // уезжать вместе с прокруткой лора.
+        int окноВерх = верхТекста() + font.lineHeight + 6;
+        int окноНиз = свой ? дноТекста() - 30 : дноТекста();
 
-        for (FormattedCharSequence строка : font.split(ClassLore.роль(открытаяВкладка), ширинаТекста - 22)) {
-            if (y > дноТекста) return;
-            графика.drawString(font, строка, x, y, ClassStyle.ЧЕРНИЛА_БЛЕДНЫЕ, false);
-            y += font.lineHeight + 1;
+        List<Строка> строки = собратьСтраницу(ширинаТекста);
+        int шаг = font.lineHeight + 1;
+        пределПрокрутки = Math.max(0, строки.size() * шаг - (окноНиз - окноВерх));
+        прокрутка = Math.max(0, Math.min(прокрутка, пределПрокрутки));
+
+        графика.enableScissor(x, окноВерх, правыйКрай, окноНиз);
+        int y = окноВерх - прокрутка;
+        for (Строка строка : строки) {
+            if (строка.текст() != null && y + шаг > окноВерх && y < окноНиз) {
+                if (строка.маркер()) {
+                    графика.fill(x + 1, y + 2, x + 3, y + 4, 0xFF000000 | (акцент & 0xFFFFFF));
+                }
+                графика.drawString(font, строка.текст(), x + строка.сдвиг(), y, строка.цвет(), false);
+            }
+            y += шаг;
         }
-        y += 4;
+        графика.disableScissor();
 
-        for (FormattedCharSequence строка
-                : font.split(сАкцентомНаПервомСлове(ClassLore.лор(открытаяВкладка), акцент), ширинаТекста)) {
-            if (y > дноТекста) return;
-            графика.drawString(font, строка, x, y, ClassStyle.ЧЕРНИЛА, false);
-            y += font.lineHeight + 2;
+        if (пределПрокрутки > 0) {
+            полосаПрокрутки(графика, правыйКрай + 2, окноВерх, окноНиз, строки.size() * шаг);
         }
-
-        y = рисоватьСпособности(графика, x, y + 6, ширинаТекста, дноТекста, акцент);
 
         if (свой) {
-            рисоватьМастерство(графика, x, дно - 26, ширинаТекста, акцент);
+            рисоватьМастерство(графика, x, дноТекста() - 26, ширинаТекста, акцент);
         }
     }
 
-    /**
-     * Список того, что класс реально умеет, плюс строка «чем растёт
-     * мастерство». Ни того, ни другого в книге не было — она
-     * описывала роли, но не отвечала, что нажимать.
-     */
-    private int рисоватьСпособности(
-            GuiGraphics графика, int x, int y, int ширина, int дно, int акцент) {
-        List<Component> способности = ClassLore.способности(открытаяВкладка);
-        if (способности.isEmpty() || y > дно) return y;
-
-        графика.drawString(font, Component.translatable("gui.lmpc_classes.codex.abilities")
-            .copy().withStyle(ChatFormatting.BOLD), x, y, акцент, false);
-        y += font.lineHeight + 2;
-
-        for (Component способность : способности) {
-            // Маркер ставим до переноса: после цикла y уже уехал на несколько строк.
-            графика.fill(x + 1, y + 2, x + 3, y + 4, 0xFF000000 | (акцент & 0xFFFFFF));
-            for (FormattedCharSequence строка : font.split(способность, ширина - 6)) {
-                if (y > дно) return y;
-                графика.drawString(font, строка, x + 6, y, ClassStyle.ЧЕРНИЛА, false);
-                y += font.lineHeight;
-            }
-            y += 2;
-        }
-
-        if (y <= дно) {
-            for (FormattedCharSequence строка
-                    : font.split(ClassLore.ростМастерства(открытаяВкладка), ширина)) {
-                if (y > дно) break;
-                графика.drawString(font, строка, x, y, ClassStyle.ЧЕРНИЛА_ПОГАШЕННЫЕ, false);
-                y += font.lineHeight;
-            }
-        }
-        return y;
+    /** Тонкая закладка на поле страницы: единственный знак, что текст ниже продолжается. */
+    private void полосаПрокрутки(GuiGraphics графика, int x, int верх, int низ, int всего) {
+        int высотаОкна = низ - верх;
+        int ползунок = Math.max(8, высотаОкна * высотаОкна / всего);
+        int сдвиг = (высотаОкна - ползунок) * прокрутка / пределПрокрутки;
+        графика.fill(x, верх, x + 2, низ, 0x30000000 | ClassStyle.ЧЕРНИЛА);
+        графика.fill(x, верх + сдвиг, x + 2, верх + сдвиг + ползунок, 0xA0000000 | ClassStyle.ЧЕРНИЛА);
     }
 
     /** Первое слово лора выделено жирным и цветом класса — кивок в сторону заглавных буквиц. */
@@ -265,7 +342,7 @@ public class ClassCodexScreen extends Screen {
 
         ВкладкаКнопка(int x, int y, int ширина, PlayerClassData.Класс класс, String номер) {
             super(x, y, ширина, 18, ClassLore.заголовок(класс),
-                b -> открытаяВкладка = класс, DEFAULT_NARRATION);
+                b -> листать(класс), DEFAULT_NARRATION);
             this.класс = класс;
             this.номер = номер;
         }
