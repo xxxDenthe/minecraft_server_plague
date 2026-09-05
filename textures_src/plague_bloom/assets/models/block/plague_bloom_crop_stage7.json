@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/crop",
   "textures": {
-    "crop": "lmpc_classes:block/plague_bloom_crop_stage1"
+    "crop": "lmpc_classes:block/plague_bloom_crop_stage7"
   }
 }
