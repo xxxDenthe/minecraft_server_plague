@@ -13,7 +13,7 @@ import net.neoforged.neoforge.event.tick.EntityTickEvent;
 /**
  * Видимые приметы личного заражения — заглушка до подсистемы 2. Дизайна
  * стадий ещё нет, поэтому источник стадии сейчас один: вложение
- * {@link PlagueAttachments#СТАДИЯ}, которое правится только командой
+ * {@link PlayerPlagueData}, которое правится только командой
  * `/plague setstage` для проверки. Когда подсистема 2 появится и станет
  * сама писать в то же вложение, этот файл менять не придётся.
  *
@@ -39,7 +39,7 @@ public final class PlayerInfectionEffects {
         Entity сущность = событие.getEntity();
         if (!(сущность instanceof ServerPlayer игрок)) return;
 
-        int стадия = игрок.getData(PlagueAttachments.СТАДИЯ);
+        int стадия = PlayerPlagueData.данные(игрок).стадия;
         if (стадия < СТАДИЯ_РЕДКИХ_СПОР) return;
         ServerLevel мир = (ServerLevel) игрок.level();
 
