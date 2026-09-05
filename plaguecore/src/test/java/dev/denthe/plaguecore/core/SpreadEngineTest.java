@@ -47,8 +47,8 @@ class SpreadEngineTest {
         PlagueGrid g = пустая();
         засеятьРазреженно(g);
         SpreadEngine.NightResult r = SpreadEngine.runNight(g, 1, false, rng(42));
-        assertEquals(25, r.newlyInfected(),
-            "фаза 0 разрешает ровно 25 новых чанков за ночь");
+        assertEquals(PhaseTable.paramsFor(0).budget(), r.newlyInfected(),
+            "фаза 0 разрешает ровно бюджет фазы новых чанков за ночь");
     }
 
     @Test
@@ -61,8 +61,9 @@ class SpreadEngineTest {
         SpreadEngine.NightResult без = SpreadEngine.runNight(обычная, 1, false, rng(7));
         SpreadEngine.NightResult со = SpreadEngine.runNight(сонная, 1, true, rng(7));
 
-        assertEquals(25, без.newlyInfected(), "без сна — бюджет фазы 0");
-        assertEquals(50, со.newlyInfected(), "сон удваивает бюджет");
+        int бюджет = PhaseTable.paramsFor(0).budget();
+        assertEquals(бюджет, без.newlyInfected(), "без сна — бюджет фазы 0");
+        assertEquals(бюджет * 2, со.newlyInfected(), "сон удваивает бюджет");
     }
 
     /**

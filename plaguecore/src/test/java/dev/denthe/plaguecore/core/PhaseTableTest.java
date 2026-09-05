@@ -27,11 +27,14 @@ class PhaseTableTest {
 
     @Test
     void бюджетыСоответствуютСпеку() {
-        assertEquals(25, PhaseTable.paramsFor(0).budget());
-        assertEquals(50, PhaseTable.paramsFor(1).budget());
-        assertEquals(95, PhaseTable.paramsFor(2).budget());
-        assertEquals(150, PhaseTable.paramsFor(3).budget());
-        assertEquals(240, PhaseTable.paramsFor(4).budget());
+        // Числа пересчитаны под мир 1500×1500 (сетка 95×95): прежние
+        // 25/50/95/150/240 были рассчитаны на 63×63 и на большем мире
+        // давали к ночи 30 сорок процентов вместо восьмидесяти.
+        assertEquals(57, PhaseTable.paramsFor(0).budget());
+        assertEquals(114, PhaseTable.paramsFor(1).budget());
+        assertEquals(216, PhaseTable.paramsFor(2).budget());
+        assertEquals(341, PhaseTable.paramsFor(3).budget());
+        assertEquals(546, PhaseTable.paramsFor(4).budget());
     }
 
     @Test
@@ -88,7 +91,7 @@ class PhaseTableTest {
         for (int night = 1; night <= 30; night++) {
             сумма += PhaseTable.paramsFor(PhaseTable.phaseForNight(night)).budget();
         }
-        assertEquals(2735, сумма, "суммарный бюджет за 30 ночей по спеку 6.2");
+        assertEquals(6221, сумма, "суммарный бюджет за 30 ночей по спеку 6.2");
     }
 
     /**

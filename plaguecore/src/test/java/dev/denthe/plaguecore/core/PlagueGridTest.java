@@ -125,10 +125,14 @@ class PlagueGridTest {
             assertEquals(середина, g.index(центр, центр));
             assertEquals(центр, g.chunkXOf(середина));
             assertEquals(центр, g.chunkZOf(середина));
-            // 1000 блоков границы мира влезают в сетку целиком
-            assertTrue(g.contains(центр - 31, центр - 31));
-            assertTrue(g.contains(центр + 31, центр + 31));
-            assertFalse(g.contains(центр - 32, центр));
+            // граница мира влезает в сетку целиком, с запасом
+            int половина = размер / 2;
+            assertTrue(g.contains(центр - половина, центр - половина));
+            assertTrue(g.contains(центр + половина, центр + половина));
+            assertFalse(g.contains(центр - половина - 1, центр));
+            assertTrue(размер * 16 >= PlagueConstants.WORLD_SIZE_BLOCKS,
+                "сетка обязана покрывать границу мира: "
+                + (размер * 16) + " < " + PlagueConstants.WORLD_SIZE_BLOCKS);
         }
     }
 }

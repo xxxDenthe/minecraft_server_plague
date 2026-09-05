@@ -1,10 +1,17 @@
 package dev.denthe.plaguecore.core;
 
 /**
- * Таблица фаз из спека, раздел 6.2. Числа рассчитаны под мир 1000×1000.
+ * Таблица фаз из спека, раздел 6.2. Числа рассчитаны под мир 1500×1500,
+ * то есть сетку 95×95 = 9 025 чанков.
  *
- * Кривая: старт 10% (≈397 чанков), к ночи 30 суммарный бюджет 2735,
- * итого около 80% мира.
+ * Кривая: старт 10% (≈900 чанков), к ночи 30 около 80% мира.
+ *
+ * <b>Бюджет ночи считается в штуках чанков, а не в долях мира.</b>
+ * Поэтому при смене {@link dev.denthe.plaguecore.PlagueConstants#WORLD_SIZE_BLOCKS}
+ * числа ниже надо пересчитывать пропорционально площади, иначе кривая
+ * уедет молча. Прежний мир 1000×1000 (сетка 63×63) жил на бюджетах
+ * 25/50/95/150/240 — здесь они умножены на 2,27 по отношению площадей.
+ * Ловит это {@code SpreadCurveTest}.
  */
 public final class PhaseTable {
     private PhaseTable() {}
@@ -16,11 +23,11 @@ public final class PhaseTable {
 
     private static final PhaseParams[] PARAMS = {
         //               base   budget  каждые N ночей  на сколько
-        new PhaseParams(0.04f,   25,      3,             1),
-        new PhaseParams(0.07f,   50,      2,             1),
-        new PhaseParams(0.11f,   95,      1,             1),
-        new PhaseParams(0.16f,  150,      1,             1),
-        new PhaseParams(0.24f,  240,      1,             2)
+        new PhaseParams(0.04f,   57,      3,             1),
+        new PhaseParams(0.07f,  114,      2,             1),
+        new PhaseParams(0.11f,  216,      1,             1),
+        new PhaseParams(0.16f,  341,      1,             1),
+        new PhaseParams(0.24f,  546,      1,             2)
     };
 
     /** Последняя ночь фазы. Нужно конфигу, чтобы показать значение по умолчанию. */

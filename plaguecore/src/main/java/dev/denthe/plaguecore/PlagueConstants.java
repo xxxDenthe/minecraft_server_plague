@@ -28,15 +28,18 @@ public final class PlagueConstants {
     public static final int MAX_NATURAL_LEVEL = 4;
 
     /** Сторона мира в блоках. */
-    public static final int WORLD_SIZE_BLOCKS = 1000;
+    public static final int WORLD_SIZE_BLOCKS = 1500;
 
     /**
-     * Сторона сетки в чанках. 63 × 16 = 1008 — покрывает границу с запасом.
+     * Сторона сетки в чанках. 95 × 16 = 1520 — покрывает границу 1500
+     * с запасом в 20 блоков. Число нечётное намеренно: у сетки должен
+     * быть настоящий центральный чанк, вокруг которого /plague center
+     * строит границу мира и точку возрождения.
      *
      * В конфиг не выносится намеренно: размер сетки записан в сохранение
      * мира, и смена числа на живом мире означала бы порчу данных.
      */
-    public static final int GRID_SIZE_CHUNKS = 63;
+    public static final int GRID_SIZE_CHUNKS = 95;
 
     /**
      * Потолок очереди чанков на перерисовку.
