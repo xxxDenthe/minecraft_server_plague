@@ -146,9 +146,13 @@ cd lmpc_classes  && ./gradlew build
 
 Эти четырнадцать стояли в списке от 2026-09-04, но в папке `mods/` их
 сейчас нет. Причина не записана: либо их выкинули и забыли отметить,
-либо джарники потерялись. **Разойтись клиенту и серверу по модам —
-верный способ уронить вход всем восьмерым**, поэтому вопрос закрыть
-до раздачи пака.
+либо джарники потерялись.
+
+**Пак в нынешнем виде не загрузится.** Проверено разбором зависимостей
+всех 91 джарника, включая вложенные: `ftb-quests` объявляет `ftbteams`
+обязательной зависимостью, а `ftb-teams-neoforge-2101.1.11.jar` — один
+из пропавших. Других обязательных дыр нет, эта одна. Значит выбор такой:
+вернуть `ftb-teams` в папку **или** убрать `ftb-quests` вместе с ним.
 
 ```
 ColdSweat-2.4.2.jar                        холод, конфиг уже лежит в launcher/pack-config
@@ -160,11 +164,11 @@ entity_texture_features-7.2.1-1.21-neoforge.jar
 extrasounds-1.5.6+1.21.1-neoforge.jar
 ok_zoomer-neo-10.0.0-beta.13.jar
 clickthrough-plus-neoforge-3.5.0+1.21.1.jar
-corpsecurioscompat-1.21.1-NeoForge-4.0.1.jar
+corpsecurioscompat-1.21.1-NeoForge-4.0.1.jar   могила забирает вещи из Curios — а Curios носят классы
 InvMoveCompats-0.5.0+1.21.8-NeoForge.jar
 baguettelib-1.21.1-NeoForge-2.0.6.jar
 c2me-neoforge-mc1.21.1-0.4.0-alpha.0.120.jar
-ftb-teams-neoforge-2101.1.11.jar
+ftb-teams-neoforge-2101.1.11.jar           ОБЯЗАТЕЛЕН: без него ftb-quests не грузится
 ```
 
 Обратно в папку вернулись, хотя список считал их удалёнными:
