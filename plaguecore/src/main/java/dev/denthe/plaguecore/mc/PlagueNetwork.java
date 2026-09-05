@@ -37,7 +37,7 @@ public final class PlagueNetwork {
     private PlagueNetwork() {}
 
     /** Версия протокола. Меняется, если поменяется формат пакетов. */
-    private static final String VERSION = "3";
+    private static final String VERSION = "4";
 
     // ── номера действий ────────────────────────────────────────────────
     public static final int ACTION_REFRESH = 0;
@@ -215,6 +215,94 @@ public final class PlagueNetwork {
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
+    /**
+     * Чужая рука на пульте тела. Идёт жертве каждый тик, пока сессия жива.
+     * Заметка 2026-09-06-oderzhimost.
+     *
+     * Один пакет и на «тебя ведут», и на само нажатие: отдельный пакет
+     * начала сессии добавил бы гонку — нажатие пришло бы раньше, чем
+     * разрешение его слушать. {@code ведут = false} закрывает сессию,
+     * флаги при этом не смотрят.
+     *
+     * {@code чума} нужна только клиенту, чтобы отличать своё оформление:
+     * чума и админ ведут тело совершенно одинаково.
+     */
+    public record Drive(boolean ведут, boolean чума, int флаги,
+                        float рыскание, float тангаж) implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<Drive> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "drive"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Drive> CODEC =
+            StreamCodec.of(
+                (buf, d) -> {
+                    buf.writeBoolean(d.ведут);
+                    buf.writeBoolean(d.чума);
+                    buf.writeByte(d.флаги & 0xFF);
+                    buf.writeFloat(d.рыскание);
+                    buf.writeFloat(d.тангаж);
+                },
+                buf -> new Drive(buf.readBoolean(), buf.readBoolean(),
+                    buf.readByte() & 0xFF, buf.readFloat(), buf.readFloat()));
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /**
+     * Нажатия админа на сервер. Шлются каждый тик, пока он за пультом.
+     *
+     * Проверка одна и на сервере: отправитель обязан прямо сейчас вести
+     * чьё-то тело. Иначе любой подменённый клиент слал бы сюда мусор,
+     * а на том конце труба, которая двигает чужого игрока.
+     */
+    public record Steer(int флаги, float рыскание, float тангаж) implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<Steer> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "steer"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Steer> CODEC =
+            StreamCodec.of(
+                (buf, s) -> {
+                    buf.writeByte(s.флаги & 0xFF);
+                    buf.writeFloat(s.рыскание);
+                    buf.writeFloat(s.тангаж);
+                },
+                buf -> new Steer(buf.readByte() & 0xFF, buf.readFloat(), buf.readFloat()));
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /**
+     * Кем правит админ. Идёт только ему и только дважды за сессию:
+     * номер сущности в начале и -1 в конце.
+     *
+     * Клиент админа обязан это знать: камеру на чужое тело он ставит сам,
+     * картинка по сети не ходит.
+     */
+    public record Puppet(int сущность) implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<Puppet> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "puppet"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Puppet> CODEC =
+            StreamCodec.of(
+                (buf, p) -> buf.writeVarInt(p.сущность),
+                buf -> new Puppet(buf.readVarInt()));
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /** Послать жертве очередное нажатие. */
+    public static void отправитьУправление(ServerPlayer жертва, Drive пакет) {
+        PacketDistributor.sendToPlayer(жертва, пакет);
+    }
+
     /** Послать игроку словарь тайнописи. */
     public static void отправитьСлова(ServerPlayer кому, List<Words.Запись> записи) {
         PacketDistributor.sendToPlayer(кому, new Words(List.copyOf(записи)));
@@ -244,6 +332,19 @@ public final class PlagueNetwork {
         registrar.playToClient(Voice.TYPE, Voice.CODEC,
             (payload, ctx) -> ctx.enqueueWork(
                 () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьГолос(payload)));
+
+        registrar.playToClient(Drive.TYPE, Drive.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(
+                () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьУправление(payload)));
+
+        registrar.playToClient(Puppet.TYPE, Puppet.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(
+                () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьКуклу(payload)));
+
+        registrar.playToServer(Steer.TYPE, Steer.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(() -> {
+                if (ctx.player() instanceof ServerPlayer player) Possession.принятьНажатие(player, payload);
+            }));
 
         registrar.playToServer(Action.TYPE, Action.CODEC,
             (payload, ctx) -> ctx.enqueueWork(() -> {

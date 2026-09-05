@@ -44,6 +44,15 @@ public final class PlagueConfig {
     private static final ModConfigSpec.DoubleValue ЗДОРОВЬЕ_СЕРДЦА;
     private static final ModConfigSpec.DoubleValue РАЗМЕР_СЕРДЦА;
 
+    // ── одержимость ───────────────────────────────────────────────────
+    private static final ModConfigSpec.IntValue СТАДИЯ_ОДЕРЖИМОСТИ;
+    private static final ModConfigSpec.IntValue ТИКОВ_ОДЕРЖИМОСТИ;
+    private static final ModConfigSpec.IntValue ТИКОВ_ЧУМЫ;
+    private static final ModConfigSpec.IntValue ПЕРИОД_ПРЕДЛОЖЕНИЯ;
+    private static final ModConfigSpec.DoubleValue РАДИУС_ПРЕДЛОЖЕНИЯ;
+    private static final ModConfigSpec.IntValue КУЛДАУН_ПРЕДЛОЖЕНИЯ;
+    private static final ModConfigSpec.DoubleValue ДАЛЬНОСТЬ_УДАРА;
+
     // ── фазы ──────────────────────────────────────────────────────────
     private static final ModConfigSpec.IntValue[] КОНЕЦ_ФАЗЫ =
         new ModConfigSpec.IntValue[PhaseTable.PHASE_COUNT];
@@ -452,6 +461,42 @@ public final class PlagueConfig {
                 "Правка доходит до уже поставленных Сердец после перезахода в мир.")
             .defineInRange("scale", окр(PlagueConstants.HEART_SCALE), 0.5, 6.0);
 
+        СТРОИТЕЛЬ.pop().comment(
+            "Одержимость: чужие руки на пульте тела.",
+            "Команды /plague possess, /plague seize, /plague release.",
+            "Разбор — docs/superpowers/notes/2026-09-06-oderzhimost.md"
+        ).push("possession");
+
+        СТАДИЯ_ОДЕРЖИМОСТИ = СТРОИТЕЛЬ
+            .comment("С какой стадии тело вообще можно отобрать.")
+            .defineInRange("minStage", PlagueConstants.POSSESS_MIN_STAGE, 1, 4);
+
+        ТИКОВ_ОДЕРЖИМОСТИ = СТРОИТЕЛЬ
+            .comment("Сколько тиков админ правит телом. 400 — двадцать секунд.")
+            .defineInRange("possessTicks", PlagueConstants.POSSESS_TICKS, 20, 12000);
+
+        ТИКОВ_ЧУМЫ = СТРОИТЕЛЬ
+            .comment("Сколько тиков телом правит сама чума. 100 — пять секунд.")
+            .defineInRange("seizeTicks", PlagueConstants.SEIZE_TICKS, 20, 1200);
+
+        ПЕРИОД_ПРЕДЛОЖЕНИЯ = СТРОИТЕЛЬ
+            .comment("Раз во сколько тиков сервер ищет, кого предложить админу.",
+                "6000 — пять минут. Ноль отключает предложения совсем.")
+            .defineInRange("offerTicks", PlagueConstants.POSSESS_OFFER_TICKS, 0, 72000);
+
+        РАДИУС_ПРЕДЛОЖЕНИЯ = СТРОИТЕЛЬ
+            .comment("В каком радиусе ищется сосед. Без цели предложение бессмысленно.")
+            .defineInRange("offerRadius", окр(PlagueConstants.POSSESS_OFFER_RADIUS), 1.0, 256.0);
+
+        КУЛДАУН_ПРЕДЛОЖЕНИЯ = СТРОИТЕЛЬ
+            .comment("Кулдаун предложения на одну жертву. 12000 — десять минут.",
+                "Без него чат зальёт одним и тем же именем.")
+            .defineInRange("offerCooldown", PlagueConstants.POSSESS_OFFER_COOLDOWN, 0, 288000);
+
+        ДАЛЬНОСТЬ_УДАРА = СТРОИТЕЛЬ
+            .comment("С какого расстояния чума бьёт цель.")
+            .defineInRange("seizeReach", окр(PlagueConstants.SEIZE_REACH), 1.0, 6.0);
+
         SPEC = СТРОИТЕЛЬ.pop().build();
     }
 
@@ -515,6 +560,14 @@ public final class PlagueConfig {
     private static void применить() {
         PlagueConstants.HEART_HEALTH = ЗДОРОВЬЕ_СЕРДЦА.get().floatValue();
         PlagueConstants.HEART_SCALE = РАЗМЕР_СЕРДЦА.get().floatValue();
+
+        PlagueConstants.POSSESS_MIN_STAGE = СТАДИЯ_ОДЕРЖИМОСТИ.get();
+        PlagueConstants.POSSESS_TICKS = ТИКОВ_ОДЕРЖИМОСТИ.get();
+        PlagueConstants.SEIZE_TICKS = ТИКОВ_ЧУМЫ.get();
+        PlagueConstants.POSSESS_OFFER_TICKS = ПЕРИОД_ПРЕДЛОЖЕНИЯ.get();
+        PlagueConstants.POSSESS_OFFER_RADIUS = РАДИУС_ПРЕДЛОЖЕНИЯ.get().floatValue();
+        PlagueConstants.POSSESS_OFFER_COOLDOWN = КУЛДАУН_ПРЕДЛОЖЕНИЯ.get();
+        PlagueConstants.SEIZE_REACH = ДАЛЬНОСТЬ_УДАРА.get().floatValue();
 
         PlagueConstants.START_EPICENTERS = ОЧАГИ.get();
         PlagueConstants.START_INFECTION_PERCENT = СТАРТОВАЯ_ДОЛЯ.get().floatValue();

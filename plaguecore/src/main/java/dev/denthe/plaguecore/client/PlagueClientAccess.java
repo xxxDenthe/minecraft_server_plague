@@ -39,6 +39,16 @@ public final class PlagueClientAccess {
         SecretText.принять(пакет);
     }
 
+    /** Чужая рука на пульте нашего тела. Разбирает {@link PossessionClient}. */
+    public static void принятьУправление(PlagueNetwork.Drive пакет) {
+        PossessionClient.принять(пакет);
+    }
+
+    /** Кем правим мы сами, если сидим за пультом. */
+    public static void принятьКуклу(PlagueNetwork.Puppet пакет) {
+        PossessionClient.принятьКуклу(пакет);
+    }
+
     public static void принятьСнимок(PlagueNetwork.Snapshot snapshot) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof PlagueMapScreen экран) {

@@ -30,18 +30,32 @@ public final class PlagueOverlay {
     /** Насколько плотность гуляет от дыхания. */
     private static final float РАЗМАХ = 0.06f;
 
+    /** Плотность плёнки, пока тело ведут чужие руки. */
+    private static final float ОДЕРЖИМОСТЬ = 0.70f;
+
+    /** Насколько сильнее гуляет плёнка при одержимости: это уже не дыхание, а пульс. */
+    private static final float РАЗМАХ_ПУЛЬСА = 0.12f;
+
     @SubscribeEvent
     public static void нарисовать(RenderGuiEvent.Post событие) {
+        boolean ведут = PossessionClient.ведут();
         int стадия = PlagueClientAccess.стадия();
-        if (стадия < 2 || стадия >= ПЛОТНОСТЬ.length) return;
+        if (!ведут && (стадия < 2 || стадия >= ПЛОТНОСТЬ.length)) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
 
         float такт = mc.player.tickCount
             + событие.getPartialTick().getGameTimeDeltaPartialTick(false);
-        float дыхание = Mth.sin(такт / 25f) * РАЗМАХ;
-        float альфа = Mth.clamp(ПЛОТНОСТЬ[стадия] + дыхание, 0f, 0.8f);
+
+        // Одержимость перебивает стадию: человек обязан понять, что это чума,
+        // а не лаги, — иначе полезет перезаходить и оборвёт сессию.
+        float плотность = ведут ? ОДЕРЖИМОСТЬ : ПЛОТНОСТЬ[стадия];
+        float размах = ведут ? РАЗМАХ_ПУЛЬСА : РАЗМАХ;
+        float период = ведут ? 6f : 25f;
+
+        float дыхание = Mth.sin(такт / период) * размах;
+        float альфа = Mth.clamp(плотность + дыхание, 0f, 0.85f);
 
         GuiGraphics графика = событие.getGuiGraphics();
         int цвет = ((int) (альфа * 255f) << 24);   // чёрный с нужной прозрачностью

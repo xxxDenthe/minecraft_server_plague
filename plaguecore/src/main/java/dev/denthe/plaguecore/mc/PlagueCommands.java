@@ -123,6 +123,19 @@ public final class PlagueCommands {
                 .then(Commands.argument("value", FloatArgumentType.floatArg(0f, 100f))
                     .executes(PlagueCommands::выставитьИгроку))));
 
+        // Одержимость. Заметка 2026-09-06-oderzhimost.
+        корень.then(Commands.literal("possess")
+            .then(Commands.argument("who", EntityArgument.player())
+                .executes(PlagueCommands::вселиться)));
+
+        корень.then(Commands.literal("seize")
+            .then(Commands.argument("who", EntityArgument.player())
+                .executes(PlagueCommands::отдатьЧуме)));
+
+        корень.then(Commands.literal("release")
+            .then(Commands.argument("who", EntityArgument.player())
+                .executes(PlagueCommands::отпустить)));
+
         LiteralArgumentBuilder<CommandSourceStack> голос = Commands.literal("voice")
             .executes(PlagueCommands::показатьГолос);
         голос.then(Commands.literal("sync").executes(PlagueCommands::синхронизироватьГолос));
@@ -629,6 +642,57 @@ public final class PlagueCommands {
         c.getSource().sendSuccess(() -> Component.literal(String.format(
             "%s: заражённость %.1f, стадия %d",
             кто.getGameProfile().getName(), д.заражённость, д.стадия)), true);
+        return 1;
+    }
+
+    // ── одержимость ────────────────────────────────────────────────────
+    // Вся работа — в Possession. Здесь только разбор аргумента и ответ:
+    // файл команд и так на семьсот строк, ещё одна подсистема его добьёт.
+
+    private static int вселиться(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> c)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer админ = c.getSource().getPlayer();
+        if (админ == null) {
+            c.getSource().sendFailure(Component.literal("Вселяться может только игрок."));
+            return 0;
+        }
+        ServerPlayer жертва = EntityArgument.getPlayer(c, "who");
+        Component отказ = Possession.вселить(админ, жертва);
+        if (отказ != null) {
+            c.getSource().sendFailure(отказ);
+            return 0;
+        }
+        c.getSource().sendSuccess(() -> Component.literal(
+            "Ты в теле " + жертва.getGameProfile().getName()
+            + ". Обратно — /plague release " + жертва.getGameProfile().getName()), true);
+        return 1;
+    }
+
+    private static int отдатьЧуме(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> c)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer жертва = EntityArgument.getPlayer(c, "who");
+        Component отказ = Possession.отдатьЧуме(жертва);
+        if (отказ != null) {
+            c.getSource().sendFailure(отказ);
+            return 0;
+        }
+        c.getSource().sendSuccess(() -> Component.literal(
+            "Чума ведёт " + жертва.getGameProfile().getName()), true);
+        return 1;
+    }
+
+    private static int отпустить(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> c)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer жертва = EntityArgument.getPlayer(c, "who");
+        if (!Possession.отпустить(жертва.getUUID())) {
+            c.getSource().sendFailure(Component.literal("Это тело никто не ведёт."));
+            return 0;
+        }
+        c.getSource().sendSuccess(() -> Component.literal(
+            жертва.getGameProfile().getName() + " снова свой"), true);
         return 1;
     }
 

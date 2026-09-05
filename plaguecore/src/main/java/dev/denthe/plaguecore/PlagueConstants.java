@@ -312,4 +312,28 @@ public final class PlagueConstants {
      * уже стоящее Сердце подхватит новый размер после перезахода в мир.
      */
     public static float HEART_SCALE = 1.5f;
+
+    // ── одержимость ───────────────────────────────────────────────────
+    // Заметка 2026-09-06-oderzhimost.
+
+    /** С какой стадии тело вообще можно отобрать. */
+    public static int POSSESS_MIN_STAGE = 4;
+
+    /** Сколько тиков админ правит телом. 400 — двадцать секунд. */
+    public static int POSSESS_TICKS = 400;
+
+    /** Сколько тиков телом правит чума. 100 — пять секунд. */
+    public static int SEIZE_TICKS = 100;
+
+    /** Раз во сколько тиков сервер ищет, кого предложить. 6000 — пять минут. */
+    public static int POSSESS_OFFER_TICKS = 6000;
+
+    /** Радиус поиска соседа: без цели чуме некого бить, и звать незачем. */
+    public static float POSSESS_OFFER_RADIUS = 24f;
+
+    /** Кулдаун предложения на одну жертву. 12000 — десять минут. */
+    public static int POSSESS_OFFER_COOLDOWN = 12000;
+
+    /** С какого расстояния чума бьёт цель. Чуть меньше ванильных трёх. */
+    public static float SEIZE_REACH = 2.8f;
 }
