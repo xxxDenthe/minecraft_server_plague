@@ -48,7 +48,12 @@ public final class ClassBlocks {
     public static final DeferredBlock<PurifierBlock> ANDESITE_PURIFIER = БЛОКИ.registerBlock(
         "andesite_purifier",
         PurifierBlock::new,
-        BlockBehaviour.Properties.ofFullCopy(Blocks.POLISHED_ANDESITE).mapColor(MapColor.STONE));
+        // noOcclusion обязателен: модель уже не куб — тулово вдвинуто
+        // на пиксель со всех сторон, и без него игра прячет грани
+        // соседних блоков, а сквозь щели видно пустоту.
+        BlockBehaviour.Properties.ofFullCopy(Blocks.POLISHED_ANDESITE)
+            .mapColor(MapColor.STONE)
+            .noOcclusion());
 
     public static final DeferredItem<BlockItem> ANDESITE_PURIFIER_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(ANDESITE_PURIFIER);

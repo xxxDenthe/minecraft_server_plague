@@ -2,10 +2,14 @@ package dev.denthe.classes;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -40,6 +44,17 @@ public class PurifierBlockEntity extends BlockEntity {
     /** Проверяем условия раз в секунду: ночь наступает не чаще. */
     private static final int ИНТЕРВАЛ = 20;
 
+    /**
+     * Как часто плюёт брызгами и как часто гудит, в тиках.
+     *
+     * Гул взят с маяка и посажен на его же ритм в 80 тиков: файл
+     * длинный, и на любом ритме чаще он наслаивается сам на себя
+     * в гудящую кашу.
+     */
+    private static final int ЧАСТОТА_БРЫЗГ = 5;
+    private static final int ЧАСТОТА_ГУЛА = 80;
+    private static final int КАПЕЛЬ_ЗА_РАЗ = 3;
+
     private static final String КЛЮЧ_РЕАГЕНТ = "Reagent";
     private static final String КЛЮЧ_НОЧЬ = "LastNight";
 
@@ -47,6 +62,15 @@ public class PurifierBlockEntity extends BlockEntity {
 
     /** Номер ночи, за которую уже отработали. -1 — ещё ни разу. */
     private int последняяНочь = -1;
+
+    /**
+     * Крутится ли и есть ли чем чистить. Пересчитывается раз в секунду
+     * вместе с ночным шагом, а читается каждый тик ради брызг и гула:
+     * спрашивать Create о скорости шестьдесят раз в секунду незачем.
+     *
+     * В NBT не пишется: после перезагрузки досчитается за секунду сам.
+     */
+    private boolean работает = false;
 
     public PurifierBlockEntity(BlockPos позиция, BlockState состояние) {
         super(ClassBlockEntities.PURIFIER.get(), позиция, состояние);
@@ -102,8 +126,49 @@ public class PurifierBlockEntity extends BlockEntity {
 
     public static void тик(Level мир, BlockPos позиция, BlockState состояние, PurifierBlockEntity сам) {
         if (!(мир instanceof ServerLevel уровень)) return;
-        if (уровень.getGameTime() % ИНТЕРВАЛ != 0) return;
 
+        if (уровень.getGameTime() % ИНТЕРВАЛ == 0) {
+            сам.работает = !сам.реагент.isEmpty()
+                && CreateBridge.скоростьРядом(уровень, позиция)
+                   >= ClassesConfig.очистительМинСкорость();
+            ночнойШаг(уровень, позиция, сам);
+        }
+        if (сам.работает) эффекты(уровень, позиция);
+    }
+
+    /**
+     * Брызги и гул — единственный признак, что очиститель жив: работает
+     * он раз за ночь, а стоять рядом с молчащим ящиком игрок будет
+     * весь день.
+     *
+     * Всё шлём с сервера: клиентского тика у блока нет, а
+     * {@code sendParticles} и {@code playSound} сами рассылаются всем,
+     * кто рядом. Отдельная клиентская половина ради этого не нужна.
+     */
+    private static void эффекты(ServerLevel уровень, BlockPos позиция) {
+        long время = уровень.getGameTime();
+        if (время % ЧАСТОТА_ГУЛА == 0) {
+            уровень.playSound(null, позиция, SoundEvents.BEACON_AMBIENT,
+                SoundSource.BLOCKS, 0.12f, 0.55f);
+        }
+        if (время % ЧАСТОТА_БРЫЗГ != 0) return;
+
+        RandomSource случай = уровень.random;
+        for (int i = 0; i < КАПЕЛЬ_ЗА_РАЗ; i++) {
+            double угол = случай.nextDouble() * Math.PI * 2;
+            double разлёт = 0.08 + случай.nextDouble() * 0.07;
+            // Количество ноль — тогда три числа читаются не как разброс
+            // места, а как скорость. Ванильная капля берёт нашу скорость
+            // по горизонтали только при нулевой вертикальной, вверх она
+            // подбрасывает себя сама. Отсюда и ноль посередине.
+            уровень.sendParticles(ParticleTypes.SPLASH,
+                позиция.getX() + 0.5, позиция.getY() + 1.05, позиция.getZ() + 0.5,
+                0, Math.cos(угол), 0.0, Math.sin(угол), разлёт);
+        }
+    }
+
+    /** Ночная работа: раз за ночь, независимо от того, вышло или нет. */
+    private static void ночнойШаг(ServerLevel уровень, BlockPos позиция, PurifierBlockEntity сам) {
         int ночь = PlagueBridge.ночь(уровень);
         if (ночь < 0 || ночь == сам.последняяНочь) return;
 
@@ -117,8 +182,7 @@ public class PurifierBlockEntity extends BlockEntity {
         сам.последняяНочь = ночь;
         сам.setChanged();
 
-        if (сам.реагент.isEmpty()) return;
-        if (CreateBridge.скоростьРядом(уровень, позиция) < ClassesConfig.очистительМинСкорость()) return;
+        if (!сам.работает) return;
 
         int тир = ClassParty.тир(уровень.getServer(), PlayerClassData.Класс.SMITH);
         float сила = ClassesConfig.очистительСила(тир);
