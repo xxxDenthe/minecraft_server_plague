@@ -17,6 +17,17 @@
 Четыре независимых куска: три в `client/ShadeClient.java`, небо —
 в `client/ShadeSky.java`.
 
+**`ShadeSky` регистрируется всегда,** и при `overcast = false` тоже:
+затемнение ночного lightmap живёт в том же объекте, и пока регистрация
+была под условием, выключение пасмурного неба молча уносило с собой
+тёмную ночь (нашлось после того, как небо отдали Atmospherics). При
+`overcast = false` ставится `Vanilla extends DimensionSpecialEffects.
+OverworldEffects` — ванильное небо во всём, кроме нашего
+`adjustLightmapColors`; наследование от `OverworldEffects`, а не от
+голого `DimensionSpecialEffects`, оставляет рабочими и ванильные
+рассветы, и чужие `instanceof`. Сама тьма — общий статический
+`ShadeSky.crushNight`.
+
 1. **Цветокоррекция кадра** — ванильный `PostChain` из
    `assets/lmpc_shade/shaders/post/plague.json` на главный буфер, один
    полноэкранный проход на `RenderLevelStageEvent.Stage.AFTER_LEVEL`.
@@ -147,6 +158,14 @@ MC/NeoForge из общего кэша на `D:`; своя папка `build/` �
 
 `0.МИНОР.0` — фичи, `0.МИНОР.ПАТЧ` — исправления (как `lmpc_gmtools`).
 
+- **0.9.0** — фикс: при `overcast = false` пропадала тёмная ночь.
+  `ShadeSky` регистрировался только под пасмурное небо, а в том же
+  объекте жил `adjustLightmapColors` — отдав небо Atmospherics, мы
+  вместе с куполом молча выключили и `nightBoost` с
+  `surfaceNightFloor`. Теперь регистрируемся всегда: при
+  `overcast = false` — `Vanilla extends DimensionSpecialEffects.
+  OverworldEffects` (ванильное небо, наш lightmap), при `true` — прежний
+  `Overcast`. Тело затемнения вынесено в общий `ShadeSky.crushNight`.
 - **0.8.0** — второй, отдельный от пепла декоративный эффект: грибные
   споры (`ParticleTypes.MYCELIUM`) вспышками у земли (`groundSporeRate`,
   `groundSporeChance`, по умолчанию редко — 1 частица при ~5% тиков).

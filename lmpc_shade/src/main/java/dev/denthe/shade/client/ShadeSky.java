@@ -10,8 +10,16 @@ import net.neoforged.neoforge.client.event.RegisterDimensionSpecialEffectsEvent;
 import org.joml.Vector3f;
 
 /**
- * Пасмурное небо над Верхним миром. Регистрируем свой
+ * Небо и ночная тьма над Верхним миром. Регистрируем свой
  * DimensionSpecialEffects вместо ванильного — чистый API, без миксинов.
+ *
+ * Регистрируемся ВСЕГДА, даже при overcast = false. Затемнение ночного
+ * lightmap живёт в этом же объекте, и когда небо отдали Atmospherics,
+ * вместе с пасмурным куполом молча пропадала и тёмная ночь. Поэтому при
+ * overcast = false ставим {@link Vanilla} — ванильное небо во всём,
+ * кроме нашего adjustLightmapColors, а Atmospherics поверх него рисует
+ * своё (его миксины сидят на LevelRenderer и на базовом
+ * DimensionSpecialEffects, наследование их не ломает).
  *
  * SkyType.NONE убирает купол, солнце, луну и звёзды: сверху остаётся
  * ровный цвет тумана (дальше его правит наш ComputeFogColor). Облака
@@ -33,9 +41,25 @@ public final class ShadeSky {
     private ShadeSky() {}
 
     public static void onRegister(RegisterDimensionSpecialEffectsEvent e) {
-        if (!ShadeConfig.SKY_OVERCAST.get()) return;
         e.register(BuiltinDimensionTypes.OVERWORLD_EFFECTS,
-            new Overcast(ShadeConfig.CLOUD_HEIGHT.get()));
+            ShadeConfig.SKY_OVERCAST.get()
+                ? new Overcast(ShadeConfig.CLOUD_HEIGHT.get())
+                : new Vanilla());
+    }
+
+    /**
+     * Ванильное небо плюс наша тёмная ночь. Наследуемся от
+     * {@code OverworldEffects}, а не от голого DimensionSpecialEffects:
+     * так достаются даром и ванильные рассветы, и синева тумана, и
+     * проверки {@code instanceof} в чужих модах.
+     */
+    private static final class Vanilla extends DimensionSpecialEffects.OverworldEffects {
+        @Override
+        public void adjustLightmapColors(ClientLevel level, float partialTicks, float skyDarken,
+                                         float blockLightRedFlicker, float skyLight,
+                                         int pixelX, int pixelY, Vector3f colors) {
+            crushNight(skyDarken, pixelX, pixelY, colors);
+        }
     }
 
     private static final class Overcast extends DimensionSpecialEffects {
@@ -71,24 +95,37 @@ public final class ShadeSky {
         public void adjustLightmapColors(ClientLevel level, float partialTicks, float skyDarken,
                                          float blockLightRedFlicker, float skyLight,
                                          int pixelX, int pixelY, Vector3f colors) {
-            float boost = ShadeConfig.NIGHT_BOOST.get().floatValue();
-            if (boost <= 0f) return;
-            float night = Mth.clamp((1.0f - skyDarken) / 0.8f, 0f, 1f); // 0 день .. 1 полночь
-            if (night <= 0f) return;
-
-            float block = pixelX / 15.0f;   // блочный свет 0..1
-            float sky = pixelY / 15.0f;     // небесный свет 0..1
-            // Свет «спасает» по крутой кривой: даже слабый блочный свет
-            // (тусклый край факела) заметно вытаскивает пиксель из тьмы.
-            // Куб вместо квадрата — свет бьёт дальше. Полную тьму
-            // (block == 0) не трогаем: там noBlock всё равно 1.
-            float lightSave = 1.0f - block;
-            float noBlock = lightSave * lightSave * lightSave;
-            float crush = Mth.clamp(night * sky * noBlock * boost, 0f, 1f);
-            if (crush <= 0f) return;
-
-            float floor = ShadeConfig.SURFACE_NIGHT_FLOOR.get().floatValue();
-            colors.mul(Mth.lerp(crush, 1.0f, floor));
+            crushNight(skyDarken, pixelX, pixelY, colors);
         }
+    }
+
+    /**
+     * Затемняем ночную поверхность в самом lightmap. Крушим только то,
+     * что освещено небом и не освещено блоками: ночью факел/фонарь —
+     * единственное, что оставляет видимость. Пещеры (мало skyLight) и
+     * день (skyDarken ≈ 1) не трогаем.
+     *
+     * Общий для обоих режимов неба: тьма не должна зависеть от того,
+     * кто рисует купол — мы или Atmospherics.
+     */
+    static void crushNight(float skyDarken, int pixelX, int pixelY, Vector3f colors) {
+        float boost = ShadeConfig.NIGHT_BOOST.get().floatValue();
+        if (boost <= 0f) return;
+        float night = Mth.clamp((1.0f - skyDarken) / 0.8f, 0f, 1f); // 0 день .. 1 полночь
+        if (night <= 0f) return;
+
+        float block = pixelX / 15.0f;   // блочный свет 0..1
+        float sky = pixelY / 15.0f;     // небесный свет 0..1
+        // Свет «спасает» по крутой кривой: даже слабый блочный свет
+        // (тусклый край факела) заметно вытаскивает пиксель из тьмы.
+        // Куб вместо квадрата — свет бьёт дальше. Полную тьму
+        // (block == 0) не трогаем: там noBlock всё равно 1.
+        float lightSave = 1.0f - block;
+        float noBlock = lightSave * lightSave * lightSave;
+        float crush = Mth.clamp(night * sky * noBlock * boost, 0f, 1f);
+        if (crush <= 0f) return;
+
+        float floor = ShadeConfig.SURFACE_NIGHT_FLOOR.get().floatValue();
+        colors.mul(Mth.lerp(crush, 1.0f, floor));
     }
 }
