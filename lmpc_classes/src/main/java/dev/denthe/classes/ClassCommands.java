@@ -96,6 +96,7 @@ public final class ClassCommands {
         д.сменитьКласс(класс, сейчас, ClassesConfig.доляМастерстваПриСмене());
         PlayerClassData.синхронизировать(игрок);
         выдатьГримуарЕслиНадо(игрок);
+        PlagueBridge.refreshWords(игрок);
         c.getSource().sendSuccess(
             () -> Component.translatable("msg.lmpc_classes.switch.done", ClassLore.заголовок(класс)), false);
         return 1;
@@ -137,6 +138,7 @@ public final class ClassCommands {
         д.последняяСменаТик = -1L;
         PlayerClassData.синхронизировать(кто);
         выдатьГримуарЕслиНадо(кто);
+        PlagueBridge.refreshWords(кто);
         c.getSource().sendSuccess(() -> Component.translatable(
             "msg.lmpc_classes.admin.set", кто.getGameProfile().getName(), ClassLore.заголовок(класс)), true);
         return 1;

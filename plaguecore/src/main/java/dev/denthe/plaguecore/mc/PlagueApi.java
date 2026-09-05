@@ -1,12 +1,14 @@
 package dev.denthe.plaguecore.mc;
 
 import dev.denthe.plaguecore.PlagueCore;
+import dev.denthe.plaguecore.core.CipherWords;
 import dev.denthe.plaguecore.core.InfectionMath;
 import dev.denthe.plaguecore.core.PlagueGrid;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 
 /**
  * Точка входа для подсистемы классов. Спек ядра, раздел 9.6.
@@ -137,5 +139,35 @@ public final class PlagueApi {
      */
     public static void recordSnapshot(ServerPlayer игрок, BlockPos позиция) {
         PlagueCore.LOG.debug("Снимок Летописца: {} в {}", игрок.getGameProfile().getName(), позиция);
+    }
+
+    // ── тайнопись ──────────────────────────────────────────────────────
+
+    /**
+     * Раскрыть тайное слово помимо чата. Сюда придёт клин бессонных,
+     * когда подсистема лора его сделает: клин — это кнопка «сдаюсь»,
+     * а не второй способ читать.
+     *
+     * @return true, если слово раньше было закрыто
+     */
+    public static boolean revealWord(ServerPlayer игрок, String корень) {
+        ServerLevel мир = игрок.server.getLevel(Level.OVERWORLD);
+        if (мир == null) return false;
+        boolean новое = PlagueState.get(мир).раскрыть(CipherWords.нормализовать(корень));
+        if (новое) PlagueWords.синхронизироватьВсех(игрок.server);
+        return новое;
+    }
+
+    public static boolean isWordRevealed(ServerPlayer игрок, String корень) {
+        ServerLevel мир = игрок.server.getLevel(Level.OVERWORLD);
+        return мир != null && PlagueState.get(мир).раскрыт(CipherWords.нормализовать(корень));
+    }
+
+    /**
+     * Переслать игроку словарь тайнописи. Звать при смене класса:
+     * подсказки видит только Летописец, и решает это сервер.
+     */
+    public static void refreshWords(ServerPlayer игрок) {
+        PlagueWords.синхронизировать(игрок);
     }
 }

@@ -18,6 +18,7 @@ final class ClassBridge {
     private ClassBridge() {}
 
     private static Method методЗащита;
+    private static Method методКласс;
     private static boolean инициализирован;
     private static boolean доступен;
 
@@ -27,6 +28,7 @@ final class ClassBridge {
         try {
             Class<?> api = Class.forName("dev.denthe.classes.ClassesApi");
             методЗащита = api.getMethod("protectionBonus", Player.class);
+            методКласс = api.getMethod("className", Player.class);
             доступен = true;
             PlagueCore.LOG.info("lmpc_classes найден, мост классов подключён");
         } catch (ReflectiveOperationException e) {
@@ -43,6 +45,20 @@ final class ClassBridge {
             return результат instanceof Float ф ? ф : 0f;
         } catch (ReflectiveOperationException e) {
             return 0f;
+        }
+    }
+
+    /**
+     * Летописец ли игрок. Без `lmpc_classes` — нет, и тогда подсказок
+     * тайнописи не получает никто: движок работает, просто без них.
+     */
+    static boolean летописец(Player игрок) {
+        инициализировать();
+        if (!доступен) return false;
+        try {
+            return "CHRONICLER".equals(методКласс.invoke(null, игрок));
+        } catch (ReflectiveOperationException e) {
+            return false;
         }
     }
 }

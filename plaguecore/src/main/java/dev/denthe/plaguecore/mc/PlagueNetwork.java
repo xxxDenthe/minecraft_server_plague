@@ -17,6 +17,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Сеть для админского экрана. Спек, раздел 12.1.
  *
@@ -34,7 +37,7 @@ public final class PlagueNetwork {
     private PlagueNetwork() {}
 
     /** Версия протокола. Меняется, если поменяется формат пакетов. */
-    private static final String VERSION = "2";
+    private static final String VERSION = "3";
 
     // ── номера действий ────────────────────────────────────────────────
     public static final int ACTION_REFRESH = 0;
@@ -170,6 +173,53 @@ public final class PlagueNetwork {
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
+    /**
+     * Словарь тайнописи на клиент. Клиент обязан его знать: руны
+     * подставляет он сам, при отрисовке книги.
+     *
+     * Подсказка приходит непустой только Летописцу — решает сервер,
+     * а не клиент. Пустая строка вместо подсказки, а не отдельный
+     * флаг: так у подменённого клиента нечего включать.
+     */
+    public record Words(List<Words.Запись> записи) implements CustomPacketPayload {
+
+        public record Запись(String корень, boolean раскрыт, String подсказка) {}
+
+        public static final CustomPacketPayload.Type<Words> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "words"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Words> CODEC =
+            StreamCodec.of(
+                (buf, w) -> {
+                    buf.writeVarInt(w.записи.size());
+                    for (Запись з : w.записи) {
+                        buf.writeUtf(з.корень(), 64);
+                        buf.writeBoolean(з.раскрыт());
+                        buf.writeUtf(з.подсказка(), 256);
+                    }
+                },
+                buf -> {
+                    int n = buf.readVarInt();
+                    if (n < 0 || n > 4096) {
+                        throw new IllegalArgumentException("подозрительный размер словаря: " + n);
+                    }
+                    List<Запись> список = new ArrayList<>(n);
+                    for (int i = 0; i < n; i++) {
+                        список.add(new Запись(buf.readUtf(64), buf.readBoolean(), buf.readUtf(256)));
+                    }
+                    return new Words(List.copyOf(список));
+                });
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /** Послать игроку словарь тайнописи. */
+    public static void отправитьСлова(ServerPlayer кому, List<Words.Запись> записи) {
+        PacketDistributor.sendToPlayer(кому, new Words(List.copyOf(записи)));
+    }
+
     /** Послать текущие ручки голоса одному игроку. */
     public static void отправитьГолос(ServerPlayer кому) {
         PacketDistributor.sendToPlayer(кому, new Voice(VoiceKnobs.снимок()));
@@ -186,6 +236,10 @@ public final class PlagueNetwork {
         registrar.playToClient(Stage.TYPE, Stage.CODEC,
             (payload, ctx) -> ctx.enqueueWork(
                 () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьСтадию(payload)));
+
+        registrar.playToClient(Words.TYPE, Words.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(
+                () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьСлова(payload)));
 
         registrar.playToClient(Voice.TYPE, Voice.CODEC,
             (payload, ctx) -> ctx.enqueueWork(

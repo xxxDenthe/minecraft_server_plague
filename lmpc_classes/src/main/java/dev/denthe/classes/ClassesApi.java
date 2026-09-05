@@ -39,7 +39,13 @@ public final class ClassesApi {
         return Math.min(0.9f, базовая * ClassesConfig.силаТира(д.тир()));
     }
 
-    /** Класс игрока строкой: {@code NONE/CLERIC/SMITH/FARMER/CHRONICLER}. */
+    /**
+     * Класс игрока строкой, как в {@link PlayerClassData.Класс}:
+     * NONE, CLERIC, SMITH, FARMER, CHRONICLER.
+     *
+     * Строка, а не enum, намеренно: соседи читают этот метод
+     * рефлексией и не должны знать наших типов.
+     */
     public static String className(Player игрок) {
         return PlayerClassData.данные(игрок).класс.name();
     }

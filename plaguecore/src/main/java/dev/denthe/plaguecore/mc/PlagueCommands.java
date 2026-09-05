@@ -44,6 +44,17 @@ public final class PlagueCommands {
 
         корень.then(Commands.literal("info").executes(PlagueCommands::info));
 
+        // Тайнопись: предохранитель мастера игры. Если команда завязла
+        // и слово не угадывается — открыть руками, сессия важнее загадки.
+        корень.then(Commands.literal("word")
+            .then(Commands.literal("list").executes(PlagueCommands::словаСписок))
+            .then(Commands.literal("reveal")
+                .then(Commands.argument("корень", StringArgumentType.greedyString())
+                    .executes(c -> словоПереключить(c, true))))
+            .then(Commands.literal("hide")
+                .then(Commands.argument("корень", StringArgumentType.greedyString())
+                    .executes(c -> словоПереключить(c, false)))));
+
         корень.then(Commands.literal("night").executes(PlagueCommands::ночь));
 
         корень.then(Commands.literal("fastforward")
@@ -508,6 +519,57 @@ public final class PlagueCommands {
         c.getSource().sendSuccess(() -> Component.literal(String.format(
             "%s: заражённость %.1f, стадия %d",
             кто.getGameProfile().getName(), д.заражённость, д.стадия)), true);
+        return 1;
+    }
+
+    // ── тайнопись ──────────────────────────────────────────────────────
+
+    private static int словаСписок(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        ServerLevel level = мир(ctx.getSource());
+        PlagueState st = PlagueState.get(level);
+
+        if (PlagueWords.корни().isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal(
+                "Словарь тайнописи пуст: нет файлов в data/*/tainopis/"));
+            return 0;
+        }
+
+        StringBuilder сб = new StringBuilder("Тайнопись:");
+        int закрыто = 0;
+        for (String к : PlagueWords.корни()) {
+            boolean открыт = st.раскрыт(к);
+            if (!открыт) закрыто++;
+            сб.append("\n  ").append(открыт ? "[+] " : "[ ] ").append(к)
+              .append(" — ").append(PlagueWords.тайна(к).слово());
+        }
+        сб.append("\nЗакрыто: ").append(закрыто).append(" из ").append(PlagueWords.корни().size());
+
+        String текст = сб.toString();
+        ctx.getSource().sendSuccess(() -> Component.literal(текст), false);
+        return 1;
+    }
+
+    private static int словоПереключить(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, boolean раскрыть) {
+        String корень = dev.denthe.plaguecore.core.CipherWords.нормализовать(
+            StringArgumentType.getString(ctx, "корень").trim());
+
+        if (!PlagueWords.корни().contains(корень)) {
+            ctx.getSource().sendFailure(Component.literal(
+                "Нет такого корня: " + корень + ". Список — /plague word list"));
+            return 0;
+        }
+
+        ServerLevel level = мир(ctx.getSource());
+        PlagueState st = PlagueState.get(level);
+        boolean изменилось = раскрыть ? st.раскрыть(корень) : st.спрятать(корень);
+
+        if (изменилось) PlagueWords.синхронизироватьВсех(ctx.getSource().getServer());
+
+        String итог = изменилось
+            ? (раскрыть ? "Раскрыто: " : "Спрятано обратно: ") + корень
+            : "Уже " + (раскрыть ? "раскрыто" : "спрятано") + ": " + корень;
+        ctx.getSource().sendSuccess(() -> Component.literal(итог), true);
         return 1;
     }
 }

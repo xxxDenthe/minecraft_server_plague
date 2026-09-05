@@ -34,6 +34,11 @@ public final class PlagueClientAccess {
         голос = пакет.значения();
     }
 
+    /** Словарь тайнописи. Разбирает и держит {@link SecretText}. */
+    public static void принятьСлова(PlagueNetwork.Words пакет) {
+        SecretText.принять(пакет);
+    }
+
     public static void принятьСнимок(PlagueNetwork.Snapshot snapshot) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof PlagueMapScreen экран) {

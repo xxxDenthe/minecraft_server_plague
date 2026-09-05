@@ -46,7 +46,7 @@ public class GmPanelScreen extends Screen {
         SELF("Себе"), PLAYERS("Игроки"), MAP("Карта"),
         WORLD("Мир", "Погода", "Правила"),
         BROADCAST("Вещание", "Заголовок", "Чат", "Звук"),
-        PLAGUE("Чума"),
+        PLAGUE("Чума", "Общее", "Голос"),
         GRAPHICS("Графика", "Кадр", "Ночь", "Туман", "Небо"),
         EXPERIMENTAL("Опыты"), LOG("Журнал");
         final String label;
@@ -316,6 +316,10 @@ public class GmPanelScreen extends Screen {
     // ── Чума ──────────────────────────────────────────────────────────────
 
     private void initPlague() {
+        if (folder() == 1) {
+            initVoice();
+            return;
+        }
         int y = contentY + 14;
         y = add(contentX, y, contentW, "Состояние чумы  (/plague info)",
             () -> { run("plague info"); onClose(); });
@@ -325,6 +329,109 @@ public class GmPanelScreen extends Screen {
             plagueGuiWait = 0;
             run("plague gui");
         });
+    }
+
+    // ── Голос больного ────────────────────────────────────────────────────
+    // Ползунки правят голос в Simple Voice Chat: чем сильнее стадия, тем
+    // ниже и тяжелее речь. Считается голос на сервере, поэтому меняем
+    // командой /plague voice set, а текущие числа спрашиваем у сервера
+    // (/plague voice sync) и читаем из plaguecore рефлексией.
+
+    /** Ручки уровня силы в том порядке, в каком их приятно крутить. */
+    private static final String[] VOICE_ROWS =
+        { "semitones", "muffle", "rasp", "breath", "tremor" };
+
+    private void initVoice() {
+        if (!VoiceAccess.available()) return;
+        if (!VoiceAccess.synced()) run("plague voice sync");
+
+        int колонка = (contentW - 6) / 2;
+        int y = contentY + 12;
+        for (String основа : VOICE_ROWS) {
+            for (int уровень = 0; уровень < 2; уровень++) {
+                String id = основа + (уровень + 1);
+                if (VoiceAccess.level(id) < 0) continue;
+                addRenderableWidget(new VoiceSlider(
+                    contentX + уровень * (колонка + 6), y, колонка, 13, id,
+                    VoiceAccess.label(id)));
+            }
+            y += ROW_H;
+        }
+
+        y += 2;
+        addRenderableWidget(new VoiceSlider(contentX, y, contentW, 13,
+            "tremorHz", VoiceAccess.label("tremorHz")));
+        y += ROW_H;
+        addRenderableWidget(new VoiceSlider(contentX, y, contentW, 13,
+            "minStage", VoiceAccess.label("minStage")));
+
+        addRenderableWidget(Button.builder(Component.literal("Спросить сервер"), b -> {
+            run("plague voice sync");
+            rebuildWidgets();
+        }).bounds(contentX, contentY + contentH - 14, 104, 13).build());
+    }
+
+    private void renderVoice(GuiGraphics g) {
+        if (!VoiceAccess.available()) {
+            g.drawString(font, "Мод plaguecore не найден в паке.", contentX, contentY + 4, DIM, false);
+            return;
+        }
+        int ст = VoiceAccess.minStage();
+        int колонка = (contentW - 6) / 2;
+        g.drawString(font, "стадия " + ст, contentX, contentY, DIM, false);
+        g.drawString(font, "стадия " + (ст + 1) + "+", contentX + колонка + 6, contentY, DIM, false);
+        g.drawString(font, VoiceAccess.synced()
+                ? "правки уходят на сервер и слышны сразу · пишутся в конфиг"
+                : "числа местные: сервер ещё не ответил",
+            contentX, contentY + contentH - 26, DIM, false);
+    }
+
+    /**
+     * Ползунок одной ручки голоса. Локального превью нет и быть не может:
+     * голос портится на сервере, у клиента этих чисел просто не спросишь.
+     * Поэтому значение уходит на отпускании мыши, одной командой.
+     */
+    private final class VoiceSlider extends AbstractSliderButton {
+        private final String id;
+        private final double lo, hi;
+        private final boolean intKind;
+        private final String label;
+
+        VoiceSlider(int x, int y, int w, int h, String id, String label) {
+            super(x, y, w, h, Component.empty(),
+                VoiceAccess.max(id) > VoiceAccess.min(id)
+                    ? (VoiceAccess.get(id) - VoiceAccess.min(id))
+                      / (VoiceAccess.max(id) - VoiceAccess.min(id))
+                    : 0.0);
+            this.id = id;
+            this.lo = VoiceAccess.min(id);
+            this.hi = VoiceAccess.max(id);
+            this.intKind = VoiceAccess.isInt(id);
+            this.label = label;
+            updateMessage();
+        }
+
+        private double raw() {
+            double v = lo + this.value * (hi - lo);
+            return intKind ? Math.round(v) : v;
+        }
+
+        @Override
+        protected void updateMessage() {
+            setMessage(Component.literal(label + ":  " + (intKind
+                ? String.valueOf((long) raw())
+                : String.format(Locale.ROOT, "%.2f", raw()))));
+        }
+
+        @Override
+        protected void applyValue() {
+            // Значение живёт только в ползунке до отпускания мыши.
+        }
+
+        @Override
+        public void onRelease(double mouseX, double mouseY) {
+            run(String.format(Locale.ROOT, "plague voice set %s %.3f", id, raw()));
+        }
     }
 
     // ── Опыты ─────────────────────────────────────────────────────────────
@@ -497,7 +604,7 @@ public class GmPanelScreen extends Screen {
             case MAP -> renderMap(g, mx, my);
             case WORLD -> renderWorld(g, mx, my);
             case BROADCAST -> renderBroadcast(g);
-            case PLAGUE -> renderPlague(g);
+            case PLAGUE -> { if (folder() == 1) renderVoice(g); else renderPlague(g); }
             case GRAPHICS -> renderGraphics(g);
             case EXPERIMENTAL -> renderExperimental(g);
             case LOG -> {

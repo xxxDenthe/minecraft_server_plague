@@ -6,10 +6,15 @@ import dev.denthe.plaguecore.core.PlagueGridCodec;
 import dev.denthe.plaguecore.core.PhaseTable;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.List;
 
 /**
@@ -27,12 +32,19 @@ public class PlagueState extends SavedData {
     private static final String KEY_PAUSED = "Paused";
     private static final String KEY_TERRAIN_READY = "TerrainReady";
     private static final String KEY_EPICENTERS = "Epicenters";
+    private static final String KEY_WORDS = "RevealedWords";
 
     private PlagueGrid grid;
     private int night;
     private boolean paused;
     private boolean terrainInitialized;
     private final List<Long> epicenters = new ArrayList<>();
+
+    /**
+     * Раскрытые корни тайнописи. Одно множество на весь сервер:
+     * это память команды, а не рюкзак игрока — так же, как Хроника.
+     */
+    private final Set<String> раскрытыеСлова = new LinkedHashSet<>();
 
     /** Флаг «ночь этих суток уже обработана», в NBT не пишется. */
     private long lastProcessedDay = -1;
@@ -62,6 +74,9 @@ public class PlagueState extends SavedData {
         st.terrainInitialized = tag.getBoolean(KEY_TERRAIN_READY);
         st.epicenters.clear();
         for (long p : tag.getLongArray(KEY_EPICENTERS)) st.epicenters.add(p);
+        st.раскрытыеСлова.clear();
+        ListTag слова = tag.getList(KEY_WORDS, Tag.TAG_STRING);
+        for (int i = 0; i < слова.size(); i++) st.раскрытыеСлова.add(слова.getString(i));
         return st;
     }
 
@@ -74,7 +89,29 @@ public class PlagueState extends SavedData {
         long[] eps = new long[epicenters.size()];
         for (int i = 0; i < eps.length; i++) eps[i] = epicenters.get(i);
         tag.putLongArray(KEY_EPICENTERS, eps);
+        ListTag слова = new ListTag();
+        for (String к : раскрытыеСлова) слова.add(StringTag.valueOf(к));
+        tag.put(KEY_WORDS, слова);
         return tag;
+    }
+
+    /** Раскрытые корни тайнописи, только для чтения. */
+    public Set<String> раскрытыеСлова() { return Set.copyOf(раскрытыеСлова); }
+
+    public boolean раскрыт(String корень) { return раскрытыеСлова.contains(корень); }
+
+    /** Раскрыть корень. true — если раньше был закрыт. */
+    public boolean раскрыть(String корень) {
+        if (!раскрытыеСлова.add(корень)) return false;
+        setDirty();
+        return true;
+    }
+
+    /** Спрятать корень обратно. Нужно только мастеру игры, для отладки. */
+    public boolean спрятать(String корень) {
+        if (!раскрытыеСлова.remove(корень)) return false;
+        setDirty();
+        return true;
     }
 
     public PlagueGrid grid() { return grid; }

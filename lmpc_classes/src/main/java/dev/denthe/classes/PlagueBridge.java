@@ -41,6 +41,7 @@ public final class PlagueBridge {
     private static Method методGetNight;
     private static Method методCleanseChunk;
     private static Method методRecordSnapshot;
+    private static Method методRefreshWords;
     private static boolean инициализирован;
     private static boolean доступен;
 
@@ -51,6 +52,7 @@ public final class PlagueBridge {
             Class<?> api = Class.forName(КЛАСС_API);
             методCure = api.getMethod("cure", ServerPlayer.class, float.class);
             методGrantImmunity = api.getMethod("grantImmunity", ServerPlayer.class, int.class);
+            методRefreshWords = api.getMethod("refreshWords", ServerPlayer.class);
             доступен = true;
             // Чтение — отдельно и необязательно: без него живут все классы, кроме Летописца.
             методGetStage = метод(api, "getStage");
@@ -203,6 +205,21 @@ public final class PlagueBridge {
             методRecordSnapshot.invoke(null, игрок, позиция);
         } catch (ReflectiveOperationException e) {
             // молчим — лор ещё не подъехал, терять нечего
+        }
+    }
+
+    /**
+     * Переслать игроку словарь тайнописи. Звать после смены класса:
+     * подсказки к тайным словам видит только Летописец, и решает это
+     * сервер plaguecore, а не мы.
+     */
+    public static void refreshWords(ServerPlayer игрок) {
+        инициализировать();
+        if (!доступен || методRefreshWords == null) return;
+        try {
+            методRefreshWords.invoke(null, игрок);
+        } catch (ReflectiveOperationException e) {
+            // тихо: без тайнописи класс всё равно работает
         }
     }
 }
