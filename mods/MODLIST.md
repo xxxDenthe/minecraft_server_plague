@@ -6,17 +6,18 @@ Minecraft 1.21.1 · NeoForge 21.1.249 · Create 6.0.10
 фиксация точных версий: по нему собирается идентичный набор у всех
 игроков и на сервере.
 
-**Список сверен с папкой `mods/` 2026-09-05.** Всё, что ниже, реально
+**Список сверен с папкой `mods/` 2026-09-06.** Всё, что ниже, реально
 лежит в папке. Расхождений с ней больше нет — раздел «Пропало из папки»
 внизу перечисляет то, что было в списке раньше и потерялось.
 
-Всего: 87 сторонних модов + 4 наших. Один джарник отключён (`.disabled`).
+Всего: 92 сторонних мода + 4 наших. Один джарник отключён (`.disabled`).
 
 ## Сторонние моды
 
 ```
 AdvancementPlaques-1.21.1-neoforge-1.6.8.jar
 AmbientSounds_NEOFORGE_v6.3.8_mc1.21.1.jar
+atmospherics-2.6.5-mc-1.21.1.jar
 appleskin-neoforge-mc1.21-3.0.9.jar
 architectury-13.0.11-neoforge.jar
 better-advanced-tooltips-2101.1.0-build.5.jar
@@ -26,6 +27,7 @@ Chunky-NeoForge-1.4.23.jar
 cloth-config-15.0.140-neoforge.jar
 Controlling-neoforge-1.21.1-19.0.5.jar
 copycats-3.0.8+mc.1.21.1-neoforge.jar
+connector-2.0.0-beta.17+1.21.1-full.jar
 coroutil-neoforge-1.21.0-1.3.8.jar
 corpse-neoforge-1.21.1-1.1.13.jar
 create-1.21.1-6.0.10.jar
@@ -42,6 +44,7 @@ FallingTree-1.21.1-1.21.1.11.jar
 FarmersDelight-1.21.1-1.3.4.jar
 ferritecore-7.0.3-neoforge.jar
 ftb-library-neoforge-2101.1.35.jar
+forgified-fabric-api-0.116.15+2.3.5+1.21.1.jar
 ftb-quests-neoforge-2101.1.34.jar
 fzzy_config-0.7.6+1.21+neoforge.jar
 geckolib-neoforge-1.21.1-4.9.2.jar
@@ -70,6 +73,7 @@ mru-1.0.19+LTS+1.21.1+neoforge.jar
 OctoLib-NEOFORGE-0.6.2+1.21.jar
 PickUpNotifier-v21.1.1-1.21.1-NeoForge.jar
 player-animation-lib-forge-2.0.4+1.21.1.jar
+particlerain-4.0.0-beta.11+1.21.1-neoforge.jar
 Prism-1.21.1-neoforge-1.0.11.jar
 ProbeJS-8.0.3.jar
 punchy-2.7d-neoforge-1.21.1.jar
@@ -104,12 +108,27 @@ YungsApi-1.21.1-NeoForge-5.1.8.jar
 zombieawareness-neoforge-1.21.0-1.13.2.jar
 ```
 
+## Atmospherics и lmpc_shade
+
+`atmospherics` рисует небо, солнце, звёзды, облака, туман и дымку;
+`lmpc_shade` поверх этого делает то, чего у Atmospherics нет —
+цветокор кадра, чёрную ночь через lightmap, подземный туман по глубине,
+реакцию на HP и споры. Раньше они дрались: пасмурный купол
+`SkyType.NONE` выключал всю машинерию Atmospherics, а два цвета тумана
+спорили за один кадр.
+
+Границу держат два конфига из раздачи (`launcher/pack-config/`):
+`config/ambientfog/biome_fog.json` — серый пресет на 65 биомов,
+генерируется `launcher/tools/atmospherics-preset.py`;
+`config/lmpc_shade-client.toml` — `sky.overcast = false` и
+`fog.fogColorStrength = 0.0`.
+
 ## Наш мод
 
 ```
 plaguecore-0.1.0.jar      ядро чумы, сервер + клиент
-lmpc_gmtools-0.17.0.jar   панель мастера игры
-lmpc_shade-0.8.0.jar      цветокор, тьма, туман, небо
+lmpc_gmtools-0.18.0.jar   панель мастера игры
+lmpc_shade-0.9.0.jar      цветокор, тьма, туман
 lmpc_classes-0.7.2.jar    четыре класса, требует curios
 ```
 
@@ -167,6 +186,7 @@ clickthrough-plus-neoforge-3.5.0+1.21.1.jar
 corpsecurioscompat-1.21.1-NeoForge-4.0.1.jar   могила забирает вещи из Curios — а Curios носят классы
 InvMoveCompats-0.5.0+1.21.8-NeoForge.jar
 baguettelib-1.21.1-NeoForge-2.0.6.jar
+Axiom-6.0.5-for-MC1.21.1.jar
 c2me-neoforge-mc1.21.1-0.4.0-alpha.0.120.jar
 ftb-teams-neoforge-2101.1.11.jar           ОБЯЗАТЕЛЕН: без него ftb-quests не грузится
 ```
