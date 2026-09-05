@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -71,6 +72,16 @@ public class SporeSacBlock extends Block {
             return Blocks.AIR.defaultBlockState();
         }
         return super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
+    }
+
+    /**
+     * Ночью мешок выпускает выводок. Вся логика — в {@link SporeSpawner};
+     * здесь только точка входа, потому что решение «кто, сколько и можно
+     * ли вообще» одинаково для мешка в пещере и мешка на поверхности.
+     */
+    @Override
+    protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        SporeSpawner.попытка(level, pos, random);
     }
 
     /**

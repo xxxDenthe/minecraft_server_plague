@@ -47,6 +47,10 @@ public final class PlagueCommands {
 
         корень.then(Commands.literal("info").executes(PlagueCommands::info));
 
+        корень.then(Commands.literal("spawn")
+            .then(Commands.argument("pos", ColumnPosArgument.columnPos())
+                .executes(PlagueCommands::выводок)));
+
         корень.then(Commands.literal("center")
             .executes(PlagueCommands::показатьЦентр)
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
@@ -244,6 +248,34 @@ public final class PlagueCommands {
             String.format("Под землёй не отрисовано: %d, в очереди сейчас: %d",
                 ждётПодЗемлёй, CaveMaterializer.длинаОчереди())), false);
         return 1;
+    }
+
+    /**
+     * Выпустить ночной выводок у мешка немедленно, без броска кубика.
+     *
+     * Иначе проверить его на живом сервере нельзя: 30% за ночь означает,
+     * что мастер игры будет стоять в поле по три ночи, гадая, сломано
+     * оно или просто не повезло. Потолок кучек на игрока команда
+     * соблюдает — иначе она проверяла бы не то, что работает в игре.
+     */
+    private static int выводок(
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        ServerLevel уровень = мир(ctx.getSource());
+        var pos = ColumnPosArgument.getColumnPos(ctx, "pos");
+        BlockPos место = new BlockPos(pos.x(),
+            уровень.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, pos.x(), pos.z()),
+            pos.z());
+
+        if (SporeSpawner.высыпать(уровень, место, уровень.getRandom())) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                "Выводок вылез у " + место.getX() + ", " + место.getY() + ", " + место.getZ()), true);
+            return 1;
+        }
+        ctx.getSource().sendFailure(Component.literal(
+            "Выводок не вылез. Причины: рядом нет игрока (дальше "
+            + "128 блоков), игрок ближе " + PlagueConstants.SPAWN_MIN_PLAYER_DISTANCE
+            + " блоков, потолок кучек за ночь исчерпан, или вокруг нет места"));
+        return 0;
     }
 
     /** Где сейчас центр мира по мнению чумы. */

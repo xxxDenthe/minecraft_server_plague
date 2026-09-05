@@ -165,6 +165,10 @@ public final class PlagueBlocks {
     /**
      * Споровый мешок: бугор на полу пещеры. Не куб — своя модель
      * из Blockbench, поэтому noOcclusion, иначе соседние грани пропадут.
+     *
+     * randomTicks нужен ночным выводкам: мешок сам катает кубик на своём
+     * случайном тике, вместо того чтобы искать мешки перебором блоков.
+     * Разбор — {@link SporeSpawner}.
      */
     public static final DeferredBlock<SporeSacBlock> SPORE_SAC = БЛОКИ.registerBlock(
         "spore_sac",
@@ -174,6 +178,7 @@ public final class PlagueBlocks {
             .strength(0.5f)
             .sound(SoundType.SLIME_BLOCK)
             .pushReaction(PushReaction.DESTROY)
+            .randomTicks()
             .noOcclusion());
 
     public static final DeferredItem<BlockItem> ROTTED_DIRT_ITEM =

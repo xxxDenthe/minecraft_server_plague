@@ -68,6 +68,13 @@ public final class PlagueConfig {
     private static final ModConfigSpec.IntValue СТОЛБЦОВ_ЗА_ТИК;
 
     // ── животные ──────────────────────────────────────────────────────
+    private static final ModConfigSpec.DoubleValue ШАНС_ВЫВОДКА;
+    private static final ModConfigSpec.IntValue ЗОМБИ_В_КУЧКЕ;
+    private static final ModConfigSpec.IntValue СКЕЛЕТОВ_В_КУЧКЕ;
+    private static final ModConfigSpec.IntValue КУЧЕК_ЗА_НОЧЬ;
+    private static final ModConfigSpec.IntValue РАДИУС_ВЫВОДКА;
+    private static final ModConfigSpec.IntValue НЕ_БЛИЖЕ_К_ИГРОКУ;
+
     private static final ModConfigSpec.IntValue ПРОВЕРКА_ЖИВОТНЫХ;
     private static final ModConfigSpec.DoubleValue ШАНС_ЗАРАЖЕНИЯ;
     private static final ModConfigSpec.DoubleValue СТЕНЫ_РЕДКО;
@@ -239,6 +246,34 @@ public final class PlagueConfig {
             .comment("Шанс за проверку на уровне 1. На уровне N умножается на N.",
                      "0 полностью отключает превращение.")
             .defineInRange("infectChance", окр(PlagueConstants.ANIMAL_INFECT_CHANCE), 0.0, 1.0);
+
+        СТРОИТЕЛЬ.pop().comment(
+            "Ночные выводки у споровых мешков.",
+            "Ночью рядом с мешком вылезает кучка мутировавших зомби и скелетов.",
+            "Кубик катает сам мешок на своём случайном тике, поэтому выводок",
+            "появляется только в загруженных чанках — там, где есть люди."
+        ).push("spawn");
+
+        ШАНС_ВЫВОДКА = СТРОИТЕЛЬ
+            .comment("Вероятность, что за одну ночь у одного мешка вылезет кучка.",
+                     "0 полностью отключает ночные выводки.")
+            .defineInRange("chancePerNight", окр(PlagueConstants.SPAWN_CHANCE_PER_NIGHT), 0.0, 1.0);
+        ЗОМБИ_В_КУЧКЕ = СТРОИТЕЛЬ
+            .comment("Мутировавших зомби в одной кучке.")
+            .defineInRange("zombies", PlagueConstants.SPAWN_ZOMBIES, 0, 12);
+        СКЕЛЕТОВ_В_КУЧКЕ = СТРОИТЕЛЬ
+            .comment("Скелетов в одной кучке. Скелеты ванильные: утром сгорают сами.")
+            .defineInRange("skeletons", PlagueConstants.SPAWN_SKELETONS, 0, 12);
+        КУЧЕК_ЗА_НОЧЬ = СТРОИТЕЛЬ
+            .comment("Сколько кучек за ночь может вылезти рядом с одним игроком.",
+                     "Главная защита от армии: в гнилом поле мешков бывает под сотню.")
+            .defineInRange("maxGroupsPerNight", PlagueConstants.SPAWN_MAX_GROUPS_PER_NIGHT, 0, 20);
+        РАДИУС_ВЫВОДКА = СТРОИТЕЛЬ
+            .comment("Радиус вокруг мешка, в котором ищется место для мобов.")
+            .defineInRange("radius", PlagueConstants.SPAWN_RADIUS, 1, 16);
+        НЕ_БЛИЖЕ_К_ИГРОКУ = СТРОИТЕЛЬ
+            .comment("Ближе этого к игроку кучка не появляется — не лезем в лицо.")
+            .defineInRange("minPlayerDistance", PlagueConstants.SPAWN_MIN_PLAYER_DISTANCE, 0, 64);
 
         СТРОИТЕЛЬ.pop().comment(
             "Чума в самом игроке: как копится, чем бьёт, чем лечится.",
@@ -496,6 +531,13 @@ public final class PlagueConfig {
         PlagueConstants.CAVE_CEILING_VINES = ЛОЗЫ.get().floatValue();
         PlagueConstants.CAVE_FLOOR_ROT = ПОЛ.get().floatValue();
         PlagueConstants.CAVE_SPORE_SAC = МЕШКИ.get().floatValue();
+
+        PlagueConstants.SPAWN_CHANCE_PER_NIGHT = ШАНС_ВЫВОДКА.get().floatValue();
+        PlagueConstants.SPAWN_ZOMBIES = ЗОМБИ_В_КУЧКЕ.get();
+        PlagueConstants.SPAWN_SKELETONS = СКЕЛЕТОВ_В_КУЧКЕ.get();
+        PlagueConstants.SPAWN_MAX_GROUPS_PER_NIGHT = КУЧЕК_ЗА_НОЧЬ.get();
+        PlagueConstants.SPAWN_RADIUS = РАДИУС_ВЫВОДКА.get();
+        PlagueConstants.SPAWN_MIN_PLAYER_DISTANCE = НЕ_БЛИЖЕ_К_ИГРОКУ.get();
 
         PlagueConstants.ANIMAL_CHECK_TICKS = ПРОВЕРКА_ЖИВОТНЫХ.get();
         PlagueConstants.ANIMAL_INFECT_CHANCE = ШАНС_ЗАРАЖЕНИЯ.get().floatValue();
