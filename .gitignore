@@ -40,3 +40,7 @@ textures_src/baked/
 
 # Личные настройки Claude Code — у каждого свои, в репозиторий не идут
 .claude/settings.local.json
+
+# Кеш Python — производное, в репозиторий не идёт
+__pycache__/
+*.pyc
