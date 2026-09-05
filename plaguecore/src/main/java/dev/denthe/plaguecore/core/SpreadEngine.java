@@ -12,6 +12,8 @@ import java.util.random.RandomGenerator;
  *   2. рост на месте
  *   3. экспансия по снимку, в перемешанном порядке источников
  *   4. таяние шрамов
+ *   5. таяние сопротивления — после экспансии, чтобы оплаченная
+ *      очистителем ночь не пропала зря
  *
  * Перемешивание источников нужно, чтобы бюджет не доставался всегда
  * чанкам с начала массива: без него заражение систематически ползло бы
@@ -21,6 +23,9 @@ public final class SpreadEngine {
     private SpreadEngine() {}
 
     public record NightResult(int newlyInfected, int grown, int scarsHealed, int phase) {}
+
+    /** Цена деления сетки сопротивления: она хранит сотые. */
+    private static final float ШАГ_СОПРОТИВЛЕНИЯ = 0.01f;
 
     private static final int[] СМЕЩЕНИЯ_X = { -1, 0, 1, -1, 1, -1, 0, 1 };
     private static final int[] СМЕЩЕНИЯ_Z = { -1, -1, -1, 0, 0, 1, 1, 1 };
@@ -99,6 +104,20 @@ public final class SpreadEngine {
                 grid.setScarAt(i, шрам - 1);
                 if (шрам - 1 == 0) зажило++;
             }
+        }
+
+        // ── 4. таяние сопротивления ───────────────────────────────────
+        // Строго после заражения: чанк должен отработать ночь той
+        // защитой, за которую очиститель уже заплатил реагентом.
+        for (int i = 0; i < cells; i++) {
+            float было = grid.getResistanceAt(i);
+            if (было <= 0f) continue;
+            // Одно умножение застревает: сетка хранит сотые, и 0.03
+            // после умножения на 0.85 округляется обратно в 0.03.
+            // Шаг вниз на одну сотую гарантирует, что защита дотает.
+            float стало = Math.min(было * PlagueConstants.RESISTANCE_DECAY,
+                                   было - ШАГ_СОПРОТИВЛЕНИЯ);
+            grid.setResistanceAt(i, Math.max(0f, стало));
         }
 
         return new NightResult(заражено, выросло, зажило, PhaseTable.phaseForNight(night));

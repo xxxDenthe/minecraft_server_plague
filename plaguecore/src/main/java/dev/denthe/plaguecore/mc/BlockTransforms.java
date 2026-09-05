@@ -48,6 +48,7 @@ public final class BlockTransforms {
             case ROTTED_DIRT   -> PlagueBlocks.ROTTED_DIRT.get().defaultBlockState();
             case ROTTED_STONE  -> PlagueBlocks.ROTTED_STONE.get().defaultBlockState();
             case ROTTED_LOG    -> сгнитьСтвол(было);
+            case ROTTED_PLANKS -> PlagueBlocks.ROTTED_PLANKS.get().defaultBlockState();
             case BLIGHTED_GRASS -> PlagueBlocks.BLIGHTED_GRASS.get().defaultBlockState();
             case BLIGHTED_TALL_GRASS -> высокаяТрава(было);
             case DESTROY_PLANT -> Blocks.AIR.defaultBlockState();
@@ -79,18 +80,12 @@ public final class BlockTransforms {
      * заметить, что половины разного рода.
      */
     private static BlockState высокаяТрава(BlockState было) {
-        BlockState стало = PlagueBlocks.BLIGHTED_TALL_GRASS.get().defaultBlockState();
-        return было.hasProperty(DoublePlantBlock.HALF)
-            ? стало.setValue(DoublePlantBlock.HALF, было.getValue(DoublePlantBlock.HALF))
-            : стало;
+        return поПоловине(PlagueBlocks.BLIGHTED_TALL_GRASS.get().defaultBlockState(), было);
     }
 
     /** Ось бревна сохраняем: лежачие брёвны иначе встали бы торчком. */
     private static BlockState сгнитьСтвол(BlockState было) {
-        BlockState стало = PlagueBlocks.ROTTED_LOG.get().defaultBlockState();
-        return было.hasProperty(BlockStateProperties.AXIS)
-            ? стало.setValue(BlockStateProperties.AXIS, было.getValue(BlockStateProperties.AXIS))
-            : стало;
+        return поОси(PlagueBlocks.ROTTED_LOG.get().defaultBlockState(), было);
     }
 
     /**
@@ -127,12 +122,14 @@ public final class BlockTransforms {
             || block == PlagueBlocks.WITHERED_LEAVES.get()) {
             return BlockKind.LEAVES;
         }
-        // Ствол и доска разошлись: живое дерево гниёт целиком, а доска
-        // почти всегда чья-то постройка и только обрастает.
+        // Ствол и доска — разные виды: у каждого свой гнилой блок,
+        // и ось сохраняется только у бревна.
         if (state.is(BlockTags.LOGS) || block == PlagueBlocks.ROTTED_LOG.get()) {
             return BlockKind.LOG;
         }
-        if (state.is(BlockTags.PLANKS)) return BlockKind.PLANKS;
+        if (state.is(BlockTags.PLANKS) || block == PlagueBlocks.ROTTED_PLANKS.get()) {
+            return BlockKind.PLANKS;
+        }
         if (state.is(BlockTags.DIRT) || block == Blocks.FARMLAND) return BlockKind.DIRT;
         if (state.is(Tags.Blocks.STONES) || state.is(Tags.Blocks.ORES)
             || state.is(BlockTags.BASE_STONE_OVERWORLD)) return BlockKind.STONE;
@@ -152,12 +149,66 @@ public final class BlockTransforms {
         return вид == BlockKind.LOG || вид == BlockKind.LEAVES;
     }
 
+    /**
+     * Чем блок был до чумы, или null — если это не наш блок и трогать
+     * нечего. Обратная сторона {@link #replacement}: очиститель снижает
+     * уровень чанка, и картинка должна за этим успевать.
+     *
+     * ponytail: породу дерева таблица не помнит. Чума сводит берёзу,
+     * вишню и дуб к одному гнилому бревну, и обратно из него выходит
+     * дуб. Чтобы вернуть берёзу, пришлось бы хранить исходный блок
+     * на каждый изменённый куб — это десятки мегабайт на мир ради
+     * оттенка коры. Апгрейд, если понадобится: свойство «порода»
+     * у гнилого бревна и листвы.
+     *
+     * Цветы и посевы чума не превращает, а сносит в воздух, поэтому
+     * вернуть их нечем. Так и задумано: Гниль оставляет след.
+     */
+    public static BlockState healing(BlockState было) {
+        Block block = было.getBlock();
+        if (block == PlagueBlocks.ROTTED_DIRT.get())   return Blocks.DIRT.defaultBlockState();
+        if (block == PlagueBlocks.ROTTED_GRASS.get())  return Blocks.GRASS_BLOCK.defaultBlockState();
+        if (block == PlagueBlocks.ROTTED_STONE.get())  return Blocks.STONE.defaultBlockState();
+        if (block == PlagueBlocks.ROTTED_PLANKS.get()) return Blocks.OAK_PLANKS.defaultBlockState();
+        if (block == PlagueBlocks.ROTTED_LOG.get())    return поОси(Blocks.OAK_LOG.defaultBlockState(), было);
+        if (block == PlagueBlocks.BLIGHTED_LEAVES.get()
+            || block == PlagueBlocks.WITHERED_LEAVES.get()) {
+            return Blocks.OAK_LEAVES.defaultBlockState()
+                .setValue(LeavesBlock.PERSISTENT, Boolean.TRUE);
+        }
+        if (block == PlagueBlocks.BLIGHTED_GRASS.get()) return Blocks.SHORT_GRASS.defaultBlockState();
+        if (block == PlagueBlocks.BLIGHTED_TALL_GRASS.get()) {
+            return поПоловине(Blocks.TALL_GRASS.defaultBlockState(), было);
+        }
+        // Нарост, лоза и мешок — сама зараза, а не изменённый блок.
+        // Им возвращаться не во что, они просто пропадают.
+        if (block == PlagueBlocks.PLAGUE_GROWTH.get()
+            || block == PlagueBlocks.BLIGHT_VINE.get()
+            || block == PlagueBlocks.SPORE_SAC.get()) {
+            return Blocks.AIR.defaultBlockState();
+        }
+        return null;
+    }
+
+    private static BlockState поОси(BlockState стало, BlockState было) {
+        return было.hasProperty(BlockStateProperties.AXIS)
+            ? стало.setValue(BlockStateProperties.AXIS, было.getValue(BlockStateProperties.AXIS))
+            : стало;
+    }
+
+    private static BlockState поПоловине(BlockState стало, BlockState было) {
+        return было.hasProperty(DoublePlantBlock.HALF)
+            ? стало.setValue(DoublePlantBlock.HALF, было.getValue(DoublePlantBlock.HALF))
+            : стало;
+    }
+
     /** Наш ли это блок — чтобы не перерисовывать уже сгнившее. */
     public static boolean isPlagueBlock(BlockState state) {
         return state.is(PlagueBlocks.ROTTED_DIRT.get())
             || state.is(PlagueBlocks.ROTTED_GRASS.get())
             || state.is(PlagueBlocks.ROTTED_STONE.get())
             || state.is(PlagueBlocks.ROTTED_LOG.get())
+            || state.is(PlagueBlocks.ROTTED_PLANKS.get())
             || state.is(PlagueBlocks.BLIGHTED_GRASS.get())
             || state.is(PlagueBlocks.BLIGHTED_TALL_GRASS.get())
             || state.is(PlagueBlocks.PLAGUE_GROWTH.get())

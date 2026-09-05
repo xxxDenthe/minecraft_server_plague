@@ -133,22 +133,72 @@ class SpreadEngineTest {
                 + ", лава " + медленная.countInfected());
     }
 
+    /**
+     * Сопротивление подновляется каждую ночь — так ведёт себя работающий
+     * очиститель. Без подновления оно тает, и это отдельная проверка ниже.
+     */
     @Test
     void сопротивлениеСнижаетВероятностьЗаражения() {
         PlagueGrid защищённая = сОчагомВЦентре(4);
         PlagueGrid открытая = сОчагомВЦентре(4);
-        for (int cx = -31; cx <= 31; cx++) {
-            for (int cz = -31; cz <= 31; cz++) {
-                защищённая.setResistance(cx, cz, 1.0f);
-            }
-        }
         for (int night = 1; night <= 10; night++) {
+            for (int cx = -31; cx <= 31; cx++) {
+                for (int cz = -31; cz <= 31; cz++) {
+                    защищённая.setResistance(cx, cz, 1.0f);
+                }
+            }
             SpreadEngine.runNightWith(защищённая, night, быстрые(), 1f, 0, rng(900 + night));
             SpreadEngine.runNightWith(открытая, night, быстрые(), 1f, 0, rng(900 + night));
         }
         assertEquals(1, защищённая.countInfected(),
             "при сопротивлении 1.0 заражение не должно распространяться вообще");
         assertTrue(открытая.countInfected() > 1);
+    }
+
+    // ── таяние сопротивления ──────────────────────────────────────────
+
+    @Test
+    void сопротивлениеТаетЗаНочь() {
+        PlagueGrid g = пустая();
+        g.setResistance(0, 0, 0.80f);
+        SpreadEngine.runNightWith(g, 1, быстрые(), 1f, 0, rng(1));
+        assertEquals(0.80f * PlagueConstants.RESISTANCE_DECAY, g.getResistance(0, 0), 0.01f);
+    }
+
+    @Test
+    void сопротивлениеДотаиваетДоНуля() {
+        PlagueGrid g = пустая();
+        g.setResistance(0, 0, 1.0f);
+        for (int night = 1; night <= 200; night++) {
+            SpreadEngine.runNightWith(g, night, быстрые(), 1f, 0, rng(night));
+        }
+        assertEquals(0f, g.getResistance(0, 0), 0.001f,
+            "умножение на долю само по себе застревает на сотых — нужен шаг вниз");
+    }
+
+    @Test
+    void нулевоеСопротивлениеОстаётсяНулём() {
+        PlagueGrid g = пустая();
+        SpreadEngine.runNightWith(g, 1, быстрые(), 1f, 0, rng(1));
+        assertEquals(0f, g.getResistance(0, 0), 0.001f, "в минус уходить нельзя");
+    }
+
+    /**
+     * Порядок внутри ночи: сначала заражение, потом таяние. Иначе чанк
+     * теряет защиту раньше, чем чума по ней ударит, и оплаченная ночь
+     * пропадает зря.
+     */
+    @Test
+    void защитаДействуетВТуЖеНочьЗаКоторуюТает() {
+        PlagueGrid g = сОчагомВЦентре(4);
+        for (int cx = -31; cx <= 31; cx++) {
+            for (int cz = -31; cz <= 31; cz++) {
+                g.setResistance(cx, cz, 1.0f);
+            }
+        }
+        SpreadEngine.runNightWith(g, 1, быстрые(), 1f, 0, rng(7));
+        assertEquals(1, g.countInfected(), "первая ночь оплачена полной защитой");
+        assertTrue(g.getResistance(1, 0) < 1.0f, "но к утру защита должна просесть");
     }
 
     @Test

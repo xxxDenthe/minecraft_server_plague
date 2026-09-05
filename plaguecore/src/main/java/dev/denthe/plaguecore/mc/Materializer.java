@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.MultifaceBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -96,9 +97,9 @@ public final class Materializer {
         PlagueGrid grid = state.grid();
         int i = grid.index(cx, cz);
         if (i < 0) return false;
-        // Обратный проход при очистке — забота подсистемы очистителей,
-        // здесь только рост.
-        if (grid.maxLevelAround(i) <= grid.getAppliedSurfaceAt(i)) return false;
+        // Не равно, а не «больше»: чанк отстаёт и когда его очистили —
+        // тогда нарисовано больше, чем есть, и нужен обратный проход.
+        if (grid.maxLevelAround(i) == grid.getAppliedSurfaceAt(i)) return false;
         return ОЧЕРЕДЬ.enqueue(i);
     }
 
@@ -110,7 +111,7 @@ public final class Materializer {
         PlagueGrid grid = state.grid();
         int поставлено = 0;
         for (int i = 0; i < grid.cellCount(); i++) {
-            if (grid.maxLevelAround(i) <= grid.getAppliedSurfaceAt(i)) continue;
+            if (grid.maxLevelAround(i) == grid.getAppliedSurfaceAt(i)) continue;
             int cx = grid.chunkXOf(i);
             int cz = grid.chunkZOf(i);
             if (level.getChunkSource().getChunkNow(cx, cz) == null) continue;
@@ -148,10 +149,13 @@ public final class Materializer {
             // уровень вокруг — до чего чанк надо дорисовать.
             int уровень = grid.getLevelAt(i);
             int цель = grid.maxLevelAround(i);
-            if (цель <= grid.getAppliedSurfaceAt(i)) {   // кто-то успел раньше
+            int нарисовано = grid.getAppliedSurfaceAt(i);
+            if (цель == нарисовано) {   // кто-то успел раньше
                 ОЧЕРЕДЬ.finishHead();
                 continue;
             }
+            // Нарисовано больше, чем есть, — значит, чанк почистили.
+            boolean исцеление = цель < нарисовано;
 
             int столбец = ОЧЕРЕДЬ.cursor();
             // Столбец доводим до конца целиком: он стоит не больше четырёх
@@ -160,23 +164,35 @@ public final class Materializer {
             while (столбец < СТОЛБЦОВ && бюджет > 0) {
                 int wx = (cx << 4) + (столбец & 15);
                 int wz = (cz << 4) + (столбец >> 4);
-                float доля = MaterializationMask.fractionAt(grid, wx, wz);
-                if (MaterializationMask.isAffected(seed, wx, wz, доля)) {
-                    // Уровень своего чанка задаёт силу: подзол или гниль.
-                    // Если чанк чист, а кайма соседа сюда дотянулась, берём
-                    // силу соседа — иначе гниль обрывалась бы подзолом.
-                    int сила = Math.max(уровень, силаПоДоле(доля));
-                    int сделано = поразитьСтолбец(level, chunk, seed, wx, wz, сила);
+                if (исцеление) {
+                    int сделано = исцелитьСтолбец(level, chunk, wx, wz);
                     бюджет -= сделано;
                     изменено += сделано;
+                } else {
+                    float доля = MaterializationMask.fractionAt(grid, wx, wz);
+                    if (MaterializationMask.isAffected(seed, wx, wz, доля)) {
+                        // Уровень своего чанка задаёт силу: подзол или гниль.
+                        // Если чанк чист, а кайма соседа сюда дотянулась, берём
+                        // силу соседа — иначе гниль обрывалась бы подзолом.
+                        int сила = Math.max(уровень, силаПоДоле(доля));
+                        int сделано = поразитьСтолбец(level, chunk, seed, wx, wz, сила);
+                        бюджет -= сделано;
+                        изменено += сделано;
+                    }
                 }
                 столбец++;
             }
 
             if (столбец >= СТОЛБЦОВ) {
-                grid.setAppliedSurfaceAt(i, цель);
+                // После исцеления чанк чист начисто, поэтому нарисованный
+                // уровень — ноль, а не цель. Если чуме ещё есть что
+                // показать (уровень упал с трёх до единицы, а не до нуля),
+                // ставим чанк в очередь второй раз — прямой проход
+                // нарисует его заново, но уже слабее.
+                grid.setAppliedSurfaceAt(i, исцеление ? 0 : цель);
                 грязно = true;
                 ОЧЕРЕДЬ.finishHead();
+                if (исцеление) поставить(state, cx, cz);
             } else {
                 ОЧЕРЕДЬ.setCursor(столбец);
             }
@@ -229,6 +245,45 @@ public final class Materializer {
 
         // Мешок сажаем последним: земля под ним к этому времени уже гнилая.
         return изменено + посадитьМешок(level, chunk, seed, wx, wz, земля, уровень);
+    }
+
+    /**
+     * Обратный проход по столбцу: снять с блоков чуму.
+     *
+     * Идём сверху вниз от поверхности и лечим всё наше, что попадётся.
+     * Останавливаемся на первом чистом блоке, который не дерево и не
+     * подзол: чума заходит сверху, и если верх чист, то ниже чисто тем
+     * более. Это и есть дешёвый выход для столбцов, которых зараза
+     * не касалась вовсе.
+     *
+     * Запас глубины — крона плюс те же несколько блоков вглубь, что
+     * тратит прямой проход: ровно та толща, в которой чума и живёт.
+     */
+    private static int исцелитьСтолбец(ServerLevel level, LevelChunk chunk, int wx, int wz) {
+        int верх = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, wx, wz);
+        int дно = level.getMinBuildHeight();
+        int изменено = 0;
+        int запас = ВЫСОТА_ДЕРЕВА + PlagueConstants.SURFACE_DEPTH + 1;
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int y = верх; y >= дно && запас > 0; y--, запас--) {
+            pos.set(wx, y, wz);
+            BlockState было = chunk.getBlockState(pos);
+            if (было.isAir()) continue;
+
+            BlockState стало = BlockTransforms.healing(было);
+            if (стало == null) {
+                // Подзол не лечим намеренно: он и след чумы на слабых
+                // уровнях, и родная земля тайги. Отличить их нечем,
+                // а стереть тайгу хуже, чем оставить пятно. Сквозь него
+                // проходим — под подзолом бывает гнилая земля.
+                if (BlockTransforms.isWood(было) || было.is(Blocks.PODZOL)) continue;
+                break;
+            }
+            level.setBlock(pos.immutable(), стало, ФЛАГИ);
+            изменено++;
+        }
+        return изменено;
     }
 
     /**

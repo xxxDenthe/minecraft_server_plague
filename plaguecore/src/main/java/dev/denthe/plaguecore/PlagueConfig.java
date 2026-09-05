@@ -36,6 +36,7 @@ public final class PlagueConfig {
     private static final ModConfigSpec.IntValue ОЧАГИ;
     private static final ModConfigSpec.DoubleValue СТАРТОВАЯ_ДОЛЯ;
     private static final ModConfigSpec.IntValue НОЧЕЙ_ШРАМА;
+    private static final ModConfigSpec.DoubleValue ТАЯНИЕ_СОПРОТИВЛЕНИЯ;
     private static final ModConfigSpec.DoubleValue МНОЖИТЕЛЬ_СНА;
     private static final ModConfigSpec.IntValue ПРИБАВКА_СНА;
 
@@ -143,6 +144,11 @@ public final class PlagueConfig {
         НОЧЕЙ_ШРАМА = СТРОИТЕЛЬ
             .comment("Сколько ночей держится шрам после полной очистки земли.")
             .defineInRange("scarNights", PlagueConstants.SCAR_NIGHTS, 0, 60);
+        ТАЯНИЕ_СОПРОТИВЛЕНИЯ = СТРОИТЕЛЬ
+            .comment("Во сколько раз ужимается сопротивление чанка за ночь.",
+                     "0.85 — брошенный очиститель отпускает чанк примерно за 15 ночей.",
+                     "1.0 — сопротивление не тает вовсе, как было до правки.")
+            .defineInRange("resistanceDecay", окр(PlagueConstants.RESISTANCE_DECAY), 0.0, 1.0);
         МНОЖИТЕЛЬ_СНА = СТРОИТЕЛЬ
             .comment("Во сколько раз растёт бюджет ночи, если игроки её проспали.")
             .defineInRange("sleepBudgetMultiplier", окр(PlagueConstants.SLEEP_BUDGET_MULTIPLIER), 1.0, 10.0);
@@ -513,6 +519,7 @@ public final class PlagueConfig {
         PlagueConstants.START_EPICENTERS = ОЧАГИ.get();
         PlagueConstants.START_INFECTION_PERCENT = СТАРТОВАЯ_ДОЛЯ.get().floatValue();
         PlagueConstants.SCAR_NIGHTS = НОЧЕЙ_ШРАМА.get();
+        PlagueConstants.RESISTANCE_DECAY = ТАЯНИЕ_СОПРОТИВЛЕНИЯ.get().floatValue();
         PlagueConstants.SLEEP_BUDGET_MULTIPLIER = МНОЖИТЕЛЬ_СНА.get().floatValue();
         PlagueConstants.SLEEP_EXTRA_GROWTH = ПРИБАВКА_СНА.get();
 

@@ -137,6 +137,10 @@ public final class PlagueGrid {
 
     public float getResistanceAt(int index) { return (resistance[index] & 0xFF) / 100f; }
 
+    public void setResistanceAt(int index, float value) {
+        resistance[index] = (byte) Math.round(clampF(value, 0f, 1f) * 100f);
+    }
+
     public int getScar(int cx, int cz) {
         int i = index(cx, cz);
         return i < 0 ? 0 : scar[i];
