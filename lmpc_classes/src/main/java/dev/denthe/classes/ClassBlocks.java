@@ -53,6 +53,10 @@ public final class ClassBlocks {
         // соседних блоков, а сквозь щели видно пустоту.
         BlockBehaviour.Properties.ofFullCopy(Blocks.POLISHED_ANDESITE)
             .mapColor(MapColor.STONE)
+            // Работающий очиститель светится вполсилы: ночью это
+            // единственный способ увидеть с другого конца базы, что
+            // он не встал без реагента.
+            .lightLevel(состояние -> состояние.getValue(PurifierBlock.РАБОТАЕТ) ? 7 : 0)
             .noOcclusion());
 
     public static final DeferredItem<BlockItem> ANDESITE_PURIFIER_ITEM =

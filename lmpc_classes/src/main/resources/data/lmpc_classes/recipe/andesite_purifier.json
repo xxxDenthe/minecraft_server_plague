@@ -1,27 +1,26 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "type": "create:mechanical_crafting",
   "category": "misc",
+  "accept_mirrored": false,
+  "show_notification": true,
   "pattern": [
-    "AAA",
-    "CGC",
-    "AIA"
+    "AFA",
+    "PXP",
+    "CMC"
   ],
   "key": {
-    "A": {
-      "item": "minecraft:polished_andesite"
-    },
-    "C": {
-      "item": "minecraft:copper_ingot"
-    },
-    "G": {
-      "item": "lmpc_classes:cleansing_agent"
-    },
-    "I": {
-      "item": "minecraft:iron_ingot"
-    }
+    "A": { "item": "create:andesite_alloy" },
+    "F": { "item": "create:filter" },
+    "P": { "item": "create:fluid_pipe" },
+    "X": { "item": "create:precision_mechanism" },
+    "C": { "item": "create:andesite_casing" },
+    "M": { "item": "create:mechanical_pump" }
   },
   "result": {
     "id": "lmpc_classes:andesite_purifier",
     "count": 1
-  }
+  },
+  "neoforge:conditions": [
+    { "type": "neoforge:mod_loaded", "modid": "create" }
+  ]
 }

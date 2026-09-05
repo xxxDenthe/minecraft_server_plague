@@ -1,7 +1,6 @@
 {
   "variants": {
-    "": {
-      "model": "lmpc_classes:block/andesite_purifier"
-    }
+    "lit=false": { "model": "lmpc_classes:block/andesite_purifier" },
+    "lit=true":  { "model": "lmpc_classes:block/andesite_purifier" }
   }
 }

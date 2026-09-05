@@ -15,6 +15,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
 /**
@@ -32,8 +35,22 @@ public class PurifierBlock extends BaseEntityBlock {
 
     public static final MapCodec<PurifierBlock> CODEC = simpleCodec(PurifierBlock::new);
 
+    /**
+     * Работает ли прямо сейчас — есть вращение и реагент. Берём ванильное
+     * {@code lit}, а не заводим своё имя: свойство ровно с тем же смыслом
+     * («машина включена»), и на нём же висит свечение блока, которое
+     * прописано в {@link ClassBlocks}.
+     */
+    public static final BooleanProperty РАБОТАЕТ = BlockStateProperties.LIT;
+
     public PurifierBlock(Properties свойства) {
         super(свойства);
+        registerDefaultState(stateDefinition.any().setValue(РАБОТАЕТ, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> строитель) {
+        строитель.add(РАБОТАЕТ);
     }
 
     @Override
