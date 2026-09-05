@@ -28,6 +28,17 @@ public final class ClassBlocks {
     public static final DeferredItem<BlockItem> CLASS_ALTAR_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(CLASS_ALTAR);
 
+    /**
+     * Грядка бутона чумы — эксклюзив Фермера (спек классов, раздел 6).
+     * Предмета-блока у неё нет: в руки грядка не берётся, её сажают
+     * бутоном ({@link PlagueBloomSeedItem}), как ванильную пшеницу
+     * семенами.
+     */
+    public static final DeferredBlock<PlagueBloomCropBlock> PLAGUE_BLOOM_CROP = БЛОКИ.registerBlock(
+        "plague_bloom_crop",
+        PlagueBloomCropBlock::new,
+        BlockBehaviour.Properties.ofFullCopy(Blocks.WHEAT).mapColor(MapColor.COLOR_PURPLE));
+
     public static void register(IEventBus modEventBus) {
         БЛОКИ.register(modEventBus);
         ПРЕДМЕТЫ.register(modEventBus);

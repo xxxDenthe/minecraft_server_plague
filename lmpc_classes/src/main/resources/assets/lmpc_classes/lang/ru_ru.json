@@ -76,5 +76,13 @@
 
   "msg.lmpc_classes.admin.status": "%1$s: %2$s, мастерство %3$s (тир %4$s)",
   "msg.lmpc_classes.admin.set": "%1$s: класс %2$s",
-  "msg.lmpc_classes.admin.mastery": "%1$s: мастерство %2$s (тир %3$s)"
+  "msg.lmpc_classes.admin.mastery": "%1$s: мастерство %2$s (тир %3$s)",
+
+  "block.lmpc_classes.plague_bloom_crop": "Грядка бутона чумы",
+  "class.lmpc_classes.farmer.ability.2": "Бутон чумы всходит на вспаханной земле — сажать его умеет только Фермер.",
+  "class.lmpc_classes.farmer.ability.3": "Заражённая трава в Гнили роняет бутон — сбор открыт всем, грядка только Фермеру.",
+  "msg.lmpc_classes.bloom.not_farmer": "Сажать бутон умеет только Фермер.",
+  "msg.lmpc_classes.tune.value": "%1$s = %2$s",
+  "msg.lmpc_classes.tune.set": "%1$s теперь %2$s",
+  "msg.lmpc_classes.tune.failed": "Не удалось изменить %s: конфиг не загружен или значение вне допустимых границ."
 }

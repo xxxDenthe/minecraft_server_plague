@@ -1,5 +1,6 @@
 package dev.denthe.classes;
 
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -50,6 +51,16 @@ public final class ClassCommands {
             .then(Commands.argument("who", EntityArgument.player())
                 .then(Commands.argument("value", IntegerArgumentType.integer(0, ClassMastery.МАКСИМУМ))
                     .executes(ClassCommands::выставитьМастерство))));
+
+        var настройка = Commands.literal("tune").requires(s -> s.hasPermission(2))
+            .executes(ClassCommands::перечислитьЧисла);
+        for (String ключ : ClassesConfig.настраиваемые()) {
+            настройка.then(Commands.literal(ключ)
+                .executes(c -> показатьЧисло(c, ключ))
+                .then(Commands.argument("value", DoubleArgumentType.doubleArg())
+                    .executes(c -> задатьЧисло(c, ключ))));
+        }
+        корень.then(настройка);
 
         event.getDispatcher().register(корень);
     }
@@ -128,6 +139,41 @@ public final class ClassCommands {
         выдатьГримуарЕслиНадо(кто);
         c.getSource().sendSuccess(() -> Component.translatable(
             "msg.lmpc_classes.admin.set", кто.getGameProfile().getName(), ClassLore.заголовок(класс)), true);
+        return 1;
+    }
+
+    /**
+     * {@code /lmpcclasses tune} — правка баланса, не выходя из игры.
+     *
+     * Заведена по просьбе владельца про скорость грядки и доводит
+     * до конца проектное правило «игровые числа наружу»: за день
+     * до сессии баланс должен править не пересборка мода и даже
+     * не перезапуск сервера, а одна строка в чате. Значение пишется
+     * в `config/lmpc_classes-common.toml` сразу, поэтому переживает
+     * перезапуск.
+     */
+    private static int перечислитьЧисла(CommandContext<CommandSourceStack> c) {
+        for (String ключ : ClassesConfig.настраиваемые()) {
+            c.getSource().sendSuccess(() -> Component.translatable(
+                "msg.lmpc_classes.tune.value", ключ, String.valueOf(ClassesConfig.значение(ключ))), false);
+        }
+        return 1;
+    }
+
+    private static int показатьЧисло(CommandContext<CommandSourceStack> c, String ключ) {
+        c.getSource().sendSuccess(() -> Component.translatable(
+            "msg.lmpc_classes.tune.value", ключ, String.valueOf(ClassesConfig.значение(ключ))), false);
+        return 1;
+    }
+
+    private static int задатьЧисло(CommandContext<CommandSourceStack> c, String ключ) {
+        Object записано = ClassesConfig.задать(ключ, DoubleArgumentType.getDouble(c, "value"));
+        if (записано == null) {
+            c.getSource().sendFailure(Component.translatable("msg.lmpc_classes.tune.failed", ключ));
+            return 0;
+        }
+        c.getSource().sendSuccess(() -> Component.translatable(
+            "msg.lmpc_classes.tune.set", ключ, String.valueOf(записано)), true);
         return 1;
     }
 

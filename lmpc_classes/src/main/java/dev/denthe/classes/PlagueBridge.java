@@ -1,5 +1,7 @@
 package dev.denthe.classes;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.lang.reflect.Method;
@@ -35,6 +37,10 @@ public final class PlagueBridge {
     private static Method методGrantImmunity;
     private static Method методGetStage;
     private static Method методGetInfection;
+    private static Method методGetChunkLevel;
+    private static Method методGetNight;
+    private static Method методCleanseChunk;
+    private static Method методRecordSnapshot;
     private static boolean инициализирован;
     private static boolean доступен;
 
@@ -49,8 +55,28 @@ public final class PlagueBridge {
             // Чтение — отдельно и необязательно: без него живут все классы, кроме Летописца.
             методGetStage = метод(api, "getStage");
             методGetInfection = метод(api, "getInfection");
+            // Чанки (0.7.0): грядка Фермера, Очиститель Кузнеца, снимок Летописца.
+            методGetChunkLevel = необязательный(api, "getChunkLevel",
+                ServerLevel.class, int.class, int.class);
+            методGetNight = необязательный(api, "getNight", ServerLevel.class);
+            методCleanseChunk = необязательный(api, "cleanseChunk",
+                ServerLevel.class, int.class, int.class, float.class, float.class);
+            методRecordSnapshot = необязательный(api, "recordSnapshot",
+                ServerPlayer.class, BlockPos.class);
         } catch (ReflectiveOperationException e) {
             доступен = false;
+        }
+    }
+
+    /**
+     * Метод, которого может не быть у соседа старой версии. Отсутствие —
+     * не поломка: отвалится ровно одна способность, а не весь мод.
+     */
+    private static Method необязательный(Class<?> api, String имя, Class<?>... типы) {
+        try {
+            return api.getMethod(имя, типы);
+        } catch (ReflectiveOperationException e) {
+            return null;
         }
     }
 
@@ -109,6 +135,74 @@ public final class PlagueBridge {
             return значение instanceof Number число ? число.floatValue() : НЕТ_ДАННЫХ;
         } catch (ReflectiveOperationException e) {
             return НЕТ_ДАННЫХ;
+        }
+    }
+
+    // ── чанки ─────────────────────────────────────────────────────────
+
+    /**
+     * Уровень заражения чанка 0..5; {@code -1}, если чанк вне сетки мира
+     * или `plaguecore` недоступен. Отличать «чисто» от «не знаю» здесь
+     * важно: дикий бутон растёт только в заражённом чанке, и при
+     * неизвестном уровне он не должен выпадать где попало.
+     */
+    public static int уровеньЧанка(ServerLevel уровень, int чанкX, int чанкZ) {
+        инициализировать();
+        if (!доступен || методGetChunkLevel == null) return -1;
+        try {
+            Object значение = методGetChunkLevel.invoke(null, уровень, чанкX, чанкZ);
+            return значение instanceof Number число ? число.intValue() : -1;
+        } catch (ReflectiveOperationException e) {
+            return -1;
+        }
+    }
+
+    /** То же по позиции блока. */
+    public static int уровеньЧанкаВ(ServerLevel уровень, BlockPos позиция) {
+        return уровеньЧанка(уровень, позиция.getX() >> 4, позиция.getZ() >> 4);
+    }
+
+    /** Номер прошедшей ночи; {@code -1}, если `plaguecore` недоступен. */
+    public static int ночь(ServerLevel уровень) {
+        инициализировать();
+        if (!доступен || методGetNight == null) return -1;
+        try {
+            Object значение = методGetNight.invoke(null, уровень);
+            return значение instanceof Number число ? число.intValue() : -1;
+        } catch (ReflectiveOperationException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * Ночной проход очистителя по чанку: поднять сопротивление и,
+     * с вероятностью {@code сила}, снять один уровень заражения.
+     * Правило «нельзя окопаться» (спек ядра 10.2) применяется внутри
+     * `plaguecore`, а не здесь — оно про баланс эпидемии.
+     *
+     * @return true, если уровень действительно снизился
+     */
+    public static boolean очиститьЧанк(
+            ServerLevel уровень, int чанкX, int чанкZ, float сила, float приростСопротивления) {
+        инициализировать();
+        if (!доступен || методCleanseChunk == null) return false;
+        try {
+            Object значение = методCleanseChunk.invoke(
+                null, уровень, чанкX, чанкZ, сила, приростСопротивления);
+            return значение instanceof Boolean флаг && флаг;
+        } catch (ReflectiveOperationException e) {
+            return false;
+        }
+    }
+
+    /** Крючок под подсистему 5: снимок Летописца как будущий лор-артефакт. */
+    public static void записатьСнимок(ServerPlayer игрок, BlockPos позиция) {
+        инициализировать();
+        if (!доступен || методRecordSnapshot == null) return;
+        try {
+            методRecordSnapshot.invoke(null, игрок, позиция);
+        } catch (ReflectiveOperationException e) {
+            // молчим — лор ещё не подъехал, терять нечего
         }
     }
 }

@@ -31,7 +31,8 @@ public final class ClassLore {
     private static int способностей(PlayerClassData.Класс класс) {
         return switch (класс) {
             case CLERIC -> 3;
-            case SMITH, FARMER, CHRONICLER -> 1;
+            case FARMER -> 3;
+            case SMITH, CHRONICLER -> 1;
             case NONE -> 0;
         };
     }

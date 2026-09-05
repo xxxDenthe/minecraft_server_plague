@@ -5,6 +5,10 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Баланс классов в `config/lmpc_classes-common.toml`. Тот же приём,
  * что в `plaguecore`: числа, которые придётся крутить по ощущениям,
@@ -121,6 +125,24 @@ public final class ClassesConfig {
         .comment("Мастерство Фермера за одну собранную созревшую культуру (из 100).")
         .defineInRange("farmerMasteryPerHarvest", 1, 0, 100);
 
+    private static final ModConfigSpec.IntValue ФЕРМЕР_ДЕЛИТЕЛЬ_РОСТА = СТРОИТЕЛЬ
+        .comment("Во сколько раз грядка бутона чумы растёт медленнее ванильных культур.",
+                 "2 — вдвое медленнее. 1 — наравне с пшеницей.",
+                 "Смысл замедления: грядка не должна обнулять риск похода в Гниль.",
+                 "Правится прямо в игре: /lmpcclasses tune farmerBloomGrowthDivisor <число>")
+        .defineInRange("farmerBloomGrowthDivisor", 2, 1, 20);
+
+    private static final ModConfigSpec.DoubleValue ФЕРМЕР_ДИКИЙ_ШАНС = СТРОИТЕЛЬ
+        .comment("Вероятность, что заражённая трава в Гнили обронит бутон чумы.",
+                 "Это дикий сбор из спека — источник бутона до первой грядки.",
+                 "Правится прямо в игре: /lmpcclasses tune farmerBloomWildChance <число>")
+        .defineInRange("farmerBloomWildChance", 0.25, 0.0, 1.0);
+
+    private static final ModConfigSpec.IntValue ФЕРМЕР_ДИКИЙ_УРОВЕНЬ = СТРОИТЕЛЬ
+        .comment("С какого уровня заражения чанка трава начинает ронять бутон (1..5).",
+                 "2 и выше — то, что спек называет Гнилью и её подступами.")
+        .defineInRange("farmerBloomWildMinLevel", 2, 1, 5);
+
     // ── Летописец (спек, раздел 7) ────────────────────────────────────
 
     private static final ModConfigSpec.DoubleValue ЛЕТОПИСЕЦ_РАДИУС = СТРОИТЕЛЬ
@@ -223,6 +245,21 @@ public final class ClassesConfig {
         return ФЕРМЕР_МАСТЕРСТВО_ЗА_УРОЖАЙ.get();
     }
 
+    /** Во сколько раз грядка бутона растёт медленнее ванильных культур. */
+    public static int фермерДелительРоста() {
+        return ФЕРМЕР_ДЕЛИТЕЛЬ_РОСТА.get();
+    }
+
+    /** Вероятность, что заражённая трава обронит бутон чумы. */
+    public static double фермерДикийШанс() {
+        return ФЕРМЕР_ДИКИЙ_ШАНС.get();
+    }
+
+    /** С какого уровня заражения чанка трава начинает ронять бутон. */
+    public static int фермерДикийУровень() {
+        return ФЕРМЕР_ДИКИЙ_УРОВЕНЬ.get();
+    }
+
     /** Радиус обзора Летописца для тира, в блоках. */
     public static double летописецРадиус(int тир) {
         return ЛЕТОПИСЕЦ_РАДИУС.get() * силаТира(тир);
@@ -230,6 +267,87 @@ public final class ClassesConfig {
 
     public static int летописецМастерствоВМинуту() {
         return ЛЕТОПИСЕЦ_МАСТЕРСТВО_В_МИНУТУ.get();
+    }
+
+    // ── правка чисел прямо в игре ─────────────────────────────────────
+
+    /**
+     * Числа, которые можно крутить командой {@code /lmpcclasses tune},
+     * не выходя из игры и не перезапуская сервер.
+     *
+     * Заведено по прямой просьбе владельца про скорость грядки, но
+     * ограничивать список одним ключом смысла нет: все эти числа
+     * подбираются одинаково — на живой сессии, по ощущению. Это то же
+     * правило проекта «игровые числа наружу», доведённое до конца:
+     * за день до сессии баланс должен править не пересборка мода
+     * и даже не перезапуск сервера, а одна строка в чате.
+     *
+     * Порядок вставки сохраняется — по нему же команда печатает список.
+     */
+    private static final Map<String, ModConfigSpec.ConfigValue<?>> НАСТРАИВАЕМЫЕ =
+        new LinkedHashMap<>();
+
+    static {
+        НАСТРАИВАЕМЫЕ.put("classSwitchCooldownMinutes", КУЛДАУН_СМЕНЫ_КЛАССА);
+        НАСТРАИВАЕМЫЕ.put("masteryKeepFraction", ДОЛЯ_МАСТЕРСТВА_ПРИ_СМЕНЕ);
+        НАСТРАИВАЕМЫЕ.put("masteryTier2At", ПОРОГ_ТИРА_2);
+        НАСТРАИВАЕМЫЕ.put("masteryTier3At", ПОРОГ_ТИРА_3);
+        НАСТРАИВАЕМЫЕ.put("masteryPowerPerTier", СИЛА_ЗА_ТИР);
+        НАСТРАИВАЕМЫЕ.put("masteryCooldownCutPerTier", КУЛДАУН_ЗА_ТИР);
+        НАСТРАИВАЕМЫЕ.put("clericPendantProtection", КУЛОН_БАЗОВАЯ_ЗАЩИТА);
+        НАСТРАИВАЕМЫЕ.put("clericBrewCooldownMinutes", ОТВАР_КУЛДАУН);
+        НАСТРАИВАЕМЫЕ.put("clericBrewCureAmount", ОТВАР_ЛЕЧЕНИЕ);
+        НАСТРАИВАЕМЫЕ.put("clericMasteryPerCure", КЛИРИК_МАСТЕРСТВО_ЗА_ЛЕЧЕНИЕ);
+        НАСТРАИВАЕМЫЕ.put("smithRepairIntervalTicks", КУЗНЕЦ_ИНТЕРВАЛ_РЕМОНТА);
+        НАСТРАИВАЕМЫЕ.put("smithMasteryPerRepair", КУЗНЕЦ_МАСТЕРСТВО_ЗА_РЕМОНТ);
+        НАСТРАИВАЕМЫЕ.put("farmerFoodBonus", ФЕРМЕР_БОНУС_ЕДЫ);
+        НАСТРАИВАЕМЫЕ.put("farmerMasteryPerHarvest", ФЕРМЕР_МАСТЕРСТВО_ЗА_УРОЖАЙ);
+        НАСТРАИВАЕМЫЕ.put("farmerBloomGrowthDivisor", ФЕРМЕР_ДЕЛИТЕЛЬ_РОСТА);
+        НАСТРАИВАЕМЫЕ.put("farmerBloomWildChance", ФЕРМЕР_ДИКИЙ_ШАНС);
+        НАСТРАИВАЕМЫЕ.put("farmerBloomWildMinLevel", ФЕРМЕР_ДИКИЙ_УРОВЕНЬ);
+        НАСТРАИВАЕМЫЕ.put("chroniclerInsightRadius", ЛЕТОПИСЕЦ_РАДИУС);
+        НАСТРАИВАЕМЫЕ.put("chroniclerMasteryPerMinute", ЛЕТОПИСЕЦ_МАСТЕРСТВО_В_МИНУТУ);
+    }
+
+    /** Имена настраиваемых чисел, в порядке объявления. */
+    public static Set<String> настраиваемые() {
+        return НАСТРАИВАЕМЫЕ.keySet();
+    }
+
+    /** Текущее значение числа; {@code null}, если такого ключа нет. */
+    public static Object значение(String ключ) {
+        ModConfigSpec.ConfigValue<?> поле = НАСТРАИВАЕМЫЕ.get(ключ);
+        return поле == null ? null : поле.get();
+    }
+
+    /**
+     * Записать новое значение и сохранить файл конфига. Возвращает
+     * то, что реально записалось, или {@code null}, если ключ неизвестен
+     * либо конфиг ещё не загружен.
+     *
+     * Значение за границами {@code defineInRange} не отвергается тихо:
+     * ModConfigSpec поправит его при следующей загрузке, а до тех пор
+     * в памяти жило бы то, чего в файле нет. Поэтому запись сразу
+     * перечитывается и наружу отдаётся именно она.
+     */
+    public static Object задать(String ключ, double новое) {
+        ModConfigSpec.ConfigValue<?> поле = НАСТРАИВАЕМЫЕ.get(ключ);
+        if (поле == null) return null;
+        try {
+            if (поле instanceof ModConfigSpec.IntValue целое) {
+                целое.set((int) Math.round(новое));
+            } else if (поле instanceof ModConfigSpec.DoubleValue дробное) {
+                дробное.set(новое);
+            } else {
+                return null;
+            }
+            поле.save();
+            return поле.get();
+        } catch (RuntimeException e) {
+            // Конфиг ещё не загружен или значение не лезет в диапазон —
+            // для команды это обычный отказ, а не повод ронять сервер.
+            return null;
+        }
     }
 
     public static void зарегистрировать(IEventBus modEventBus, ModContainer container) {

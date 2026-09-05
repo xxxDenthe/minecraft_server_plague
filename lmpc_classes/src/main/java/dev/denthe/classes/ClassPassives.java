@@ -1,11 +1,15 @@
 package dev.denthe.classes;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CropBlock;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -17,6 +21,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Пассивки Кузнеца, Фермера и Летописца и рост их мастерства.
@@ -125,6 +130,37 @@ public final class ClassPassives {
         if (!культура.isMaxAge(событие.getState())) return;
 
         PlayerClassData.прибавитьМастерство(игрок, ClassesConfig.фермерМастерствоЗаУрожай());
+    }
+
+    /** Заражённая трава `plaguecore`, с которой собирается дикий бутон. */
+    private static final Set<String> ТРАВА_ГНИЛИ = Set.of(
+        "plaguecore:blighted_grass", "plaguecore:blighted_tall_grass");
+
+    /**
+     * Дикий сбор бутона чумы — то, что спек (раздел 6) называет
+     * «риском»: бутон роняет заражённая трава, и только в заражённом
+     * чанке. Это первый и до появления грядки единственный источник
+     * семян, поэтому он открыт всем классам, а не одному Фермеру:
+     * эксклюзив Фермера — грядка, а не доступ к сырью.
+     *
+     * Блоки соседнего мода опознаются по идентификатору, а не по типу:
+     * жёсткой зависимости на `plaguecore` у нас нет и не будет, и без
+     * него этот обработчик просто никогда не срабатывает.
+     */
+    @SubscribeEvent
+    public static void дикийБутон(BlockEvent.BreakEvent событие) {
+        if (!(событие.getPlayer() instanceof ServerPlayer игрок)) return;
+        ServerLevel уровень = игрок.serverLevel();
+
+        String идентификатор = BuiltInRegistries.BLOCK.getKey(событие.getState().getBlock()).toString();
+        if (!ТРАВА_ГНИЛИ.contains(идентификатор)) return;
+
+        BlockPos позиция = событие.getPos();
+        int уровеньЧанка = PlagueBridge.уровеньЧанкаВ(уровень, позиция);
+        if (уровеньЧанка < ClassesConfig.фермерДикийУровень()) return;
+        if (уровень.getRandom().nextDouble() >= ClassesConfig.фермерДикийШанс()) return;
+
+        Block.popResource(уровень, позиция, new ItemStack(ClassItems.PLAGUE_BLOOM.get()));
     }
 
     // ── Летописец ─────────────────────────────────────────────────────

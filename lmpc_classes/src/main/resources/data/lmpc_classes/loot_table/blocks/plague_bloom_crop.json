@@ -1,0 +1,42 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:alternatives",
+          "children": [
+            {
+              "type": "minecraft:item",
+              "name": "lmpc_classes:plague_bloom",
+              "conditions": [
+                {
+                  "condition": "minecraft:block_state_property",
+                  "block": "lmpc_classes:plague_bloom_crop",
+                  "properties": {
+                    "age": "7"
+                  }
+                }
+              ],
+              "functions": [
+                {
+                  "function": "minecraft:set_count",
+                  "count": {
+                    "type": "minecraft:uniform",
+                    "min": 2.0,
+                    "max": 3.0
+                  }
+                }
+              ]
+            },
+            {
+              "type": "minecraft:item",
+              "name": "lmpc_classes:plague_bloom"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

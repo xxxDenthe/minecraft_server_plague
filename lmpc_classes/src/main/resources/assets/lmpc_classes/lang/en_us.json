@@ -76,5 +76,13 @@
 
   "msg.lmpc_classes.admin.status": "%1$s: %2$s, mastery %3$s (tier %4$s)",
   "msg.lmpc_classes.admin.set": "%1$s: class %2$s",
-  "msg.lmpc_classes.admin.mastery": "%1$s: mastery %2$s (tier %3$s)"
+  "msg.lmpc_classes.admin.mastery": "%1$s: mastery %2$s (tier %3$s)",
+
+  "block.lmpc_classes.plague_bloom_crop": "Plague Bloom Crop",
+  "class.lmpc_classes.farmer.ability.2": "Plague bloom sprouts on tilled soil - only the Farmer knows how to plant it.",
+  "class.lmpc_classes.farmer.ability.3": "Blighted grass in the Rot drops blooms - anyone may gather, only the Farmer may sow.",
+  "msg.lmpc_classes.bloom.not_farmer": "Only the Farmer knows how to plant a bloom.",
+  "msg.lmpc_classes.tune.value": "%1$s = %2$s",
+  "msg.lmpc_classes.tune.set": "%1$s is now %2$s",
+  "msg.lmpc_classes.tune.failed": "Could not change %s: config not loaded, or the value is out of range."
 }

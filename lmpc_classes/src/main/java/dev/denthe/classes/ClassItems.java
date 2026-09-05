@@ -32,14 +32,15 @@ public final class ClassItems {
         "class_codex", свойства -> new ClassCodexItem(свойства.stacksTo(1)));
 
     /**
-     * Сырой бутон чумы. По спеку (раздел 10.4 старого документа)
-     * должен добываться диким кустом в Гнили или расти на грядке
-     * Фермера — ни того, ни другого ещё нет, поэтому пока обычный
-     * крафтимый предмет. Заменится настоящим сбором, когда подъедут
-     * Фермер и Мир.
+     * Сырой бутон чумы. Он же семя грядки Фермера — сажать может
+     * только Фермер, см. {@link PlagueBloomSeedItem}. Добывается тремя
+     * путями: диким сбором в заражённых чанках
+     * ({@link ClassPassives#дикийБутон}), урожаем с грядки и, как
+     * временный запасной вариант, крафтом из заражённой травы.
      */
-    public static final DeferredItem<net.minecraft.world.item.Item> PLAGUE_BLOOM =
-        ПРЕДМЕТЫ.registerSimpleItem("plague_bloom");
+    public static final DeferredItem<PlagueBloomSeedItem> PLAGUE_BLOOM = ПРЕДМЕТЫ.registerItem(
+        "plague_bloom",
+        свойства -> new PlagueBloomSeedItem(ClassBlocks.PLAGUE_BLOOM_CROP.get(), свойства));
 
     /**
      * Обработанный реагент чумы. Крафт открыт всем — гейта по классу
