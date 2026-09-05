@@ -20,6 +20,9 @@ launcher/                  лаунчер на Electron: раздача пака
 
 - `docs/superpowers/notes/2026-09-06-peredacha-sessii-7.md` — **передача
   между сессиями:** что осталось по всему проекту, по важности, с блокерами
+- `docs/superpowers/notes/2026-09-06-server-podnyat.md` — **сервер поднят**
+  (блокер № 1 передачи седьмой закрыт): где лежит, как запускать,
+  какие моды не поехали и что осталось сделать руками
 - `docs/superpowers/notes/2026-09-06-peredacha-atmospherics-i-noch.md` —
   Atmospherics в паке, ночь и панель мастера: что сделано и где грабли
 - `docs/superpowers/notes/2026-09-05-peredacha-sessii-4.md` — передача
