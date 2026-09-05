@@ -16,6 +16,7 @@
   "class.lmpc_classes.cleric.ability.1": "The pendant in the necklace slot slows infection; on a Cleric it is twice as strong as on anyone else.",
   "class.lmpc_classes.cleric.ability.2": "The improved brew cures at any stage. In other hands the bottle is simply wasted.",
   "class.lmpc_classes.cleric.ability.3": "Feed an ally: stand right next to them and hold right-click while looking at them.",
+  "class.lmpc_classes.cleric.ability.4": "Wounds close on their own, even on an empty stomach - faster with higher mastery.",
   "class.lmpc_classes.cleric.mastery": "Mastery grows with every successful cure; healing an ally is worth twice healing yourself.",
 
   "class.lmpc_classes.smith": "Smith",
@@ -81,6 +82,7 @@
   "block.lmpc_classes.plague_bloom_crop": "Plague Bloom Crop",
   "class.lmpc_classes.farmer.ability.2": "Plague bloom sprouts on tilled soil - only the Farmer knows how to plant it.",
   "class.lmpc_classes.farmer.ability.3": "Blighted grass in the Rot drops blooms - anyone may gather, only the Farmer may sow.",
+  "class.lmpc_classes.farmer.ability.4": "A ripe crop sometimes yields more than it should - the chance grows with mastery.",
   "msg.lmpc_classes.bloom.not_farmer": "Only the Farmer knows how to plant a bloom.",
   "msg.lmpc_classes.tune.value": "%1$s = %2$s",
   "msg.lmpc_classes.tune.set": "%1$s is now %2$s",
@@ -88,6 +90,7 @@
   "block.lmpc_classes.andesite_purifier": "Andesite Purifier",
   "class.lmpc_classes.smith.ability.2": "Andesite purifier: once a night it cleanses its own chunk, if turning and fuelled with reagent.",
   "class.lmpc_classes.smith.ability.3": "The purifier runs stronger while a Smith is online - its power scales with their tier.",
+  "class.lmpc_classes.smith.ability.4": "Forged gear sometimes comes out already enchanted, and the forge and furnace grant experience - more often with mastery.",
   "msg.lmpc_classes.purifier.no_power": "The purifier stands still - no rotation.",
   "msg.lmpc_classes.purifier.no_reagent": "The purifier has no reagent.",
   "msg.lmpc_classes.purifier.working": "Purifier running. Reagent: %1$s, party tier: %2$s",
@@ -97,6 +100,7 @@
   "hud.lmpc_classes.chunk_unknown": "Local infection unknown",
   "class.lmpc_classes.chronicler.ability.2": "The exact infection level of the ground you are looking at.",
   "class.lmpc_classes.chronicler.ability.3": "A camera click reveals the infection map around you to the whole party for minutes.",
+  "class.lmpc_classes.chronicler.ability.4": "Light step: the higher the mastery, the faster the Chronicler walks.",
   "msg.lmpc_classes.snapshot.cooldown": "The film is not ready yet: %s min.",
   "msg.lmpc_classes.snapshot.no_data": "Nothing to photograph: the plague is not tracked here."
 }

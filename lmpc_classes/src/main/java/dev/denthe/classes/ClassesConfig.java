@@ -96,6 +96,13 @@ public final class ClassesConfig {
                  "Не магия — Клирик должен стоять вплотную. 1.5 — чуть больше одного блока.")
         .defineInRange("clericFeedMaxDistance", 1.5, 0.5, 4.0);
 
+    private static final ModConfigSpec.IntValue КЛИРИК_ИНТЕРВАЛ_РЕГЕНЕРАЦИИ = СТРОИТЕЛЬ
+        .comment("Раз во сколько тиков Клирику само добавляется полсердца. Делится на тир:",
+                 "600 — раз в 30 секунд на первом тире, раз в 15 на втором, раз в 10 на третьем.",
+                 "Работает и на голодный желудок — в этом весь смысл при чуме,",
+                 "которая режет сытость. 0 — выключить.")
+        .defineInRange("clericRegenIntervalTicks", 600, 0, 24000);
+
     private static final ModConfigSpec.IntValue КЛИРИК_МАСТЕРСТВО_ЗА_ЛЕЧЕНИЕ = СТРОИТЕЛЬ
         .comment("Мастерство Клирика за одно удачное лечение отваром (из 100).",
                  "Лечение союзника даёт вдвое больше, чем лечение себя.")
@@ -116,6 +123,30 @@ public final class ClassesConfig {
                  "Считается всё, что имеет прочность: оружие, инструмент, броня, щит.")
         .defineInRange("smithMasteryPerCraft", 2, 0, 100);
 
+    private static final ModConfigSpec.DoubleValue КУЗНЕЦ_ШАНС_ЗАЧАРОВАНИЯ = СТРОИТЕЛЬ
+        .comment("Шанс на тир, что скованная Кузнецом вещь выйдет уже зачарованной.",
+                 "Итог = число * тир: 0.08 даёт 8 % на первом тире, 16 % на втором, 24 % на третьем.",
+                 "Умножаем на тир, а не на masteryPowerPerTier: тот даёт +15 % и на глаз незаметен.")
+        .defineInRange("smithEnchantChancePerTier", 0.08, 0.0, 1.0);
+
+    private static final ModConfigSpec.IntValue КУЗНЕЦ_СИЛА_ЗАЧАРОВАНИЯ = СТРОИТЕЛЬ
+        .comment("Сила случайного зачарования на тир, в «уровнях стола».",
+                 "Итог = число * тир: 5 — как стол на 5, 10 и 15 уровней.",
+                 "Сокровищ и проклятий нет: берём только тег in_enchanting_table.")
+        .defineInRange("smithEnchantPowerPerTier", 5, 1, 30);
+
+    private static final ModConfigSpec.IntValue КУЗНЕЦ_ОПЫТ_ЗА_КРАФТ = СТРОИТЕЛЬ
+        .comment("Опыт Кузнецу за скованное снаряжение, на тир выше первого.",
+                 "Итог = число * (тир − 1): на первом тире ноль, дальше 1 и 2 очка.")
+        .defineInRange("smithCraftXpPerTier", 1, 0, 100);
+
+    private static final ModConfigSpec.IntValue КУЗНЕЦ_ОПЫТ_ЗА_ПЛАВКУ = СТРОИТЕЛЬ
+        .comment("Доп. опыт Кузнецу за плавку, на тир выше первого и на очко мастерства.",
+                 "Итог = число * (тир − 1) * (выплавлено / smithSmeltsPerMastery).",
+                 "Считается той же порцией, что и мастерство, поэтому вынос по одному",
+                 "не даёт ни опыта, ни мастерства — печь не становится фермой опыта.")
+        .defineInRange("smithSmeltBonusXpPerTier", 2, 0, 100);
+
     private static final ModConfigSpec.IntValue КУЗНЕЦ_ПЛАВОК_НА_ОЧКО = СТРОИТЕЛЬ
         .comment("Сколько предметов надо выплавить в печи на одно очко мастерства.",
                  "Считается за один вынос из печи, с округлением вниз: вынести стопку",
@@ -126,8 +157,10 @@ public final class ClassesConfig {
     private static final ModConfigSpec.DoubleValue ОЧИСТИТЕЛЬ_СИЛА = СТРОИТЕЛЬ
         .comment("Вероятность, что андезитовый очиститель снимет уровень заражения за ночь.",
                  "Это cleansePower из спека ядра 10.1, для партии без Кузнеца.",
-                 "С Кузнецом растёт по тиру его мастерства (masteryPowerPerTier).")
-        .defineInRange("purifierCleansePower", 0.35, 0.0, 1.0);
+                 "С Кузнецом растёт по тиру его мастерства (masteryPowerPerTier).",
+                 "0.30, а не 0.35: тир I даёт множитель ровно 1.0, и на 0.35 Кузнец-новичок",
+                 "не отличался бы от партии вообще без Кузнеца. Теперь тир I — уже плюс.")
+        .defineInRange("purifierCleansePower", 0.30, 0.0, 1.0);
 
     private static final ModConfigSpec.DoubleValue ОЧИСТИТЕЛЬ_СОПРОТИВЛЕНИЕ = СТРОИТЕЛЬ
         .comment("На сколько очиститель поднимает сопротивление чанка за ночь (0..1).",
@@ -156,6 +189,12 @@ public final class ClassesConfig {
         .comment("Мастерство Фермера за одну собранную созревшую культуру (из 100).")
         .defineInRange("farmerMasteryPerHarvest", 1, 0, 100);
 
+    private static final ModConfigSpec.DoubleValue ФЕРМЕР_ЩЕДРЫЙ_УРОЖАЙ = СТРОИТЕЛЬ
+        .comment("Шанс на тир, что созревшая культура даст на один предмет больше.",
+                 "Итог = число * тир: 0.10 даёт 10 % на первом тире, 20 % на втором, 30 % на третьем.",
+                 "Прибавка идёт к каждой стопке дропа — и к зерну, и к семенам.")
+        .defineInRange("farmerExtraDropChancePerTier", 0.10, 0.0, 1.0);
+
     private static final ModConfigSpec.IntValue ФЕРМЕР_ДЕЛИТЕЛЬ_РОСТА = СТРОИТЕЛЬ
         .comment("Во сколько раз грядка бутона чумы растёт медленнее ванильных культур.",
                  "2 — вдвое медленнее. 1 — наравне с пшеницей.",
@@ -181,6 +220,19 @@ public final class ClassesConfig {
                  "Растёт с тиром мастерства. 0 — только собственная заражённость.")
         .defineInRange("chroniclerInsightRadius", 16.0, 0.0, 128.0);
 
+    private static final ModConfigSpec.DoubleValue ЛЕТОПИСЕЦ_СКОРОСТЬ_1 = СТРОИТЕЛЬ
+        .comment("Прибавка к скорости бега Летописца на первом тире, долей (0.05 — плюс 5 %).")
+        .defineInRange("chroniclerSpeedTier1", 0.05, 0.0, 1.0);
+
+    private static final ModConfigSpec.DoubleValue ЛЕТОПИСЕЦ_СКОРОСТЬ_2 = СТРОИТЕЛЬ
+        .comment("То же на втором тире.")
+        .defineInRange("chroniclerSpeedTier2", 0.08, 0.0, 1.0);
+
+    private static final ModConfigSpec.DoubleValue ЛЕТОПИСЕЦ_СКОРОСТЬ_3 = СТРОИТЕЛЬ
+        .comment("То же на третьем тире. Три отдельных числа, а не формула:",
+                 "владелец задал 5 / 8 / 15 %, и это не арифметическая прогрессия.")
+        .defineInRange("chroniclerSpeedTier3", 0.15, 0.0, 1.0);
+
     private static final ModConfigSpec.IntValue ЛЕТОПИСЕЦ_МАСТЕРСТВО_В_МИНУТУ = СТРОИТЕЛЬ
         .comment("Мастерство Летописца за минуту рядом хотя бы с одним заражённым (из 100).")
         .defineInRange("chroniclerMasteryPerMinute", 1, 0, 100);
@@ -195,8 +247,10 @@ public final class ClassesConfig {
 
     private static final ModConfigSpec.IntValue СНИМОК_РАДИУС = СТРОИТЕЛЬ
         .comment("Радиус снимка в чанках у первого тира. Растёт с тиром мастерства.",
-                 "4 — квадрат 9 на 9 чанков вокруг Летописца.")
-        .defineInRange("chroniclerSnapshotRadiusChunks", 4, 1, 10);
+                 "6 — квадрат 13 на 13 чанков вокруг Летописца.",
+                 "6, а не 4: на четвёрке округление давало 4/5/5 — тир III не отличался",
+                 "от тира II, и докачавшийся игрок не видел разницы. На шести — 6/7/8.")
+        .defineInRange("chroniclerSnapshotRadiusChunks", 6, 1, 16);
 
     private static final ModConfigSpec.IntValue ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_СНИМОК = СТРОИТЕЛЬ
         .comment("Мастерство Летописца за один снимок (из 100).")
@@ -278,6 +332,13 @@ public final class ClassesConfig {
         return СКОРМИТЬ_ДИСТАНЦИЯ.get();
     }
 
+    /** Интервал пассивной регенерации Клирика для тира, в тиках; 0 — выключена. */
+    public static int клирикИнтервалРегенерации(int тир) {
+        int базовый = КЛИРИК_ИНТЕРВАЛ_РЕГЕНЕРАЦИИ.get();
+        if (базовый <= 0) return 0;
+        return Math.max(1, базовый / Math.max(1, тир));
+    }
+
     public static int клирикМастерствоЗаЛечение() {
         return КЛИРИК_МАСТЕРСТВО_ЗА_ЛЕЧЕНИЕ.get();
     }
@@ -300,6 +361,26 @@ public final class ClassesConfig {
     /** Мастерство Кузнеца за вынос {@code сколько} предметов из печи. */
     public static int кузнецМастерствоЗаПлавку(int сколько) {
         return сколько / КУЗНЕЦ_ПЛАВОК_НА_ОЧКО.get();
+    }
+
+    /** Шанс, что скованная вещь выйдет зачарованной, для тира. */
+    public static double кузнецШансЗачарования(int тир) {
+        return КУЗНЕЦ_ШАНС_ЗАЧАРОВАНИЯ.get() * Math.max(1, тир);
+    }
+
+    /** Сила случайного зачарования для тира, в «уровнях стола». */
+    public static int кузнецСилаЗачарования(int тир) {
+        return КУЗНЕЦ_СИЛА_ЗАЧАРОВАНИЯ.get() * Math.max(1, тир);
+    }
+
+    /** Опыт за скованное снаряжение; на первом тире ноль. */
+    public static int кузнецОпытЗаКрафт(int тир) {
+        return КУЗНЕЦ_ОПЫТ_ЗА_КРАФТ.get() * Math.max(0, тир - 1);
+    }
+
+    /** Доп. опыт за плавку: на тир выше первого и на каждое очко мастерства. */
+    public static int кузнецОпытЗаПлавку(int тир, int очкиМастерства) {
+        return КУЗНЕЦ_ОПЫТ_ЗА_ПЛАВКУ.get() * Math.max(0, тир - 1) * Math.max(0, очкиМастерства);
     }
 
     /**
@@ -331,6 +412,11 @@ public final class ClassesConfig {
         return ФЕРМЕР_БОНУС_ЕДЫ.get() * силаТира(тир);
     }
 
+    /** Шанс щедрого урожая для тира. */
+    public static double фермерЩедрыйУрожай(int тир) {
+        return ФЕРМЕР_ЩЕДРЫЙ_УРОЖАЙ.get() * Math.max(1, тир);
+    }
+
     public static int фермерМастерствоЗаУрожай() {
         return ФЕРМЕР_МАСТЕРСТВО_ЗА_УРОЖАЙ.get();
     }
@@ -353,6 +439,15 @@ public final class ClassesConfig {
     /** Радиус обзора Летописца для тира, в блоках. */
     public static double летописецРадиус(int тир) {
         return ЛЕТОПИСЕЦ_РАДИУС.get() * силаТира(тир);
+    }
+
+    /** Прибавка к скорости бега Летописца для тира, долей от базовой. */
+    public static double летописецСкорость(int тир) {
+        return switch (тир) {
+            case 2 -> ЛЕТОПИСЕЦ_СКОРОСТЬ_2.get();
+            case 3 -> ЛЕТОПИСЕЦ_СКОРОСТЬ_3.get();
+            default -> ЛЕТОПИСЕЦ_СКОРОСТЬ_1.get();
+        };
     }
 
     public static int летописецМастерствоВМинуту() {
@@ -416,19 +511,28 @@ public final class ClassesConfig {
         НАСТРАИВАЕМЫЕ.put("clericBrewCooldownMinutes", ОТВАР_КУЛДАУН);
         НАСТРАИВАЕМЫЕ.put("clericBrewCureAmount", ОТВАР_ЛЕЧЕНИЕ);
         НАСТРАИВАЕМЫЕ.put("clericMasteryPerCure", КЛИРИК_МАСТЕРСТВО_ЗА_ЛЕЧЕНИЕ);
+        НАСТРАИВАЕМЫЕ.put("clericRegenIntervalTicks", КЛИРИК_ИНТЕРВАЛ_РЕГЕНЕРАЦИИ);
         НАСТРАИВАЕМЫЕ.put("smithRepairIntervalTicks", КУЗНЕЦ_ИНТЕРВАЛ_РЕМОНТА);
         НАСТРАИВАЕМЫЕ.put("smithMasteryPerCraft", КУЗНЕЦ_МАСТЕРСТВО_ЗА_КРАФТ);
         НАСТРАИВАЕМЫЕ.put("smithSmeltsPerMastery", КУЗНЕЦ_ПЛАВОК_НА_ОЧКО);
+        НАСТРАИВАЕМЫЕ.put("smithEnchantChancePerTier", КУЗНЕЦ_ШАНС_ЗАЧАРОВАНИЯ);
+        НАСТРАИВАЕМЫЕ.put("smithEnchantPowerPerTier", КУЗНЕЦ_СИЛА_ЗАЧАРОВАНИЯ);
+        НАСТРАИВАЕМЫЕ.put("smithCraftXpPerTier", КУЗНЕЦ_ОПЫТ_ЗА_КРАФТ);
+        НАСТРАИВАЕМЫЕ.put("smithSmeltBonusXpPerTier", КУЗНЕЦ_ОПЫТ_ЗА_ПЛАВКУ);
         НАСТРАИВАЕМЫЕ.put("purifierCleansePower", ОЧИСТИТЕЛЬ_СИЛА);
         НАСТРАИВАЕМЫЕ.put("purifierResistanceGain", ОЧИСТИТЕЛЬ_СОПРОТИВЛЕНИЕ);
         НАСТРАИВАЕМЫЕ.put("purifierMinSpeed", ОЧИСТИТЕЛЬ_МИН_СКОРОСТЬ);
         НАСТРАИВАЕМЫЕ.put("smithMasteryPerCleanse", КУЗНЕЦ_МАСТЕРСТВО_ЗА_ОЧИСТКУ);
         НАСТРАИВАЕМЫЕ.put("farmerFoodBonus", ФЕРМЕР_БОНУС_ЕДЫ);
         НАСТРАИВАЕМЫЕ.put("farmerMasteryPerHarvest", ФЕРМЕР_МАСТЕРСТВО_ЗА_УРОЖАЙ);
+        НАСТРАИВАЕМЫЕ.put("farmerExtraDropChancePerTier", ФЕРМЕР_ЩЕДРЫЙ_УРОЖАЙ);
         НАСТРАИВАЕМЫЕ.put("farmerBloomGrowthDivisor", ФЕРМЕР_ДЕЛИТЕЛЬ_РОСТА);
         НАСТРАИВАЕМЫЕ.put("farmerBloomWildChance", ФЕРМЕР_ДИКИЙ_ШАНС);
         НАСТРАИВАЕМЫЕ.put("farmerBloomWildMinLevel", ФЕРМЕР_ДИКИЙ_УРОВЕНЬ);
         НАСТРАИВАЕМЫЕ.put("chroniclerInsightRadius", ЛЕТОПИСЕЦ_РАДИУС);
+        НАСТРАИВАЕМЫЕ.put("chroniclerSpeedTier1", ЛЕТОПИСЕЦ_СКОРОСТЬ_1);
+        НАСТРАИВАЕМЫЕ.put("chroniclerSpeedTier2", ЛЕТОПИСЕЦ_СКОРОСТЬ_2);
+        НАСТРАИВАЕМЫЕ.put("chroniclerSpeedTier3", ЛЕТОПИСЕЦ_СКОРОСТЬ_3);
         НАСТРАИВАЕМЫЕ.put("chroniclerMasteryPerMinute", ЛЕТОПИСЕЦ_МАСТЕРСТВО_В_МИНУТУ);
         НАСТРАИВАЕМЫЕ.put("chroniclerSnapshotMinutes", СНИМОК_ДЛИТЕЛЬНОСТЬ);
         НАСТРАИВАЕМЫЕ.put("chroniclerSnapshotCooldownMinutes", СНИМОК_КУЛДАУН);

@@ -2,13 +2,23 @@ package dev.denthe.classes;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.phys.BlockHitResult;
@@ -17,12 +27,14 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -56,11 +68,38 @@ public final class ClassPassives {
     public static void тикИгрока(PlayerTickEvent.Post событие) {
         if (!(событие.getEntity() instanceof ServerPlayer игрок)) return;
 
-        switch (PlayerClassData.данные(игрок).класс) {
+        PlayerClassData данные = PlayerClassData.данные(игрок);
+        switch (данные.класс) {
+            case CLERIC -> клирикЛечится(игрок, данные.тир());
             case SMITH -> кузнецЧинит(игрок);
-            case CHRONICLER -> летописецСмотрит(игрок);
+            case CHRONICLER -> {
+                летописецСмотрит(игрок);
+                датьСкорость(игрок, данные.тир());
+            }
             default -> { }
         }
+        // Класс мог смениться минуту назад — прибавка к скорости обязана уйти
+        // вместе с ним. Снимаем тут, а не в обработчике смены класса: тот
+        // не сработает, если игрок вышел Летописцем, а мод обновили.
+        if (данные.класс != PlayerClassData.Класс.CHRONICLER) снятьСкорость(игрок);
+    }
+
+    // ── Клирик ────────────────────────────────────────────────────────
+
+    /**
+     * «Своя рана заживает первой»: раз в
+     * {@code clericRegenIntervalTicks} (делится на тир) Клирику
+     * возвращается полсердца.
+     *
+     * Ванильная регенерация требует сытости, а чума сытость и режет —
+     * поэтому эта работает всегда. Полсердца в полминуты в бою ничего
+     * не решает, а в дороге экономит еду, которой при чуме мало.
+     */
+    private static void клирикЛечится(ServerPlayer игрок, int тир) {
+        int интервал = ClassesConfig.клирикИнтервалРегенерации(тир);
+        if (интервал <= 0 || игрок.level().getGameTime() % интервал != 0) return;
+        if (игрок.getHealth() >= игрок.getMaxHealth()) return;
+        игрок.heal(1.0f);
     }
 
     // ── Кузнец ────────────────────────────────────────────────────────
@@ -103,8 +142,41 @@ public final class ClassPassives {
     public static void кузнецСковал(PlayerEvent.ItemCraftedEvent событие) {
         if (!(событие.getEntity() instanceof ServerPlayer игрок)) return;
         if (PlayerClassData.данные(игрок).класс != PlayerClassData.Класс.SMITH) return;
-        if (!событие.getCrafting().isDamageableItem()) return;
+        ItemStack вещь = событие.getCrafting();
+        if (!вещь.isDamageableItem()) return;
+
+        int тир = PlayerClassData.данные(игрок).тир();
         PlayerClassData.прибавитьМастерство(игрок, ClassesConfig.кузнецМастерствоЗаКрафт());
+
+        int опыт = ClassesConfig.кузнецОпытЗаКрафт(тир);
+        if (опыт > 0) игрок.giveExperiencePoints(опыт);
+
+        зачароватьСлучайно(игрок, вещь, тир);
+    }
+
+    /**
+     * «Рука мастера кладёт чары сама»: с шансом
+     * {@code smithEnchantChancePerTier} × тир свежая вещь выходит
+     * из-под молота уже зачарованной.
+     *
+     * Берём ванильный подбор чар со стола, ограниченный тегом
+     * {@code in_enchanting_table}: без него в выборку попадают
+     * сокровища и проклятия, и «награда» иногда оказывалась бы
+     * проклятием привязки.
+     *
+     * Уже зачарованное не трогаем: иначе Кузнец мог бы перекладывать
+     * чары, пересобирая вещь.
+     */
+    private static void зачароватьСлучайно(ServerPlayer игрок, ItemStack вещь, int тир) {
+        if (вещь.isEnchanted()) return;
+        if (игрок.getRandom().nextDouble() >= ClassesConfig.кузнецШансЗачарования(тир)) return;
+
+        var реестр = игрок.serverLevel().registryAccess();
+        Optional<? extends HolderSet<Enchantment>> набор =
+            реестр.registryOrThrow(Registries.ENCHANTMENT).getTag(EnchantmentTags.IN_ENCHANTING_TABLE);
+
+        EnchantmentHelper.enchantItem(игрок.getRandom(), вещь,
+            ClassesConfig.кузнецСилаЗачарования(тир), реестр, набор);
     }
 
     /**
@@ -122,7 +194,13 @@ public final class ClassPassives {
         if (!(событие.getEntity() instanceof ServerPlayer игрок)) return;
         if (PlayerClassData.данные(игрок).класс != PlayerClassData.Класс.SMITH) return;
         int очки = ClassesConfig.кузнецМастерствоЗаПлавку(событие.getSmelting().getCount());
-        if (очки > 0) PlayerClassData.прибавитьМастерство(игрок, очки);
+        if (очки <= 0) return;
+
+        int тир = PlayerClassData.данные(игрок).тир();
+        PlayerClassData.прибавитьМастерство(игрок, очки);
+
+        int опыт = ClassesConfig.кузнецОпытЗаПлавку(тир, очки);
+        if (опыт > 0) игрок.giveExperiencePoints(опыт);
     }
 
     // ── Фермер ────────────────────────────────────────────────────────
@@ -158,6 +236,33 @@ public final class ClassPassives {
         if (!культура.isMaxAge(событие.getState())) return;
 
         PlayerClassData.прибавитьМастерство(игрок, ClassesConfig.фермерМастерствоЗаУрожай());
+    }
+
+    /**
+     * «Щедрый урожай»: с шансом {@code farmerExtraDropChancePerTier} × тир
+     * созревшая культура даёт на один предмет больше в каждой стопке.
+     *
+     * Ловим {@link BlockDropsEvent}, а не {@code BreakEvent}: дроп там
+     * уже посчитан ванилью и ещё не выброшен в мир, поэтому прибавка
+     * складывается со всем остальным — с Удачей, с косой, с чужими
+     * модами на урожай — вместо того чтобы спорить с ними.
+     */
+    @SubscribeEvent
+    public static void фермерЩедрыйУрожай(BlockDropsEvent событие) {
+        if (!(событие.getBreaker() instanceof ServerPlayer игрок)) return;
+        PlayerClassData данные = PlayerClassData.данные(игрок);
+        if (данные.класс != PlayerClassData.Класс.FARMER) return;
+        if (!(событие.getState().getBlock() instanceof CropBlock культура)) return;
+        if (!культура.isMaxAge(событие.getState())) return;
+
+        double шанс = ClassesConfig.фермерЩедрыйУрожай(данные.тир());
+        if (событие.getLevel().getRandom().nextDouble() >= шанс) return;
+
+        for (ItemEntity дроп : событие.getDrops()) {
+            ItemStack стопка = дроп.getItem().copy();
+            стопка.grow(1);
+            дроп.setItem(стопка);
+        }
     }
 
     /** Заражённая трава `plaguecore`, с которой собирается дикий бутон. */
@@ -229,6 +334,39 @@ public final class ClassPassives {
 
         if (естьЗаражённый && сейчас % ClassSwitch.ТИКОВ_В_МИНУТЕ == 0) {
             PlayerClassData.прибавитьМастерство(летописец, ClassesConfig.летописецМастерствоВМинуту());
+        }
+    }
+
+    /** Идентификатор прибавки к скорости. Один на мод — по нему же и снимается. */
+    private static final ResourceLocation СКОРОСТЬ_ЛЕТОПИСЦА =
+        ResourceLocation.fromNamespaceAndPath(LmpcClasses.MODID, "chronicler_speed");
+
+    /**
+     * «Лёгкий шаг летописца»: прибавка к скорости бега по тиру,
+     * 5 ⁄ 8 ⁄ 15 % от базовой.
+     *
+     * Модификатор временный (transient): в сейв не пишется, а
+     * навешивается заново каждым тиком. Так он не может остаться
+     * на игроке после смены класса, удаления мода или отката версии —
+     * прибитая намертво прибавка к скорости в сейве чинится только
+     * командой, и хорошо, если кто-то её заметит.
+     */
+    private static void датьСкорость(ServerPlayer игрок, int тир) {
+        AttributeInstance атрибут = игрок.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (атрибут == null) return;
+
+        double нужно = ClassesConfig.летописецСкорость(тир);
+        AttributeModifier текущий = атрибут.getModifier(СКОРОСТЬ_ЛЕТОПИСЦА);
+        if (текущий != null && текущий.amount() == нужно) return;
+
+        атрибут.addOrUpdateTransientModifier(new AttributeModifier(
+            СКОРОСТЬ_ЛЕТОПИСЦА, нужно, AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
+    }
+
+    private static void снятьСкорость(ServerPlayer игрок) {
+        AttributeInstance атрибут = игрок.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (атрибут != null && атрибут.hasModifier(СКОРОСТЬ_ЛЕТОПИСЦА)) {
+            атрибут.removeModifier(СКОРОСТЬ_ЛЕТОПИСЦА);
         }
     }
 

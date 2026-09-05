@@ -16,6 +16,7 @@
   "class.lmpc_classes.cleric.ability.1": "Кулон в слоте ожерелья снижает набор заражённости; у Клирика — вдвое сильнее, чем у прочих.",
   "class.lmpc_classes.cleric.ability.2": "Улучшенный отвар лечит на любой стадии. В чужих руках бутылка пропадает впустую.",
   "class.lmpc_classes.cleric.ability.3": "Напоить союзника: подойти вплотную и удерживать ПКМ, глядя на него.",
+  "class.lmpc_classes.cleric.ability.4": "Раны затягиваются сами, даже на голодный желудок — тем быстрее, чем выше мастерство.",
   "class.lmpc_classes.cleric.mastery": "Мастерство растёт за каждое удачное лечение; за союзника — вдвое больше, чем за себя.",
 
   "class.lmpc_classes.smith": "Кузнец",
@@ -81,6 +82,7 @@
   "block.lmpc_classes.plague_bloom_crop": "Грядка бутона чумы",
   "class.lmpc_classes.farmer.ability.2": "Бутон чумы всходит на вспаханной земле — сажать его умеет только Фермер.",
   "class.lmpc_classes.farmer.ability.3": "Заражённая трава в Гнили роняет бутон — сбор открыт всем, грядка только Фермеру.",
+  "class.lmpc_classes.farmer.ability.4": "Созревшая грядка порой отдаёт больше, чем должна — шанс растёт с мастерством.",
   "msg.lmpc_classes.bloom.not_farmer": "Сажать бутон умеет только Фермер.",
   "msg.lmpc_classes.tune.value": "%1$s = %2$s",
   "msg.lmpc_classes.tune.set": "%1$s теперь %2$s",
@@ -88,6 +90,7 @@
   "block.lmpc_classes.andesite_purifier": "Андезитовый очиститель",
   "class.lmpc_classes.smith.ability.2": "Андезитовый очиститель: раз за ночь чистит свой чанк, если крутится и заряжен реагентом.",
   "class.lmpc_classes.smith.ability.3": "Очиститель работает сильнее, пока в игре есть Кузнец — сила растёт с его тиром.",
+  "class.lmpc_classes.smith.ability.4": "Скованная вещь порой выходит уже зачарованной, а горн и печь дают опыт — с мастерством чаще и щедрее.",
   "msg.lmpc_classes.purifier.no_power": "Очиститель стоит без вращения.",
   "msg.lmpc_classes.purifier.no_reagent": "В очистителе нет реагента.",
   "msg.lmpc_classes.purifier.working": "Очиститель работает. Реагента: %1$s, тир партии: %2$s",
@@ -97,6 +100,7 @@
   "hud.lmpc_classes.chunk_unknown": "Заражение местности неизвестно",
   "class.lmpc_classes.chronicler.ability.2": "Точный уровень заражения местности там, куда смотришь.",
   "class.lmpc_classes.chronicler.ability.3": "Щелчок камерой открывает всей партии карту заражения вокруг — на несколько минут.",
+  "class.lmpc_classes.chronicler.ability.4": "Лёгкий шаг: чем выше мастерство, тем быстрее ходит Летописец.",
   "msg.lmpc_classes.snapshot.cooldown": "Плёнка ещё не готова: %s мин.",
   "msg.lmpc_classes.snapshot.no_data": "Снимать нечего: чума здесь не считается."
 }

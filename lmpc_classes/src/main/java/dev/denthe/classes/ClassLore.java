@@ -30,10 +30,10 @@ public final class ClassLore {
     /** Сколько строк способностей объявлено в языковом файле у каждого класса. */
     private static int способностей(PlayerClassData.Класс класс) {
         return switch (класс) {
-            case CLERIC -> 3;
-            case FARMER -> 3;
-            case SMITH -> 3;
-            case CHRONICLER -> 3;
+            case CLERIC -> 4;
+            case FARMER -> 4;
+            case SMITH -> 4;
+            case CHRONICLER -> 4;
             case NONE -> 0;
         };
     }
