@@ -139,14 +139,17 @@ public final class PlagueWords {
         PlagueState состояние = PlagueState.get(мир);
         List<String> угаданные = CipherWords.угаданные(событие.getRawText(), словарь.keySet());
 
-        boolean естьНовое = false;
+        int новых = 0;
         for (String корень : угаданные) {
             if (состояние.раскрыть(корень)) {
-                естьНовое = true;
+                новых++;
                 объявить(сервер, игрок.getName().getString(), словарь.get(корень));
             }
         }
-        if (естьНовое) синхронизироватьВсех(сервер);
+        if (новых > 0) {
+            синхронизироватьВсех(сервер);
+            ClassBridge.наградитьЗаШифр(игрок, новых);
+        }
     }
 
     private static void объявить(MinecraftServer сервер, String кто, Тайна тайна) {

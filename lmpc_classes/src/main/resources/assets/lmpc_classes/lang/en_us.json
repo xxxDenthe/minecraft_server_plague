@@ -22,7 +22,7 @@
   "class.lmpc_classes.smith.role": "Defence technician, keeps the surface Purifiers running",
   "class.lmpc_classes.smith.lore": "While others run from the Blight, the Smith builds what keeps it at arm's length. A machine never tires and never fears — but it is hungry, and without its keeper it rusts like any abandoned mechanism.",
   "class.lmpc_classes.smith.ability.1": "Gear in hand and on the body slowly repairs itself — a machine with a keeper does not rust.",
-  "class.lmpc_classes.smith.mastery": "Mastery grows from working at the anvil.",
+  "class.lmpc_classes.smith.mastery": "Mastery grows from forged gear, from smelting, and from every night the land is cleansed.",
 
   "class.lmpc_classes.farmer": "Farmer",
   "class.lmpc_classes.farmer.role": "Turns the run for plague reagents into husbandry",
@@ -34,7 +34,7 @@
   "class.lmpc_classes.chronicler.role": "Scout and the party's eyes",
   "class.lmpc_classes.chronicler.lore": "The Chronicler goes where nobody else wants to look, and writes down what was seen — in case they do not come back. Every photograph and every line will one day be the only testimony that any of this was here.",
   "class.lmpc_classes.chronicler.ability.1": "Sees the exact plague stage and infection points — their own and everyone nearby.",
-  "class.lmpc_classes.chronicler.mastery": "Mastery grows for every minute spent near someone infected.",
+  "class.lmpc_classes.chronicler.mastery": "Mastery grows from deciphered words, from snapshots, and for every minute spent near someone infected.",
 
   "gui.lmpc_classes.close": "Close",
   "gui.lmpc_classes.altar.title": "Altar of Calling",

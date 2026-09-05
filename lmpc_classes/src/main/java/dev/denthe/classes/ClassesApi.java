@@ -59,4 +59,23 @@ public final class ClassesApi {
     public static int masteryTier(Player игрок) {
         return PlayerClassData.данные(игрок).тир();
     }
+
+    /**
+     * Игрок назвал вслух {@code слов} новых слов тайнописи. Зовёт
+     * `plaguecore` (`ClassBridge`) — только он знает, что слово
+     * раскрылось впервые.
+     *
+     * Мастерство идёт только Летописцу: разгадать может кто угодно,
+     * но летопись пишет он. Не Летописец — тихий ноль, а не ошибка.
+     *
+     * Возвращает начисленное мастерство, чтобы вызывающей стороне
+     * было что проверить, не зная наших типов.
+     */
+    public static int rewardCipher(Player игрок, int слов) {
+        if (слов <= 0) return 0;
+        if (PlayerClassData.данные(игрок).класс != PlayerClassData.Класс.CHRONICLER) return 0;
+        int награда = слов * ClassesConfig.летописецМастерствоЗаШифр();
+        PlayerClassData.прибавитьМастерство(игрок, награда);
+        return награда;
+    }
 }

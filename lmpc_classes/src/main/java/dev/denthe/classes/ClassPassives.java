@@ -16,7 +16,7 @@ import net.minecraft.world.phys.HitResult;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
-import net.neoforged.neoforge.event.entity.player.AnvilRepairEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -91,12 +91,38 @@ public final class ClassPassives {
         return всё;
     }
 
-    /** Работа на наковальне — профильное действие Кузнеца, отсюда и мастерство. */
+    /**
+     * Скованное снаряжение — профильное действие Кузнеца. «Снаряжение» —
+     * всё, у чего есть прочность: оружие, инструмент, броня, щит.
+     * Проверять по прочности, а не перечислять типы предметов: в паке
+     * почти сотня модов, и любой список устареет к первой же сборке.
+     *
+     * Накрутить нельзя: каждый крафт стоит материалов.
+     */
     @SubscribeEvent
-    public static void кузнецУНаковальни(AnvilRepairEvent событие) {
+    public static void кузнецСковал(PlayerEvent.ItemCraftedEvent событие) {
         if (!(событие.getEntity() instanceof ServerPlayer игрок)) return;
         if (PlayerClassData.данные(игрок).класс != PlayerClassData.Класс.SMITH) return;
-        PlayerClassData.прибавитьМастерство(игрок, ClassesConfig.кузнецМастерствоЗаРемонт());
+        if (!событие.getCrafting().isDamageableItem()) return;
+        PlayerClassData.прибавитьМастерство(игрок, ClassesConfig.кузнецМастерствоЗаКрафт());
+    }
+
+    /**
+     * Печь — второе профильное действие. Событие приходит ровно тогда,
+     * когда игрок забирает выплавленное и ваниль выдаёт ему опыт, так
+     * что «переплавка руды» и «опыт с печки» — одно и то же событие,
+     * а не два.
+     *
+     * Очко даётся за каждые {@code smithSmeltsPerMastery} предметов
+     * с округлением вниз, поэтому вынос по одному не даёт ничего:
+     * иначе Кузнец добирал бы третий тир, щёлкая по печи стопкой камня.
+     */
+    @SubscribeEvent
+    public static void кузнецПереплавил(PlayerEvent.ItemSmeltedEvent событие) {
+        if (!(событие.getEntity() instanceof ServerPlayer игрок)) return;
+        if (PlayerClassData.данные(игрок).класс != PlayerClassData.Класс.SMITH) return;
+        int очки = ClassesConfig.кузнецМастерствоЗаПлавку(событие.getSmelting().getCount());
+        if (очки > 0) PlayerClassData.прибавитьМастерство(игрок, очки);
     }
 
     // ── Фермер ────────────────────────────────────────────────────────

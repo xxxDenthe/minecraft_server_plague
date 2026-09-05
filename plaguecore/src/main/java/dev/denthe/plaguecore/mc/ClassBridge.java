@@ -19,6 +19,7 @@ final class ClassBridge {
 
     private static Method методЗащита;
     private static Method методКласс;
+    private static Method методШифр;
     private static boolean инициализирован;
     private static boolean доступен;
 
@@ -30,6 +31,13 @@ final class ClassBridge {
             методЗащита = api.getMethod("protectionBonus", Player.class);
             методКласс = api.getMethod("className", Player.class);
             доступен = true;
+            // Появился позже остальных: у соседа старой сборки его нет,
+            // и это не повод ронять весь мост — отвалится одна награда.
+            try {
+                методШифр = api.getMethod("rewardCipher", Player.class, int.class);
+            } catch (NoSuchMethodException e) {
+                методШифр = null;
+            }
             PlagueCore.LOG.info("lmpc_classes найден, мост классов подключён");
         } catch (ReflectiveOperationException e) {
             доступен = false;
@@ -59,6 +67,21 @@ final class ClassBridge {
             return "CHRONICLER".equals(методКласс.invoke(null, игрок));
         } catch (ReflectiveOperationException e) {
             return false;
+        }
+    }
+
+    /**
+     * Игрок назвал вслух новые слова тайнописи — Летописцу за это
+     * идёт мастерство. Кто именно Летописец, решает сосед: здесь мы
+     * только сообщаем факт.
+     */
+    static void наградитьЗаШифр(Player игрок, int слов) {
+        инициализировать();
+        if (!доступен || методШифр == null) return;
+        try {
+            методШифр.invoke(null, игрок, слов);
+        } catch (ReflectiveOperationException e) {
+            // тихо: награда за шифр — приятность, а не механика чумы
         }
     }
 }

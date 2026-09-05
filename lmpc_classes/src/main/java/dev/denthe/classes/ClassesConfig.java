@@ -111,9 +111,17 @@ public final class ClassesConfig {
                  "0 — выключить пассивный ремонт совсем.")
         .defineInRange("smithRepairIntervalTicks", 100, 0, 12000);
 
-    private static final ModConfigSpec.IntValue КУЗНЕЦ_МАСТЕРСТВО_ЗА_РЕМОНТ = СТРОИТЕЛЬ
-        .comment("Мастерство Кузнеца за одну работу на наковальне (из 100).")
-        .defineInRange("smithMasteryPerRepair", 2, 0, 100);
+    private static final ModConfigSpec.IntValue КУЗНЕЦ_МАСТЕРСТВО_ЗА_КРАФТ = СТРОИТЕЛЬ
+        .comment("Мастерство Кузнеца за один скованный предмет снаряжения (из 100).",
+                 "Считается всё, что имеет прочность: оружие, инструмент, броня, щит.")
+        .defineInRange("smithMasteryPerCraft", 2, 0, 100);
+
+    private static final ModConfigSpec.IntValue КУЗНЕЦ_ПЛАВОК_НА_ОЧКО = СТРОИТЕЛЬ
+        .comment("Сколько предметов надо выплавить в печи на одно очко мастерства.",
+                 "Считается за один вынос из печи, с округлением вниз: вынести стопку",
+                 "из 64 при значении 8 — восемь очков, вынести один слиток — ноль.",
+                 "Округление вниз и есть защита от накрутки поштучным выносом.")
+        .defineInRange("smithSmeltsPerMastery", 8, 1, 256);
 
     private static final ModConfigSpec.DoubleValue ОЧИСТИТЕЛЬ_СИЛА = СТРОИТЕЛЬ
         .comment("Вероятность, что андезитовый очиститель снимет уровень заражения за ночь.",
@@ -193,6 +201,12 @@ public final class ClassesConfig {
     private static final ModConfigSpec.IntValue ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_СНИМОК = СТРОИТЕЛЬ
         .comment("Мастерство Летописца за один снимок (из 100).")
         .defineInRange("chroniclerMasteryPerSnapshot", 3, 0, 100);
+
+    private static final ModConfigSpec.IntValue ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_ШИФР = СТРОИТЕЛЬ
+        .comment("Мастерство Летописца за одно разгаданное слово тайнописи (из 100).",
+                 "Слово раскрывается один раз на весь сервер, накрутить его нельзя,",
+                 "поэтому число крупнее прочих.")
+        .defineInRange("chroniclerMasteryPerCipher", 8, 0, 100);
 
     private static final ModConfigSpec.ConfigValue<List<? extends String>> КАМЕРЫ = СТРОИТЕЛЬ
         .comment("Предметы, щелчок которыми Летописец считает снимком.",
@@ -279,8 +293,13 @@ public final class ClassesConfig {
         return Math.max(1, Math.round(базовый / силаТира(тир)));
     }
 
-    public static int кузнецМастерствоЗаРемонт() {
-        return КУЗНЕЦ_МАСТЕРСТВО_ЗА_РЕМОНТ.get();
+    public static int кузнецМастерствоЗаКрафт() {
+        return КУЗНЕЦ_МАСТЕРСТВО_ЗА_КРАФТ.get();
+    }
+
+    /** Мастерство Кузнеца за вынос {@code сколько} предметов из печи. */
+    public static int кузнецМастерствоЗаПлавку(int сколько) {
+        return сколько / КУЗНЕЦ_ПЛАВОК_НА_ОЧКО.get();
     }
 
     /**
@@ -359,6 +378,10 @@ public final class ClassesConfig {
         return ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_СНИМОК.get();
     }
 
+    public static int летописецМастерствоЗаШифр() {
+        return ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_ШИФР.get();
+    }
+
     /** Идентификаторы предметов-камер, щелчок которыми считается снимком. */
     public static Set<String> камерыЛетописца() {
         return Set.copyOf(КАМЕРЫ.get());
@@ -394,7 +417,8 @@ public final class ClassesConfig {
         НАСТРАИВАЕМЫЕ.put("clericBrewCureAmount", ОТВАР_ЛЕЧЕНИЕ);
         НАСТРАИВАЕМЫЕ.put("clericMasteryPerCure", КЛИРИК_МАСТЕРСТВО_ЗА_ЛЕЧЕНИЕ);
         НАСТРАИВАЕМЫЕ.put("smithRepairIntervalTicks", КУЗНЕЦ_ИНТЕРВАЛ_РЕМОНТА);
-        НАСТРАИВАЕМЫЕ.put("smithMasteryPerRepair", КУЗНЕЦ_МАСТЕРСТВО_ЗА_РЕМОНТ);
+        НАСТРАИВАЕМЫЕ.put("smithMasteryPerCraft", КУЗНЕЦ_МАСТЕРСТВО_ЗА_КРАФТ);
+        НАСТРАИВАЕМЫЕ.put("smithSmeltsPerMastery", КУЗНЕЦ_ПЛАВОК_НА_ОЧКО);
         НАСТРАИВАЕМЫЕ.put("purifierCleansePower", ОЧИСТИТЕЛЬ_СИЛА);
         НАСТРАИВАЕМЫЕ.put("purifierResistanceGain", ОЧИСТИТЕЛЬ_СОПРОТИВЛЕНИЕ);
         НАСТРАИВАЕМЫЕ.put("purifierMinSpeed", ОЧИСТИТЕЛЬ_МИН_СКОРОСТЬ);
@@ -410,6 +434,7 @@ public final class ClassesConfig {
         НАСТРАИВАЕМЫЕ.put("chroniclerSnapshotCooldownMinutes", СНИМОК_КУЛДАУН);
         НАСТРАИВАЕМЫЕ.put("chroniclerSnapshotRadiusChunks", СНИМОК_РАДИУС);
         НАСТРАИВАЕМЫЕ.put("chroniclerMasteryPerSnapshot", ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_СНИМОК);
+        НАСТРАИВАЕМЫЕ.put("chroniclerMasteryPerCipher", ЛЕТОПИСЕЦ_МАСТЕРСТВО_ЗА_ШИФР);
     }
 
     /** Имена настраиваемых чисел, в порядке объявления. */
