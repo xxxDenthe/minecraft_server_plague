@@ -14,6 +14,7 @@ import { ensureJava } from './java.js';
 import { ensureVanilla, ensureVersionJson } from './minecraft.js';
 import { ensureNeoForge, readProfile } from './neoforge.js';
 import { planSync, applySync } from './sync.js';
+import { readState } from './state.js';
 import { launchGame } from './launch.js';
 import { progressEvent, STAGES } from './progress.js';
 
@@ -49,13 +50,14 @@ export async function loadManifest({ source = packSource(), fetchImpl = fetch } 
   return fetchManifest(source.url, { fetchImpl, headers: manifestHeaders(source.token) });
 }
 
-// Файлы пака ставятся при каждом запуске, всё остальное — один раз.
+// Пак сверяется при каждом запуске, всё остальное — один раз.
 export async function syncPack(manifest, { onProgress = null, ...rest } = {}) {
   const instance = paths.instance();
 
-  onProgress?.(progressEvent({ stage: STAGES.PACK, message: 'сверяю файлы пака' }));
+  onProgress?.(progressEvent({ stage: STAGES.PACK, message: 'сверяю пак' }));
 
-  const plan = await planSync(manifest, instance);
+  const state = await readState(instance);
+  const plan = await planSync(manifest, instance, state);
 
   if (plan.skippedDeletion) {
     onProgress?.(progressEvent({ stage: STAGES.PACK, message: plan.skippedDeletion }));
@@ -64,6 +66,8 @@ export async function syncPack(manifest, { onProgress = null, ...rest } = {}) {
   const result = await applySync(plan, {
     ...rest,
     instanceDir: instance,
+    cacheDir: paths.packCache(),
+    state,
     headers: manifestHeaders(),
     onProgress,
   });

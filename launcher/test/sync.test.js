@@ -11,30 +11,33 @@ import http from 'node:http';
 import { createHash } from 'node:crypto';
 
 import { planSync, applySync, PROTECTED } from '../src/main/sync.js';
+import { zip } from '../src/main/archive.js';
+import { readState, STATE_FILE } from '../src/main/state.js';
 
 const sha = (text) => createHash('sha256').update(text).digest('hex');
-
-const BODY = 'джарник';
-const BODY_SHA = sha(BODY);
+const shaOfFile = (file) => sha(fs.readFileSync(file));
 
 let dir;
 
-const manifest = (files, managedDirs = ['mods', 'config']) => ({
-  packVersion: 1,
+const manifest = (archives, managedDirs = ['mods', 'config']) => ({
+  packVersion: 7,
   minecraft: '1.21.1',
   neoforge: '21.1.249',
   managedDirs,
-  files,
+  archives,
 });
 
-const file = (p, body = BODY) => ({
-  path: p,
+const archive = (dirName, body = dirName) => ({
+  dir: dirName,
   sha256: sha(body),
+  contentId: sha(`${body}-content`),
   size: Buffer.byteLength(body),
-  url: `http://127.0.0.1:1/${p}`,
+  url: `http://127.0.0.1:1/${dirName}.zip`,
 });
 
-async function put(relative, body = BODY) {
+const state = (archives) => ({ packVersion: 7, archives });
+
+async function put(relative, body = 'джарник') {
   const full = path.join(dir, relative);
   await fsp.mkdir(path.dirname(full), { recursive: true });
   await fsp.writeFile(full, body);
@@ -46,157 +49,224 @@ beforeEach(async () => {
 });
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-const paths = (list) => list.map((f) => f.path ?? f).sort();
+const dirs = (list) => list.map((a) => a.dir ?? a).sort();
 
 describe('план синхронизации', () => {
-  it('файла нет — в toDownload', async () => {
-    const plan = await planSync(manifest([file('mods/create.jar')]), dir);
+  it('состояния нет — все архивы в toInstall', async () => {
+    const plan = await planSync(manifest([archive('mods'), archive('config')]), dir);
 
-    expect(paths(plan.toDownload)).toEqual(['mods/create.jar']);
+    expect(dirs(plan.toInstall)).toEqual(['config', 'mods']);
     expect(plan.toKeep).toEqual([]);
   });
 
-  it('файл есть и хеш совпал — в toKeep, скачивания нет', async () => {
+  it('хеш совпал и файлы на месте — в toKeep, скачивания нет', async () => {
+    const mods = archive('mods');
     await put('mods/create.jar');
-    const plan = await planSync(manifest([file('mods/create.jar')]), dir);
 
-    expect(plan.toDownload).toEqual([]);
-    expect(paths(plan.toKeep)).toEqual(['mods/create.jar']);
+    const plan = await planSync(
+      manifest([mods]),
+      dir,
+      state({ mods: { sha256: mods.sha256, files: ['mods/create.jar'] } })
+    );
+
+    expect(plan.toInstall).toEqual([]);
+    expect(dirs(plan.toKeep)).toEqual(['mods']);
   });
 
-  it('файл есть, но хеш не тот — в toDownload', async () => {
-    await put('mods/create.jar', 'версия позапрошлой недели');
-    const plan = await planSync(manifest([file('mods/create.jar')]), dir);
+  it('хеш не тот — в toInstall, даже если файлы на месте', async () => {
+    await put('mods/create.jar');
 
-    expect(paths(plan.toDownload)).toEqual(['mods/create.jar']);
+    const plan = await planSync(
+      manifest([archive('mods', 'новая версия')]),
+      dir,
+      state({ mods: { sha256: sha('старая версия'), files: ['mods/create.jar'] } })
+    );
+
+    expect(dirs(plan.toInstall)).toEqual(['mods']);
   });
 
-  it('лишний файл в управляемой папке — в toDelete', async () => {
+  // Ради этого в состоянии и лежит список файлов.
+  it('игрок удалил мод руками — папка переставится, хотя хеш совпал', async () => {
+    const mods = archive('mods');
     await put('mods/create.jar');
-    await put('mods/xray-1.21.1.jar', 'чужой мод');
 
-    const plan = await planSync(manifest([file('mods/create.jar')]), dir);
+    const plan = await planSync(
+      manifest([mods]),
+      dir,
+      state({ mods: { sha256: mods.sha256, files: ['mods/create.jar', 'mods/пропавший.jar'] } })
+    );
 
-    expect(plan.toDelete).toEqual(['mods/xray-1.21.1.jar']);
+    expect(dirs(plan.toInstall)).toEqual(['mods']);
   });
 
-  it('лишний файл вне управляемых папок не трогается', async () => {
-    await put('mods/create.jar');
+  it('управляемая папка без архива в манифесте — в dirsToWipe', async () => {
+    await put('config/create.toml', 'конфиг');
+
+    const plan = await planSync(manifest([archive('mods')]), dir);
+
+    expect(plan.dirsToWipe).toEqual(['config']);
+  });
+
+  it('управляемая папка без архива и без файлов на диске не попадает никуда', async () => {
+    const plan = await planSync(manifest([archive('mods')]), dir);
+    expect(plan.dirsToWipe).toEqual([]);
+  });
+
+  it('файлы вне управляемых папок не трогаются', async () => {
     await put('journeymap/data/waypoints.json', 'точки игрока');
     await put('emotes/wave.json', 'эмоция');
 
-    const plan = await planSync(manifest([file('mods/create.jar')]), dir);
+    const plan = await planSync(manifest([archive('mods'), archive('config')]), dir);
 
-    expect(plan.toDelete).toEqual([]);
-  });
-
-  it('пользовательские файлы не удаляются никогда, даже внутри управляемой папки', async () => {
-    await put('mods/create.jar');
-    await put('config/options.txt', 'настройки');
-    await put('config/saves/мир/level.dat', 'мир');
-    await put('config/screenshots/1.png', 'снимок');
-    await put('config/logs/latest.log', 'лог');
-    await put('config/servers.dat', 'список серверов');
-
-    const plan = await planSync(manifest([file('mods/create.jar')]), dir);
-
-    expect(plan.toDelete).toEqual([]);
-  });
-
-  it('пустая управляемая папка и непустой манифест — всё в toDownload', async () => {
-    await fsp.mkdir(path.join(dir, 'mods'), { recursive: true });
-
-    const plan = await planSync(
-      manifest([file('mods/a.jar'), file('mods/b.jar'), file('config/create.toml', 'конфиг')]),
-      dir
-    );
-
-    expect(plan.toDownload).toHaveLength(3);
-    expect(plan.toDelete).toEqual([]);
+    expect(plan.dirsToWipe).toEqual([]);
   });
 
   // Защита от самого дорогого сценария: сервер отдал пустой ответ,
   // лаунчер честно его исполнил, восемь человек остались без модов.
-  it('манифест с пустым files не приводит к удалению всего', async () => {
+  it('манифест с пустым archives не приводит к удалению всего', async () => {
     await put('mods/create.jar');
     await put('config/create.toml', 'конфиг');
 
     const plan = await planSync(manifest([]), dir);
 
-    expect(plan.toDelete).toEqual([]);
+    expect(plan.dirsToWipe).toEqual([]);
     expect(plan.skippedDeletion).toMatch(/пуст/);
   });
 
-  it('вложенные папки внутри управляемой обходятся', async () => {
-    await put('config/create/common.toml', 'общий');
-    await put('config/create/лишний.toml', 'лишний');
-
-    const plan = await planSync(manifest([file('config/create/common.toml', 'общий')]), dir);
-
-    expect(plan.toDelete).toEqual(['config/create/лишний.toml']);
-  });
-
-  it('обрубок .part от прошлой попытки убирается как лишний файл', async () => {
-    await put('mods/create.jar');
-    await put('mods/create.jar.part', 'половина');
-
-    const plan = await planSync(manifest([file('mods/create.jar')]), dir);
-
-    expect(plan.toDelete).toEqual(['mods/create.jar.part']);
-  });
-
-  it('каждое имя из PROTECTED переживает синхронизацию', async () => {
-    await put('mods/create.jar');
-    for (const name of PROTECTED) await put(`config/${name}/след.dat`, 'личное');
-
-    const plan = await planSync(manifest([file('mods/create.jar')]), dir);
-
-    expect(plan.toDelete).toEqual([]);
+  it('в PROTECTED есть файл состояния: чистка не должна его съесть', () => {
+    expect(PROTECTED).toContain(STATE_FILE);
   });
 });
 
 describe('применение плана', () => {
   let server;
   let base;
+  let packDir;
+  let zips;
 
+  // Раздаём настоящие zip, собранные тем же tar.exe, каким лаунчер
+  // их распаковывает: подделка архива проверила бы только заглушку.
   beforeAll(async () => {
-    server = http.createServer((req, res) => res.writeHead(200).end(BODY));
+    packDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'plague-pack-'));
+    zips = await fsp.mkdtemp(path.join(os.tmpdir(), 'plague-zips-'));
+
+    await fsp.mkdir(path.join(packDir, 'mods'), { recursive: true });
+    await fsp.mkdir(path.join(packDir, 'config', 'create'), { recursive: true });
+    await fsp.writeFile(path.join(packDir, 'mods', 'create.jar'), 'новый create');
+    await fsp.writeFile(path.join(packDir, 'mods', 'jei.jar'), 'jei');
+    await fsp.writeFile(path.join(packDir, 'config', 'create', 'common.toml'), 'общий');
+
+    await zip({
+      sourceDir: packDir,
+      entries: ['mods/create.jar', 'mods/jei.jar'],
+      archive: path.join(zips, 'mods.zip'),
+    });
+    await zip({
+      sourceDir: packDir,
+      entries: ['config/create/common.toml'],
+      archive: path.join(zips, 'config.zip'),
+    });
+
+    server = http.createServer((req, res) => {
+      const file = path.join(zips, path.basename(req.url));
+      if (!fs.existsSync(file)) return res.writeHead(404).end();
+      return res.writeHead(200).end(fs.readFileSync(file));
+    });
     await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
     base = `http://127.0.0.1:${server.address().port}`;
   });
-  afterAll(() => new Promise((resolve) => server.close(resolve)));
 
-  it('сначала качает, потом удаляет', async () => {
+  afterAll(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(packDir, { recursive: true, force: true });
+    fs.rmSync(zips, { recursive: true, force: true });
+  });
+
+  const served = (name) => ({
+    dir: name,
+    sha256: shaOfFile(path.join(zips, `${name}.zip`)),
+    contentId: 'c'.repeat(64),
+    size: fs.statSync(path.join(zips, `${name}.zip`)).size,
+    url: `${base}/${name}.zip`,
+  });
+
+  it('качает архив, чистит папку и распаковывает', async () => {
     await put('mods/старый.jar', 'старьё');
 
-    const wanted = { ...file('mods/новый.jar'), url: `${base}/новый.jar` };
-    const plan = await planSync(manifest([wanted]), dir);
+    const plan = await planSync(manifest([served('mods')]), dir);
     const result = await applySync(plan, { instanceDir: dir });
 
-    expect(result.downloaded).toBe(1);
-    expect(result.deleted).toEqual(['mods/старый.jar']);
-    expect(fs.readFileSync(path.join(dir, 'mods', 'новый.jar'), 'utf8')).toBe(BODY);
+    expect(result.installed).toEqual(['mods']);
+    expect(fs.readFileSync(path.join(dir, 'mods', 'create.jar'), 'utf8')).toBe('новый create');
     expect(fs.existsSync(path.join(dir, 'mods', 'старый.jar'))).toBe(false);
   });
 
-  it('опустевшая папка убирается, но инстанс остаётся', async () => {
-    await put('config/лишнее/файл.toml', 'мусор');
-
-    const wanted = { ...file('mods/нужный.jar'), url: `${base}/нужный.jar` };
-    const plan = await planSync(manifest([wanted]), dir);
+  it('состояние после установки описывает то, что реально лежит', async () => {
+    const plan = await planSync(manifest([served('mods')]), dir);
     await applySync(plan, { instanceDir: dir });
 
-    expect(fs.existsSync(path.join(dir, 'config', 'лишнее'))).toBe(false);
+    const saved = await readState(dir);
+
+    expect(saved.packVersion).toBe(7);
+    expect(saved.archives.mods.sha256).toBe(served('mods').sha256);
+    expect(saved.archives.mods.files.sort()).toEqual(['mods/create.jar', 'mods/jei.jar']);
+  });
+
+  it('второй запуск на том же паке ничего не качает', async () => {
+    const wanted = manifest([served('mods')]);
+
+    await applySync(await planSync(wanted, dir), { instanceDir: dir });
+    const second = await planSync(wanted, dir, await readState(dir));
+
+    expect(second.toInstall).toEqual([]);
+    expect(dirs(second.toKeep)).toEqual(['mods']);
+  });
+
+  it('вложенные папки внутри архива распаковываются', async () => {
+    const plan = await planSync(manifest([served('mods'), served('config')]), dir);
+    await applySync(plan, { instanceDir: dir });
+
+    expect(fs.readFileSync(path.join(dir, 'config', 'create', 'common.toml'), 'utf8')).toBe('общий');
+  });
+
+  it('пользовательские файлы переживают установку, даже внутри управляемой папки', async () => {
+    for (const name of PROTECTED) await put(`mods/${name}/след.dat`, 'личное');
+
+    const plan = await planSync(manifest([served('mods')]), dir);
+    await applySync(plan, { instanceDir: dir });
+
+    for (const name of PROTECTED) {
+      expect(fs.existsSync(path.join(dir, 'mods', name, 'след.dat'))).toBe(true);
+    }
+  });
+
+  it('папка, выпавшая из пака, вычищается, а инстанс остаётся', async () => {
+    await put('config/лишнее/файл.toml', 'мусор');
+
+    const plan = await planSync(manifest([served('mods')]), dir);
+    const result = await applySync(plan, { instanceDir: dir });
+
+    expect(result.wiped).toEqual(['config']);
+    expect(fs.existsSync(path.join(dir, 'config'))).toBe(false);
     expect(fs.existsSync(dir)).toBe(true);
   });
 
-  it('сорванная закачка не доходит до удаления', async () => {
+  it('архивы не остаются на диске после распаковки', async () => {
+    const cacheDir = path.join(dir, '.cache', 'pack');
+    const plan = await planSync(manifest([served('mods')]), dir);
+    await applySync(plan, { instanceDir: dir, cacheDir });
+
+    expect(fs.existsSync(path.join(cacheDir, 'mods.zip'))).toBe(false);
+  });
+
+  it('сорванная закачка не доходит до чистки папки', async () => {
     await put('mods/старый.jar', 'старьё');
 
-    const wanted = { ...file('mods/новый.jar'), url: `${base}/новый.jar`, sha256: sha('совсем другое') };
-    const plan = await planSync(manifest([wanted]), dir);
+    const broken = { ...served('mods'), sha256: sha('совсем другое') };
+    const plan = await planSync(manifest([broken]), dir);
 
     await expect(applySync(plan, { instanceDir: dir, retries: 1 })).rejects.toThrow();
     expect(fs.existsSync(path.join(dir, 'mods', 'старый.jar'))).toBe(true);
+    expect(fs.existsSync(path.join(dir, STATE_FILE))).toBe(false);
   });
 });

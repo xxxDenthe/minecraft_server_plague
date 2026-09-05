@@ -1,29 +1,37 @@
 #!/usr/bin/env node
-// Выкладывание пака в приватный релиз GitHub и сборка манифеста
-// по результатам загрузки.
+// Выкладывание пака в приватный релиз GitHub.
 //
-//   node tools/publish-pack.js --repo xxxDenthe/minecraft_server_plague \
-//                             --tag pack --token ghp_... [--dir pack-build] [--dry-run]
+//   npm run publish
 //
-// Почему манифест собирается здесь, а не отдельным скриптом заранее:
-// адресом файла служит id ассета, а id известен только после загрузки.
-// Имена ассетов для этого не годятся — GitHub переименовывает файлы
-// со спецсимволами, а «+» есть у двадцати одного мода пака.
+// Настройки — в launcher/publish.json, файл не версионируется, в нём
+// токен. Ключи командной строки его перебивают, это удобно при отладке:
 //
-// Повторный запуск заливает только изменившиеся файлы, остальные
-// остаются в релизе как есть. Правку баланса посреди сессии это
-// превращает в минуту работы вместо перезаливки трёхсот файлов.
+//   node tools/publish-pack.js --tag pack-test --dry-run
+//
+// Пак едет архивами, по одному на игровую папку: в релизе семь файлов
+// вместо трёхсот, и страницу можно читать глазами. Внутри архива путь
+// от корня инстанса, поэтому лаунчер распаковывает его как есть.
+//
+// Повторный запуск заливает только изменившиеся папки. Что изменилось,
+// решает contentId из прошлого манифеста, а не хеш архива: побайтовой
+// воспроизводимости zip tar не обещает.
 
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
 import { parseManifest } from '../src/main/manifest.js';
 import { PROTECTED } from '../src/main/sync.js';
+import { zip } from '../src/main/archive.js';
 import { apiHeaders, assetUrl, releaseByTag, checkToken } from '../src/main/github.js';
+import { contentIdOf, planUpload } from './pack.js';
 
 const API = 'https://api.github.com';
+const here = path.dirname(fileURLToPath(import.meta.url));
+
+export const SETTINGS_FILE = path.join(here, '..', 'publish.json');
 
 const DEFAULTS = {
   dir: 'pack-build',
@@ -34,8 +42,29 @@ const DEFAULTS = {
   'max-ram': '6144',
 };
 
+const HELP =
+  `нет ${SETTINGS_FILE}.\n` +
+  '  Создайте его — это единственная ручная настройка выкладки:\n' +
+  '  {\n' +
+  '    "repo": "xxxDenthe/minecraft_server_plague",\n' +
+  '    "tag": "pack",\n' +
+  '    "token": "github_pat_... с правом Contents: Read and write",\n' +
+  '    "dir": "pack-build",\n' +
+  '    "server": "хост:25565",\n' +
+  '    "max-ram": "6144"\n' +
+  '  }';
+
+function fromFile() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+    return raw && typeof raw === 'object' ? raw : {};
+  } catch {
+    return {};
+  }
+}
+
 function parseArgs(argv) {
-  const args = { ...DEFAULTS, 'dry-run': false };
+  const args = { ...DEFAULTS, ...fromFile(), 'dry-run': false };
 
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i];
@@ -54,8 +83,8 @@ function parseArgs(argv) {
     i += 1;
   }
 
-  if (!args.repo?.includes('/')) throw new Error('нужен --repo вида владелец/репозиторий');
-  if (!args.token && !args['dry-run']) throw new Error('нужен --token с правом Contents: read and write');
+  if (!args.repo?.includes('/')) throw new Error(`нужен репозиторий вида владелец/имя.\n${HELP}`);
+  if (!args.token && !args['dry-run']) throw new Error(`нужен токен.\n${HELP}`);
   if (args.token) checkToken(args.token);
 
   return args;
@@ -85,11 +114,6 @@ async function walk(dir, base) {
   return out;
 }
 
-// Ассеты лежат плоским списком, папок в нём нет. Путь кодируем в имя
-// не ради лаунчера — он берёт путь из манифеста, — а чтобы человек,
-// открывший релиз, понимал, что где лежит.
-const assetName = (relative) => relative.replaceAll('/', '__');
-
 async function github(url, { token, method = 'GET', accept, body, contentType } = {}) {
   const headers = apiHeaders(token, accept);
   if (contentType) headers['Content-Type'] = contentType;
@@ -116,6 +140,30 @@ async function github(url, { token, method = 'GET', accept, body, contentType } 
   return response;
 }
 
+// Релиза нет — создаём. Раньше скрипт здесь падал и отправлял человека
+// в браузер; это была половина ручной возни при каждой первой выкладке.
+async function ensureRelease({ owner, repo, tag, token }) {
+  const existing = await releaseByTag({ owner, repo, tag, token, orNull: true });
+  if (existing) return existing;
+
+  console.log(`релиза «${tag}» нет — создаю`);
+
+  const response = await github(`${API}/repos/${owner}/${repo}/releases`, {
+    token,
+    method: 'POST',
+    contentType: 'application/json',
+    body: JSON.stringify({
+      tag_name: tag,
+      name: `Модпак LMPC (${tag})`,
+      body: 'Архивы пака и манифест. Файлы кладёт и обновляет `npm run publish`.',
+      draft: false,
+      prerelease: false,
+    }),
+  });
+
+  return response.json();
+}
+
 async function uploadAsset({ release, repo, token, name, file, existing }) {
   // Перезалить ассет с тем же именем нельзя — сначала удаляем старый.
   if (existing) {
@@ -125,9 +173,6 @@ async function uploadAsset({ release, repo, token, name, file, existing }) {
   const uploadUrl = release.upload_url.replace(/\{\?[^}]*\}$/, '');
   const body = await fsp.readFile(file);
 
-  // Имя обязательно кодировать: незакодированный «+» GitHub принимает
-  // за пробел и заменяет точкой. Мы всё равно адресуемся по id, но
-  // человеку в релизе лучше видеть настоящие имена.
   const response = await github(`${uploadUrl}?name=${encodeURIComponent(name)}`, {
     token,
     method: 'POST',
@@ -138,109 +183,119 @@ async function uploadAsset({ release, repo, token, name, file, existing }) {
   return response.json();
 }
 
+async function readPreviousManifest({ repo, token, asset }) {
+  if (!asset) return null;
+
+  try {
+    const response = await github(`${API}/repos/${repo}/releases/assets/${asset.id}`, {
+      token,
+      accept: 'application/octet-stream',
+    });
+    return parseManifest(await response.text());
+  } catch {
+    // Нечитаемый или устаревший манифест — собираем всё заново.
+    // Хуже лишней перезаливки только тихо разошедшийся пак.
+    return null;
+  }
+}
+
+const mb = (bytes) => (bytes / 1024 / 1024).toFixed(0);
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   const [owner, repoName] = args.repo.split('/');
   const packDir = path.resolve(args.dir);
+  const cacheDir = path.join(packDir, '..', 'pack-archives');
   const managedDirs = args.managed.split(',').map((d) => d.trim()).filter(Boolean);
 
   // 1. Что вообще раздаём
-  const local = [];
+  const dirs = [];
   for (const dir of managedDirs) {
+    const files = [];
+
     for (const relative of await walk(path.join(packDir, dir), packDir)) {
       // Пользовательские файлы в пак не попадают: иначе лаунчер будет
       // затирать игроку настройки при каждом запуске.
       if (relative.split('/').some((part) => PROTECTED.includes(part))) continue;
 
       const full = path.join(packDir, relative);
-      local.push({
-        path: relative,
-        sha256: await sha256(full),
-        size: (await fsp.stat(full)).size,
-        file: full,
-      });
+      files.push({ path: relative, sha256: await sha256(full), size: (await fsp.stat(full)).size });
     }
+
+    if (files.length === 0) continue;
+    dirs.push({ dir, files, contentId: contentIdOf(files) });
   }
 
-  if (local.length === 0) {
-    throw new Error(`в ${packDir} не нашлось ни одного файла — проверьте --dir и --managed`);
+  if (dirs.length === 0) {
+    throw new Error(`в ${packDir} не нашлось ни одного файла — проверьте dir и managed`);
   }
 
-  const bytes = local.reduce((sum, f) => sum + f.size, 0);
-  console.log(`в паке ${local.length} файлов, ${(bytes / 1024 / 1024).toFixed(0)} МБ`);
+  for (const d of dirs) {
+    const bytes = d.files.reduce((sum, f) => sum + f.size, 0);
+    console.log(`  ${d.dir}: ${d.files.length} файлов, ${mb(bytes)} МБ`);
+  }
 
   if (args['dry-run']) {
-    console.log('--dry-run: ничего не загружаю, показываю первые десять имён ассетов');
-    for (const f of local.slice(0, 10)) console.log(`  ${f.path}  →  ${assetName(f.path)}`);
+    console.log('--dry-run: ничего не загружаю');
     return;
   }
 
-  // 2. Релиз должен уже существовать: создавать его и решать, каким
-  // он будет, — не дело скрипта.
-  const release = await releaseByTag({ owner, repo: repoName, tag: args.tag, token: args.token });
+  // 2. Релиз и прошлый манифест
+  const release = await ensureRelease({ owner, repo: repoName, tag: args.tag, token: args.token });
   const existing = new Map((release.assets ?? []).map((a) => [a.name, a]));
+  const previous = await readPreviousManifest({
+    repo: args.repo,
+    token: args.token,
+    asset: existing.get('pack.json'),
+  });
 
-  // 3. Заливаем только изменившееся. GitHub отдаёт digest не всегда;
-  // когда его нет, сверяем размер — имя ассета включает версию мода,
-  // так что молчаливая подмена содержимого при том же размере
-  // означала бы, что кто-то переложил файл руками.
-  const manifestFiles = [];
-  let uploaded = 0;
-  let kept = 0;
+  // 3. Собираем и заливаем только изменившиеся папки
+  const { reuse, build } = planUpload(dirs, previous);
+  const archives = [...reuse];
 
-  for (const file of local) {
-    const name = assetName(file.path);
-    const already = existing.get(name);
-    const digest = already?.digest ?? '';
-    const same = already && (digest ? digest === `sha256:${file.sha256}` : already.size === file.size);
+  for (const d of build) {
+    const file = path.join(cacheDir, `${d.dir}.zip`);
 
-    const asset = same
-      ? already
-      : await uploadAsset({
-          release,
-          repo: args.repo,
-          token: args.token,
-          name,
-          file: file.file,
-          existing: already,
-        });
+    await zip({ sourceDir: packDir, entries: d.files.map((f) => f.path), archive: file });
 
-    if (same) {
-      kept += 1;
-    } else {
-      uploaded += 1;
-      console.log(`залито: ${file.path}`);
-    }
+    const size = (await fsp.stat(file)).size;
+    console.log(`жму и заливаю ${d.dir}.zip, ${mb(size)} МБ`);
 
-    manifestFiles.push({
-      path: file.path,
-      sha256: file.sha256,
-      size: file.size,
+    const asset = await uploadAsset({
+      release,
+      repo: args.repo,
+      token: args.token,
+      name: `${d.dir}.zip`,
+      file,
+      existing: existing.get(`${d.dir}.zip`),
+    });
+
+    archives.push({
+      dir: d.dir,
+      sha256: await sha256(file),
+      contentId: d.contentId,
+      size,
       url: assetUrl({ owner, repo: repoName, assetId: asset.id }),
     });
+
+    await fsp.rm(file, { force: true });
   }
 
-  console.log(`загружено ${uploaded}, оставлено без изменений ${kept}`);
+  console.log(`залито папок ${build.length}, оставлено без изменений ${reuse.length}`);
 
-  // 4. Манифест — последним, когда все id известны
-  const previous = existing.get('pack.json');
-  let packVersion = 1;
-
-  if (previous) {
-    try {
-      const response = await github(`${API}/repos/${args.repo}/releases/assets/${previous.id}`, {
-        token: args.token,
-        accept: 'application/octet-stream',
-      });
-      packVersion = parseManifest(await response.text()).packVersion + 1;
-    } catch {
-      // Нечитаемый старый манифест — начинаем с единицы, хуже не будет.
-    }
+  // 4. Ассеты папок, которых в паке больше нет: релиз не должен
+  // хранить то, что лаунчер уже не спросит.
+  const wanted = new Set(archives.map((a) => `${a.dir}.zip`));
+  for (const [name, asset] of existing) {
+    if (name === 'pack.json' || wanted.has(name) || !name.endsWith('.zip')) continue;
+    await github(`${API}/repos/${args.repo}/releases/assets/${asset.id}`, { token: args.token, method: 'DELETE' });
+    console.log(`убран из релиза: ${name}`);
   }
 
+  // 5. Манифест — последним, когда все id известны
   const manifest = {
-    packVersion,
+    packVersion: (previous?.packVersion ?? 0) + 1,
     minecraft: args.minecraft,
     neoforge: args.neoforge,
     java: { major: 21 },
@@ -249,7 +304,7 @@ async function main() {
       jvmArgs: ['-XX:+UseG1GC', '-XX:MaxGCPauseMillis=50'],
     },
     managedDirs,
-    files: manifestFiles,
+    archives: archives.sort((a, b) => a.dir.localeCompare(b.dir)),
   };
 
   if (args.server) {
@@ -263,20 +318,21 @@ async function main() {
   // доехать до игрока.
   parseManifest(text);
 
-  const local_manifest = path.join(path.dirname(packDir), 'pack.json');
-  await fsp.writeFile(local_manifest, text, 'utf8');
+  const localManifest = path.join(cacheDir, 'pack.json');
+  await fsp.mkdir(cacheDir, { recursive: true });
+  await fsp.writeFile(localManifest, text, 'utf8');
 
   await uploadAsset({
     release,
     repo: args.repo,
     token: args.token,
     name: 'pack.json',
-    file: local_manifest,
-    existing: previous,
+    file: localManifest,
+    existing: existing.get('pack.json'),
   });
 
-  console.log(`манифест выложен: версия пака ${packVersion}, файлов ${manifestFiles.length}`);
-  console.log(`лаунчер собирать с PLAGUE_REPO=${args.repo} PLAGUE_RELEASE_TAG=${args.tag}`);
+  console.log(`манифест выложен: версия пака ${manifest.packVersion}, архивов ${archives.length}`);
+  console.log(`страница релиза: ${release.html_url}`);
 }
 
 main().catch((err) => {

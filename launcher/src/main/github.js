@@ -45,9 +45,13 @@ export const assetUrl = ({ owner, repo, assetId }) =>
 
 // Тег стабилен, id релиза — нет. Поэтому вход всегда через тег:
 // адрес, который можно зашить в сборку и не менять.
-export async function releaseByTag({ owner, repo, tag, token = '', fetchImpl = fetch }) {
+export async function releaseByTag({ owner, repo, tag, token = '', fetchImpl = fetch, orNull = false }) {
   const url = `${API}/repos/${owner}/${repo}/releases/tags/${encodeURIComponent(tag)}`;
   const response = await fetchImpl(url, { headers: apiHeaders(token), redirect: 'follow' });
+
+  // Выкладке отсутствие релиза — не ошибка, а повод его создать.
+  // Лаунчеру игрока — ошибка, и подробная.
+  if (response.status === 404 && orNull) return null;
 
   if (response.status === 404) {
     // Четыре причины, и по коду ответа они неразличимы. Самая частая —

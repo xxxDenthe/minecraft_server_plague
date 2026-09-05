@@ -30,14 +30,28 @@ function checkRelativePath(value, field) {
   return normalized;
 }
 
-function parseFile(raw, index) {
-  const at = `files[${index}]`;
+// Пак раздаётся архивами: один zip на игровую папку. Адресуется архив
+// папкой, а не путём, поэтому «mods» здесь — целая запись, а не файл.
+function parseArchive(raw, index, managedDirs) {
+  const at = `archives[${index}]`;
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) fail(`${at}: не объект`);
 
-  const path = checkRelativePath(raw.path, `${at}.path`);
+  const dir = checkRelativePath(raw.dir, `${at}.dir`);
+
+  // Один сегмент: архив разворачивается в корень инстанса, и папка
+  // вида «mods/create» означала бы чистку не того, что задумано.
+  if (dir.includes('/')) fail(`${at}.dir: не одна папка, а путь «${raw.dir}»`);
+  if (!managedDirs.includes(dir)) fail(`${at}.dir: «${dir}» отсутствует в managedDirs`);
 
   if (!isText(raw.sha256) || !SHA256.test(raw.sha256)) {
     fail(`${at}.sha256: не 64 шестнадцатеричных символа`);
+  }
+
+  // contentId лаунчер не читает — это отпечаток содержимого для
+  // выкладки. Проверяем только тип, чтобы поле не молчало в манифесте
+  // числом или объектом.
+  if (raw.contentId !== undefined && !isText(raw.contentId)) {
+    fail(`${at}.contentId: пустой или не строка`);
   }
 
   if (!isText(raw.url)) fail(`${at}.url: пустой или не строка`);
@@ -56,8 +70,9 @@ function parseFile(raw, index) {
   }
 
   return {
-    path,
+    dir,
     sha256: raw.sha256.toLowerCase(),
+    contentId: raw.contentId ?? '',
     size: raw.size ?? 0,
     url: raw.url,
   };
@@ -105,14 +120,14 @@ export function parseManifest(text) {
     checkRelativePath(dir, `managedDirs[${i}]`)
   );
 
-  if (!Array.isArray(raw.files)) fail('files: не массив');
-  const files = raw.files.map(parseFile);
+  if (!Array.isArray(raw.archives)) fail('archives: не массив');
+  const archives = raw.archives.map((entry, i) => parseArchive(entry, i, managedDirs));
 
-  // Два файла с одним путём — не выбор наугад, а ошибка сборки манифеста.
+  // Два архива на одну папку — не выбор наугад, а ошибка сборки манифеста.
   const seen = new Set();
-  for (const file of files) {
-    if (seen.has(file.path)) fail(`дубликат пути «${file.path}»`);
-    seen.add(file.path);
+  for (const archive of archives) {
+    if (seen.has(archive.dir)) fail(`дубликат папки «${archive.dir}»`);
+    seen.add(archive.dir);
   }
 
   return {
@@ -126,7 +141,7 @@ export function parseManifest(text) {
     },
     server,
     managedDirs,
-    files,
+    archives,
   };
 }
 

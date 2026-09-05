@@ -11,8 +11,8 @@ const manifestText = (packVersion) =>
     minecraft: '1.21.1',
     neoforge: '21.1.249',
     managedDirs: ['mods'],
-    files: [
-      { path: 'mods/a.jar', sha256: 'a'.repeat(64), size: 1, url: 'https://example.net/a.jar' },
+    archives: [
+      { dir: 'mods', sha256: 'a'.repeat(64), size: 1, url: 'https://example.net/mods.zip' },
     ],
   });
 

@@ -5,3 +5,5 @@ pack-build/
 src/main/distribution.json
 pack.json
 *.log
+publish.json
+pack-archives/

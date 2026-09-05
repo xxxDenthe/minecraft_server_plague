@@ -25,6 +25,9 @@ export const libraries = () => path.join(root(), 'libraries');
 export const assets = () => path.join(root(), 'assets');
 export const assetObjects = () => path.join(assets(), 'objects');
 export const assetIndexes = () => path.join(assets(), 'indexes');
+// Куда ложатся архивы пака на время распаковки. Внутри инстанса им
+// нельзя: инстанс — это то, что лаунчер чистит.
+export const packCache = () => path.join(root(), 'cache', 'pack');
 export const configFile = () => path.join(root(), 'launcher.json');
 export const logFile = () => path.join(root(), 'launcher.log');
 

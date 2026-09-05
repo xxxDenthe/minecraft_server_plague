@@ -38,6 +38,39 @@ export async function unzip(archive, destination) {
   return destination;
 }
 
+// Сборка zip для выкладки пака. Идёт только на машине владельца,
+// поэтому запасного пути на PowerShell тут нет: Compress-Archive
+// не умеет брать точный список файлов, а нам он нужен — из архива
+// исключаются пользовательские файлы.
+//
+// Список передаётся через -T, а не аргументами: девяносто три мода
+// не влезают в командную строку Windows целиком.
+export async function zip({ sourceDir, entries, archive }) {
+  if (!(await exists(TAR))) {
+    throw new Error(
+      `не нашёлся ${TAR}. Он идёт в составе Windows с 2018 года; ` +
+        'выкладка без него не соберётся.'
+    );
+  }
+  if (entries.length === 0) throw new Error('нечего архивировать: список файлов пуст');
+
+  await fs.mkdir(path.dirname(archive), { recursive: true });
+  await fs.rm(archive, { force: true });
+
+  // BOM в списке bsdtar принимает за часть первого имени и падает
+  // с «Couldn't visit directory». Пишем чистый UTF-8.
+  const list = `${archive}.files.txt`;
+  await fs.writeFile(list, `${entries.join('\n')}\n`, { encoding: 'utf8' });
+
+  try {
+    await run(TAR, ['-c', '-f', archive, '--format=zip', '-C', sourceDir, '-T', list]);
+  } finally {
+    await fs.rm(list, { force: true });
+  }
+
+  return archive;
+}
+
 // Архивы JDK и NeoForge кладут всё в одну папку верхнего уровня
 // (jdk-21.0.12.1+1-jre и подобные). Игроку эта папка не нужна:
 // пути в лаунчере фиксированные.

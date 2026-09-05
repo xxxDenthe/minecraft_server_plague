@@ -21,17 +21,18 @@ const good = {
   },
   server: { host: 'plague.example.net', port: 25565 },
   managedDirs: ['mods', 'config', 'defaultconfigs', 'kubejs', 'resourcepacks', 'shaderpacks'],
-  files: [
+  archives: [
     {
-      path: 'mods/create-1.21.1-6.0.10.jar',
+      dir: 'mods',
       sha256: 'a'.repeat(64),
-      size: 18234567,
-      url: 'https://example.net/releases/download/pack-12/create-1.21.1-6.0.10.jar',
+      contentId: 'c'.repeat(64),
+      size: 274513920,
+      url: 'https://api.github.com/repos/o/r/releases/assets/12345',
     },
   ],
 };
 
-const withFile = (patch) => ({ ...good, files: [{ ...good.files[0], ...patch }] });
+const withArchive = (patch) => ({ ...good, archives: [{ ...good.archives[0], ...patch }] });
 const text = (obj) => JSON.stringify(obj);
 
 describe('разбор манифеста: битые данные', () => {
@@ -62,39 +63,59 @@ describe('разбор манифеста: битые данные', () => {
     expect(() => parseManifest(text({ ...good, java: { major: '21' } }))).toThrow(/java\.major/);
   });
 
-  it('files не массив', () => {
-    expect(() => parseManifest(text({ ...good, files: {} }))).toThrow(/files/);
+  it('archives не массив', () => {
+    expect(() => parseManifest(text({ ...good, archives: {} }))).toThrow(/archives/);
   });
 
-  it('у файла нет path, sha256 или url', () => {
-    expect(() => parseManifest(text(withFile({ path: undefined })))).toThrow(/path/);
-    expect(() => parseManifest(text(withFile({ sha256: undefined })))).toThrow(/sha256/);
-    expect(() => parseManifest(text(withFile({ url: undefined })))).toThrow(/url/);
+  it('манифест старого образца с files не разбирается молча', () => {
+    const { archives, ...rest } = good;
+    expect(() => parseManifest(text({ ...rest, files: [] }))).toThrow(/archives/);
+  });
+
+  it('у архива нет dir, sha256 или url', () => {
+    expect(() => parseManifest(text(withArchive({ dir: undefined })))).toThrow(/dir/);
+    expect(() => parseManifest(text(withArchive({ sha256: undefined })))).toThrow(/sha256/);
+    expect(() => parseManifest(text(withArchive({ url: undefined })))).toThrow(/url/);
   });
 
   it('sha256 не 64 шестнадцатеричных символа', () => {
-    expect(() => parseManifest(text(withFile({ sha256: 'a'.repeat(63) })))).toThrow(/sha256/);
-    expect(() => parseManifest(text(withFile({ sha256: 'z'.repeat(64) })))).toThrow(/sha256/);
+    expect(() => parseManifest(text(withArchive({ sha256: 'a'.repeat(63) })))).toThrow(/sha256/);
+    expect(() => parseManifest(text(withArchive({ sha256: 'z'.repeat(64) })))).toThrow(/sha256/);
   });
 
-  it('размер файла не целое неотрицательное', () => {
-    expect(() => parseManifest(text(withFile({ size: -1 })))).toThrow(/size/);
+  it('contentId не строка', () => {
+    expect(() => parseManifest(text(withArchive({ contentId: 42 })))).toThrow(/contentId/);
+  });
+
+  it('размер архива не целое неотрицательное', () => {
+    expect(() => parseManifest(text(withArchive({ size: -1 })))).toThrow(/size/);
   });
 
   it('url не http и не https', () => {
-    expect(() => parseManifest(text(withFile({ url: 'file:///C:/windows/system32' })))).toThrow(/url/);
+    expect(() => parseManifest(text(withArchive({ url: 'file:///C:/windows/system32' })))).toThrow(/url/);
   });
 
   // Главное, ради чего вообще писалась валидация.
-  it('path с .. отвергается', () => {
-    expect(() => parseManifest(text(withFile({ path: '../../windows/system32/evil.dll' })))).toThrow(/path/);
-    expect(() => parseManifest(text(withFile({ path: 'mods/../../evil.jar' })))).toThrow(/path/);
+  it('dir с .. отвергается', () => {
+    expect(() => parseManifest(text(withArchive({ dir: '../../windows/system32' })))).toThrow(/dir/);
+    expect(() => parseManifest(text(withArchive({ dir: 'mods/../..' })))).toThrow(/dir/);
   });
 
-  it('абсолютный path отвергается', () => {
-    expect(() => parseManifest(text(withFile({ path: '/etc/passwd' })))).toThrow(/path/);
-    expect(() => parseManifest(text(withFile({ path: `C:${BS}windows${BS}evil.dll` })))).toThrow(/path/);
-    expect(() => parseManifest(text(withFile({ path: `${BS}${BS}server${BS}share${BS}evil.dll` })))).toThrow(/path/);
+  it('абсолютный dir отвергается', () => {
+    expect(() => parseManifest(text(withArchive({ dir: '/etc' })))).toThrow(/dir/);
+    expect(() => parseManifest(text(withArchive({ dir: `C:${BS}windows` })))).toThrow(/dir/);
+    expect(() => parseManifest(text(withArchive({ dir: `${BS}${BS}server${BS}share` })))).toThrow(/dir/);
+  });
+
+  it('dir из нескольких сегментов отвергается: чистилась бы не та папка', () => {
+    const m = { ...good, managedDirs: [...good.managedDirs, 'config/create'] };
+    expect(() => parseManifest(text({ ...m, archives: [{ ...good.archives[0], dir: 'config/create' }] }))).toThrow(
+      /dir/
+    );
+  });
+
+  it('dir вне managedDirs отвергается: чистить папку, которой мы не владеем, нельзя', () => {
+    expect(() => parseManifest(text(withArchive({ dir: 'journeymap' })))).toThrow(/managedDirs/);
   });
 
   it('managedDirs с .. или абсолютным путём отвергается', () => {
@@ -103,8 +124,8 @@ describe('разбор манифеста: битые данные', () => {
     expect(() => parseManifest(text({ ...good, managedDirs: 'mods' }))).toThrow(/managedDirs/);
   });
 
-  it('два файла с одним path — ошибка сборки манифеста, а не выбор наугад', () => {
-    const dup = { ...good, files: [good.files[0], { ...good.files[0] }] };
+  it('два архива на одну папку — ошибка сборки манифеста, а не выбор наугад', () => {
+    const dup = { ...good, archives: [good.archives[0], { ...good.archives[0] }] };
     expect(() => parseManifest(text(dup))).toThrow(/дубл/i);
   });
 
@@ -125,8 +146,8 @@ describe('разбор манифеста: корректные данные', (
     expect(m.launch.jvmArgs).toEqual(['-XX:+UseG1GC', '-XX:MaxGCPauseMillis=50']);
     expect(m.server).toEqual({ host: 'plague.example.net', port: 25565 });
     expect(m.managedDirs).toEqual(good.managedDirs);
-    expect(m.files).toHaveLength(1);
-    expect(m.files[0]).toEqual(good.files[0]);
+    expect(m.archives).toHaveLength(1);
+    expect(m.archives[0]).toEqual(good.archives[0]);
   });
 
   it('необязательные разделы можно опустить', () => {
@@ -137,19 +158,21 @@ describe('разбор манифеста: корректные данные', (
     expect(m.server).toBe(null);
   });
 
-  it('пустой files разбирается — решение, что с ним делать, принимает sync', () => {
-    const m = parseManifest(text({ ...good, files: [] }));
-    expect(m.files).toEqual([]);
+  it('contentId можно опустить: лаунчер его не читает', () => {
+    const { contentId, ...archive } = good.archives[0];
+    const m = parseManifest(text({ ...good, archives: [archive] }));
+
+    expect(m.archives[0].contentId).toBe('');
   });
 
-  it('разделители пути приводятся к прямому слэшу', () => {
-    const m = parseManifest(text(withFile({ path: `mods${BS}create.jar` })));
-    expect(m.files[0].path).toBe('mods/create.jar');
+  it('пустой archives разбирается — решение, что с ним делать, принимает sync', () => {
+    const m = parseManifest(text({ ...good, archives: [] }));
+    expect(m.archives).toEqual([]);
   });
 
   it('sha256 приводится к нижнему регистру', () => {
-    const m = parseManifest(text(withFile({ sha256: 'A'.repeat(64) })));
-    expect(m.files[0].sha256).toBe('a'.repeat(64));
+    const m = parseManifest(text(withArchive({ sha256: 'A'.repeat(64) })));
+    expect(m.archives[0].sha256).toBe('a'.repeat(64));
   });
 });
 
