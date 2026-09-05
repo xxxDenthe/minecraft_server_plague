@@ -46,7 +46,7 @@ public class GmPanelScreen extends Screen {
         SELF("Себе"), PLAYERS("Игроки"), MAP("Карта"),
         WORLD("Мир", "Погода", "Правила"),
         BROADCAST("Вещание", "Заголовок", "Чат", "Звук"),
-        PLAGUE("Чума", "Общее", "Голос"),
+        PLAGUE("Чума", "Общее", "Голос", "Тело"),
         GRAPHICS("Графика", "Кадр", "Ночь", "Туман", "Небо"),
         EXPERIMENTAL("Опыты"), LOG("Журнал");
         final String label;
@@ -318,6 +318,10 @@ public class GmPanelScreen extends Screen {
     private void initPlague() {
         if (folder() == 1) {
             initVoice();
+            return;
+        }
+        if (folder() == 2) {
+            initPossession();
             return;
         }
         int y = contentY + 14;
@@ -604,7 +608,11 @@ public class GmPanelScreen extends Screen {
             case MAP -> renderMap(g, mx, my);
             case WORLD -> renderWorld(g, mx, my);
             case BROADCAST -> renderBroadcast(g);
-            case PLAGUE -> { if (folder() == 1) renderVoice(g); else renderPlague(g); }
+            case PLAGUE -> {
+                if (folder() == 1) renderVoice(g);
+                else if (folder() == 2) renderPossession(g);
+                else renderPlague(g);
+            }
             case GRAPHICS -> renderGraphics(g);
             case EXPERIMENTAL -> renderExperimental(g);
             case LOG -> {
@@ -807,6 +815,58 @@ public class GmPanelScreen extends Screen {
         g.fill(x, y, x + RULE_BW, y + ROW_H - 2, hover ? HOVER : TRACK);
         outline(g, x, y, RULE_BW, ROW_H - 2, BORDER);
         g.drawString(font, label, x + (RULE_BW - font.width(label)) / 2, y + 3, TEXT, false);
+    }
+
+    // ── Чума: тело ──────────────────────────────────────────
+    // Одержимость целиком живёт в plaguecore (заметка 2026-09-06-oderzhimost).
+    // Панель только шлёт три ванильные команды и ничего не проверяет:
+    // сервер сам откажет строкой в чат, если игрок не дозрел, спит, едет
+    // верхом или его уже кто-то ведёт. Вторая копия этих правил здесь
+    // неизбежно разъехалась бы с первой.
+    //
+    // Стадию игрока панель не знает и знать не может: числа стадий на
+    // сервере. Кого предлагать, и так приходит строкой в чат раз в пять
+    // минут — пакет ради этого не заводим.
+
+    /** Место под имя игрока слева от тройки кнопок. */
+    private static final int BODY_NAME_W = 84;
+
+    private void initPossession() {
+        List<PlayerInfo> players = onlinePlayers();
+        int y = contentY + 26;
+        for (PlayerInfo p : players) {
+            String n = nameOf(p);
+            buttonRow(contentX + BODY_NAME_W, y, contentW - BODY_NAME_W,
+                new String[] { "Вселиться", "Отдать чуме", "Отпустить" },
+                new Runnable[] {
+                    // Панель закрываем: двадцать секунд смотришь чужими
+                    // глазами, а поверх этого висел бы наш экран.
+                    () -> { run("plague possess " + n); onClose(); },
+                    () -> run("plague seize " + n),
+                    () -> run("plague release " + n),
+                });
+            y += BTN_H + 2;
+        }
+    }
+
+    private void renderPossession(GuiGraphics g) {
+        List<PlayerInfo> players = onlinePlayers();
+        g.drawString(font, "Одержимость  —  тело отбирается на последней стадии",
+            contentX, contentY, DIM, false);
+        if (players.isEmpty()) {
+            drawWrapped(g, "Кроме вас в игре никого нет.",
+                contentX, contentY + 26, contentW, DIM);
+            return;
+        }
+        int y = contentY + 26;
+        for (PlayerInfo p : players) {
+            g.drawString(font, nameOf(p), contentX, y + 4, TEXT, false);
+            y += BTN_H + 2;
+        }
+        drawWrapped(g, "«Вселиться» — 20 секунд правите телом сами: ходить, смотреть, бить. "
+            + "«Отдать чуме» — 5 секунд, тело само доходит до ближайшего живого и бьёт один раз. "
+            + "Если игрок не дозрел, спит, едет верхом или уже занят — сервер откажет в чат.",
+            contentX, y + 10, contentW, DIM);
     }
 
     private void renderPlague(GuiGraphics g) {
