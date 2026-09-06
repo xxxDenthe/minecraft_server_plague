@@ -197,6 +197,22 @@ public final class ClassesConfig {
                  "0 — очиститель работает вообще без питания (для проверки).")
         .defineInRange("purifierMinSpeed", 8.0, 0.0, 256.0);
 
+    private static final ModConfigSpec.DoubleValue ОЧИСТИТЕЛЬ_ПРИБАВКА_ЗА_СКОРОСТЬ = СТРОИТЕЛЬ
+        .comment("Насколько сильнее очиститель чистит на полном разгоне, долей от базы.",
+                 "0.5 — на purifierSpeedForMax оборотах сила в полтора раза выше, чем на пороге.",
+                 "До 0.12.0 скорость была только порогом: вал на 8 и на 256 об/мин работали",
+                 "одинаково, и передачи Create в базе стояли для красоты. Заодно это",
+                 "частичная замена непотреблённому стрессу: разгон в Create сам по себе",
+                 "режет запас сети, поэтому быстрый очиститель обходится дороже.",
+                 "0 — вернуть поведение до 0.12.0.")
+        .defineInRange("purifierSpeedBonus", 0.5, 0.0, 4.0);
+
+    private static final ModConfigSpec.DoubleValue ОЧИСТИТЕЛЬ_СКОРОСТЬ_ПОЛНАЯ = СТРОИТЕЛЬ
+        .comment("Скорость вращения, на которой прибавка purifierSpeedBonus выходит целиком.",
+                 "128 об/мин — вдвое ниже потолка Create: разогнать очиститель до предела",
+                 "не должно быть обязательным, это должно быть решением.")
+        .defineInRange("purifierSpeedForMax", 128.0, 1.0, 256.0);
+
     private static final ModConfigSpec.IntValue ЛАТУННЫЙ_РАДИУС = СТРОИТЕЛЬ
         .comment("Радиус латунного очистителя в чанках вокруг своего.",
                  "3 — квадрат 7 × 7 чанков, 112 × 112 блоков.",
@@ -309,6 +325,41 @@ public final class ClassesConfig {
                  "Слово раскрывается один раз на весь сервер, накрутить его нельзя,",
                  "поэтому число крупнее прочих.")
         .defineInRange("chroniclerMasteryPerCipher", 8, 0, 100);
+
+    private static final ModConfigSpec.IntValue ФОРСАЖ_РАДИУС = СТРОИТЕЛЬ
+        .comment("На сколько чанков форсаж Кузнеца расширяет очиститель на одну ночь.",
+                 "2 — андезитовый на эту ночь работает по площади латунного.")
+        .defineInRange("smithOverdriveRadiusBonus", 2, 0, 8);
+
+    private static final ModConfigSpec.IntValue ФОРСАЖ_РАСХОД = СТРОИТЕЛЬ
+        .comment("Во сколько раз форсаж дороже обычной ночи по реагенту.",
+                 "4 — андезитовый съест за ночь форсажа четыре реагента вместо одного.",
+                 "Цена и есть смысл активки: разово выжать очиститель, а не держать так всегда.")
+        .defineInRange("smithOverdriveReagentFactor", 4, 1, 16);
+
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> КЛЮЧИ_КУЗНЕЦА = СТРОИТЕЛЬ
+        .comment("Предметы, которыми Кузнец включает форсаж очистителя.",
+                 "По умолчанию — гаечный ключ Create. Жёсткой зависимости на Create нет,",
+                 "поэтому список правится файлом, как и chroniclerCameraItems.")
+        .defineListAllowEmpty("smithOverdriveItems",
+            List.of("create:wrench"), () -> "", о -> о instanceof String);
+
+    private static final ModConfigSpec.DoubleValue КУРИЛЬНИЦА_СИЛА = СТРОИТЕЛЬ
+        .comment("Вероятность, что одно распыление курильницы снимет уровень заражения.",
+                 "0.15 — вшестеро слабее ночной работы очистителя. Курильница задумана",
+                 "как ручная и временная защита шахты, а не как замена машине.")
+        .defineInRange("censerCleansePower", 0.15, 0.0, 1.0);
+
+    private static final ModConfigSpec.DoubleValue КУРИЛЬНИЦА_СОПРОТИВЛЕНИЕ = СТРОИТЕЛЬ
+        .comment("На сколько одно распыление поднимает сопротивление чанка (0..1).",
+                 "Главная польза курильницы именно здесь: сопротивление тает само,",
+                 "поэтому защита шахты держится, только пока в неё ходят.")
+        .defineInRange("censerResistanceGain", 0.10, 0.0, 1.0);
+
+    private static final ModConfigSpec.IntValue КУРИЛЬНИЦА_ПЕРЕЗАРЯДКА = СТРОИТЕЛЬ
+        .comment("Пауза между распылениями курильницы, в тиках. 100 — пять секунд.",
+                 "Без паузы вся стопка реагента ушла бы в один чанк за минуту.")
+        .defineInRange("censerCooldownTicks", 100, 0, 12000);
 
     private static final ModConfigSpec.ConfigValue<List<? extends String>> КАМЕРЫ = СТРОИТЕЛЬ
         .comment("Предметы, щелчок которыми Летописец считает снимком.",
@@ -545,6 +596,48 @@ public final class ClassesConfig {
         return Set.copyOf(КАМЕРЫ.get());
     }
 
+    /** Идентификаторы предметов, которыми Кузнец включает форсаж очистителя. */
+    public static Set<String> ключиКузнеца() {
+        return Set.copyOf(КЛЮЧИ_КУЗНЕЦА.get());
+    }
+
+    /**
+     * Множитель силы очистки за скорость вращения: 1.0 на пороге тира,
+     * до {@code 1 + purifierSpeedBonus} на {@code purifierSpeedForMax}.
+     */
+    public static float очистительМножительСкорости(float скорость, boolean латунный) {
+        float порог = очистительМинСкорость(латунный);
+        float полная = ОЧИСТИТЕЛЬ_СКОРОСТЬ_ПОЛНАЯ.get().floatValue();
+        if (скорость <= порог || полная <= порог) return 1f;
+        float доля = Math.min((скорость - порог) / (полная - порог), 1f);
+        return 1f + доля * ОЧИСТИТЕЛЬ_ПРИБАВКА_ЗА_СКОРОСТЬ.get().floatValue();
+    }
+
+    /** На сколько чанков форсаж Кузнеца расширяет очиститель на одну ночь. */
+    public static int форсажРадиус() {
+        return ФОРСАЖ_РАДИУС.get();
+    }
+
+    /** Во сколько раз ночь форсажа дороже по реагенту. */
+    public static int форсажРасход() {
+        return ФОРСАЖ_РАСХОД.get();
+    }
+
+    /** Вероятность, что распыление курильницы снимет уровень заражения. */
+    public static float курильницаСила() {
+        return КУРИЛЬНИЦА_СИЛА.get().floatValue();
+    }
+
+    /** Прирост сопротивления чанка за одно распыление курильницы. */
+    public static float курильницаСопротивление() {
+        return КУРИЛЬНИЦА_СОПРОТИВЛЕНИЕ.get().floatValue();
+    }
+
+    /** Пауза между распылениями курильницы, в тиках. */
+    public static int курильницаПерезарядка() {
+        return КУРИЛЬНИЦА_ПЕРЕЗАРЯДКА.get();
+    }
+
     // ── правка чисел прямо в игре ─────────────────────────────────────
 
     /**
@@ -587,6 +680,13 @@ public final class ClassesConfig {
         НАСТРАИВАЕМЫЕ.put("purifierRadiusChunks", ОЧИСТИТЕЛЬ_РАДИУС);
         НАСТРАИВАЕМЫЕ.put("purifierResistanceGain", ОЧИСТИТЕЛЬ_СОПРОТИВЛЕНИЕ);
         НАСТРАИВАЕМЫЕ.put("purifierMinSpeed", ОЧИСТИТЕЛЬ_МИН_СКОРОСТЬ);
+        НАСТРАИВАЕМЫЕ.put("purifierSpeedBonus", ОЧИСТИТЕЛЬ_ПРИБАВКА_ЗА_СКОРОСТЬ);
+        НАСТРАИВАЕМЫЕ.put("purifierSpeedForMax", ОЧИСТИТЕЛЬ_СКОРОСТЬ_ПОЛНАЯ);
+        НАСТРАИВАЕМЫЕ.put("smithOverdriveRadiusBonus", ФОРСАЖ_РАДИУС);
+        НАСТРАИВАЕМЫЕ.put("smithOverdriveReagentFactor", ФОРСАЖ_РАСХОД);
+        НАСТРАИВАЕМЫЕ.put("censerCleansePower", КУРИЛЬНИЦА_СИЛА);
+        НАСТРАИВАЕМЫЕ.put("censerResistanceGain", КУРИЛЬНИЦА_СОПРОТИВЛЕНИЕ);
+        НАСТРАИВАЕМЫЕ.put("censerCooldownTicks", КУРИЛЬНИЦА_ПЕРЕЗАРЯДКА);
         НАСТРАИВАЕМЫЕ.put("brassPurifierRadiusChunks", ЛАТУННЫЙ_РАДИУС);
         НАСТРАИВАЕМЫЕ.put("brassPurifierReagentPerNight", ЛАТУННЫЙ_РАСХОД);
         НАСТРАИВАЕМЫЕ.put("brassPurifierMinSpeed", ЛАТУННЫЙ_МИН_СКОРОСТЬ);

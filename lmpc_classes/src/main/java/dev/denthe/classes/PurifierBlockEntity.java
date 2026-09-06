@@ -2,6 +2,7 @@ package dev.denthe.classes;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -15,6 +16,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.items.IItemHandler;
 
 /**
  * Андезитовый очиститель поверхности — первый тир из спека ядра,
@@ -79,6 +81,7 @@ public class PurifierBlockEntity extends BlockEntity {
 
     private static final String КЛЮЧ_РЕАГЕНТ = "Reagent";
     private static final String КЛЮЧ_НОЧЬ = "LastNight";
+    private static final String КЛЮЧ_ФОРСАЖ = "Overdrive";
 
     private ItemStack реагент = ItemStack.EMPTY;
 
@@ -102,6 +105,100 @@ public class PurifierBlockEntity extends BlockEntity {
      */
     private float скорость = 0f;
 
+    /**
+     * Уровень заражения своего чанка на последнем пересчёте — только
+     * ради вида столбика над крышкой. В NBT не пишется: чума знает
+     * это лучше нас, спросим заново через секунду.
+     */
+    private int заражение = 0;
+
+    /**
+     * Форсаж Кузнеца: ближайшая ночь отрабатывается по площади тира
+     * выше и вчетверо дороже по реагенту. Одноразовый — гаснет сам
+     * в ту же ночь, ради которой включён.
+     *
+     * В NBT пишется, в отличие от {@link #работает}: игрок мог включить
+     * его вечером и выйти из игры, и «потерять» оплаченный форсаж
+     * из-за перезапуска сервера он не должен.
+     */
+    private boolean форсаж = false;
+
+    /**
+     * Номер ночи, за которую Кузнецу уже сказали спасибо. Поле статическое
+     * и общее на все очистители нарочно: иначе владелец десяти блоков
+     * получал бы десять одинаковых строк каждое утро.
+     *
+     * ponytail: живёт только до перезапуска сервера. Худшее, что бывает
+     * при сбросе, — одна лишняя строка за ночь.
+     */
+    private static int ночьОтчёта = -1;
+
+    /**
+     * Приёмник реагента для воронок, лент и рук Create. Только на вход:
+     * очиститель — не сундук, и вытаскивать из него заряд соседней
+     * воронкой было бы способом обокрасть чужую оборону.
+     */
+    private final IItemHandler ворота = new IItemHandler() {
+        @Override public int getSlots() { return 1; }
+
+        @Override public ItemStack getStackInSlot(int слот) { return реагент; }
+
+        @Override public int getSlotLimit(int слот) { return 64; }
+
+        @Override public boolean isItemValid(int слот, ItemStack стопка) {
+            return стопка.is(ClassItems.CLEANSING_AGENT.get());
+        }
+
+        @Override public ItemStack insertItem(int слот, ItemStack стопка, boolean примерка) {
+            if (!isItemValid(слот, стопка)) return стопка;
+            int влезет = Math.min(стопка.getCount(),
+                стопка.getMaxStackSize() - реагент.getCount());
+            if (влезет <= 0) return стопка;
+            if (!примерка) {
+                if (реагент.isEmpty()) реагент = стопка.copyWithCount(влезет);
+                else реагент.grow(влезет);
+                setChanged();
+                сообщитьСравнителю();
+            }
+            return стопка.getCount() == влезет ? ItemStack.EMPTY
+                : стопка.copyWithCount(стопка.getCount() - влезет);
+        }
+
+        @Override public ItemStack extractItem(int слот, int сколько, boolean примерка) {
+            return ItemStack.EMPTY;
+        }
+    };
+
+    /** Приёмник для {@link ClassCapabilities}: воронка, лента, рука Create. */
+    public IItemHandler ворота() {
+        return ворота;
+    }
+
+    /** Сравнителю рядом — новый остаток реагента. */
+    private void сообщитьСравнителю() {
+        if (level != null) level.updateNeighbourForOutputSignal(worldPosition, getBlockState().getBlock());
+    }
+
+    /** Сколько реагента внутри — для сигнала сравнителю. */
+    public int реагентаВнутри() {
+        return реагент.getCount();
+    }
+
+    /**
+     * Форсаж на ближайшую ночь. Возвращает false, если он уже включён:
+     * второй ключ подряд не должен молча съедать ничего.
+     */
+    public boolean включитьФорсаж() {
+        if (форсаж) return false;
+        форсаж = true;
+        setChanged();
+        return true;
+    }
+
+    public boolean форсажВключён() {
+        return форсаж;
+    }
+
     public PurifierBlockEntity(BlockPos позиция, BlockState состояние) {
         super(ClassBlockEntities.PURIFIER.get(), позиция, состояние);
     }
@@ -117,6 +214,7 @@ public class PurifierBlockEntity extends BlockEntity {
             int взять = Math.min(откуда.getCount(), вместимость);
             реагент = откуда.split(взять);
             setChanged();
+            сообщитьСравнителю();
             return взять;
         }
         if (!ItemStack.isSameItemSameComponents(реагент, откуда)) return 0;
@@ -126,6 +224,7 @@ public class PurifierBlockEntity extends BlockEntity {
         реагент.grow(взять);
         откуда.shrink(взять);
         setChanged();
+        сообщитьСравнителю();
         return взять;
     }
 
@@ -181,9 +280,11 @@ public class PurifierBlockEntity extends BlockEntity {
                     состояние.setValue(PurifierBlock.РАБОТАЕТ, сам.работает),
                     Block.UPDATE_CLIENTS);
             }
+            сам.заражение = PlagueBridge.уровеньЧанка(
+                уровень, позиция.getX() >> 4, позиция.getZ() >> 4);
             ночнойШаг(уровень, позиция, сам);
         }
-        if (сам.работает) эффекты(уровень, позиция, сам.скорость);
+        if (сам.работает) эффекты(уровень, позиция, сам.скорость, сам.заражение);
     }
 
     /**
@@ -195,7 +296,8 @@ public class PurifierBlockEntity extends BlockEntity {
      * {@code sendParticles} и {@code playSound} сами рассылаются всем,
      * кто рядом. Отдельная клиентская половина ради этого не нужна.
      */
-    private static void эффекты(ServerLevel уровень, BlockPos позиция, float скорость) {
+    private static void эффекты(
+            ServerLevel уровень, BlockPos позиция, float скорость, int заражение) {
         long время = уровень.getGameTime();
         RandomSource случай = уровень.random;
         double x = позиция.getX() + 0.5;
@@ -217,13 +319,19 @@ public class PurifierBlockEntity extends BlockEntity {
                 SoundSource.BLOCKS, 0.16f, 0.75f + разгон * 0.2f);
         }
 
-        // Пар из-под крышки — медленный столбик, чтобы блок читался
-        // работающим и с высоты, где брызги уже не разглядеть.
+        // Столбик над крышкой заодно докладывает, как идут дела в своём
+        // чанке: белые искры — вычищено, облако — работа идёт, дым —
+        // земля ещё гнилая. Это ответ на главную жалобу живой проверки
+        // («поставил и не понял, работает ли») — видно через полбазы
+        // и без единого клика.
         if (время % ЧАСТОТА_ПАРА == 0) {
-            уровень.sendParticles(ParticleTypes.CLOUD,
+            ParticleOptions столбик = заражение >= 3 ? ParticleTypes.SMOKE
+                : заражение >= 1 ? ParticleTypes.CLOUD
+                : ParticleTypes.END_ROD;
+            уровень.sendParticles(столбик,
                 x + (случай.nextDouble() - 0.5) * 0.4, y + 1.1,
                 z + (случай.nextDouble() - 0.5) * 0.4,
-                1, 0.0, 0.02, 0.0, 0.01);
+                заражение >= 3 ? 2 : 1, 0.0, 0.02, 0.0, 0.01);
         }
 
         // Искра по ободу — «чистящая» блёстка от снятого воска, самая
@@ -304,10 +412,19 @@ public class PurifierBlockEntity extends BlockEntity {
 
         if (!сам.работает) return;
 
+        boolean латунный = сам.латунный();
+        boolean форсаж = сам.форсаж;
+        сам.форсаж = false;
+
         int тир = ClassParty.тир(уровень.getServer(), PlayerClassData.Класс.SMITH);
-        float сила = ClassesConfig.очистительСила(тир);
+        // Скорость вала больше не только порог: разогнанный очиститель
+        // чистит сильнее. Вероятность всё равно вероятность, поэтому
+        // потолок в единицу — иначе выше 100 % «шанса» считать нечего.
+        float сила = Math.min(1f, ClassesConfig.очистительСила(тир)
+            * ClassesConfig.очистительМножительСкорости(сам.скорость, латунный));
         float сопротивление = ClassesConfig.очистительСопротивление();
-        int радиус = ClassesConfig.очистительРадиус(сам.латунный());
+        int радиус = ClassesConfig.очистительРадиус(латунный)
+            + (форсаж ? ClassesConfig.форсажРадиус() : 0);
         int попыток = ClassesConfig.очистительПопыток();
         int чанкX = позиция.getX() >> 4;
         int чанкZ = позиция.getZ() >> 4;
@@ -334,9 +451,11 @@ public class PurifierBlockEntity extends BlockEntity {
         // Расход тира: андезитовый съедает один реагент за ночь, латунный —
         // четыре (спек 10.1). Если внутри осталось меньше, забираем сколько
         // есть: работа уже сделана, а недодавать за неё нечем.
-        сам.реагент.shrink(Math.min(
-            ClassesConfig.очистительРасход(сам.латунный()), сам.реагент.getCount()));
+        int расход = ClassesConfig.очистительРасход(латунный)
+            * (форсаж ? ClassesConfig.форсажРасход() : 1);
+        сам.реагент.shrink(Math.min(расход, сам.реагент.getCount()));
         сам.setChanged();
+        сам.сообщитьСравнителю();
 
         ночнойВсплеск(уровень, позиция, радиус, снизился);
 
@@ -356,6 +475,16 @@ public class PurifierBlockEntity extends BlockEntity {
             ServerPlayer кузнец = ClassParty.лучший(уровень.getServer(), PlayerClassData.Класс.SMITH);
             if (кузнец != null) {
                 PlayerClassData.прибавитьМастерство(кузнец, ClassesConfig.кузнецМастерствоЗаОчистку());
+                // Мастерство раньше капало молча, и Кузнец не знал, что его
+                // блок вообще отработал. Строка нарочно не техническая:
+                // «снято 2 уровня заражения в чанке -14,7» — это отчёт
+                // отладчика, а игроку нужно, чтобы за ночь что-то случилось.
+                if (ночь != ночьОтчёта) {
+                    ночьОтчёта = ночь;
+                    кузнец.displayClientMessage(Component.translatable(
+                        форсаж ? "msg.lmpc_classes.purifier.dawn_overdrive"
+                               : "msg.lmpc_classes.purifier.dawn"), false);
+                }
             }
         }
     }
@@ -364,6 +493,7 @@ public class PurifierBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag тег, HolderLookup.Provider реестры) {
         super.saveAdditional(тег, реестры);
         тег.putInt(КЛЮЧ_НОЧЬ, последняяНочь);
+        if (форсаж) тег.putBoolean(КЛЮЧ_ФОРСАЖ, true);
         if (!реагент.isEmpty()) тег.put(КЛЮЧ_РЕАГЕНТ, реагент.save(реестры));
     }
 
@@ -371,6 +501,7 @@ public class PurifierBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag тег, HolderLookup.Provider реестры) {
         super.loadAdditional(тег, реестры);
         последняяНочь = тег.contains(КЛЮЧ_НОЧЬ) ? тег.getInt(КЛЮЧ_НОЧЬ) : -1;
+        форсаж = тег.getBoolean(КЛЮЧ_ФОРСАЖ);
         реагент = тег.contains(КЛЮЧ_РЕАГЕНТ)
             ? ItemStack.parse(реестры, тег.getCompound(КЛЮЧ_РЕАГЕНТ)).orElse(ItemStack.EMPTY)
             : ItemStack.EMPTY;

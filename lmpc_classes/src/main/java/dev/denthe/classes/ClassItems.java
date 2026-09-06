@@ -54,6 +54,15 @@ public final class ClassItems {
         ПРЕДМЕТЫ.registerSimpleItem("cleansing_agent");
 
     /**
+     * Курильница — ручная очистка под землёй, спек ядра 10.3.
+     * Класса не спрашивает: это «уровень, доступный без класса»
+     * из спека классов 2.1. Прочность вместо стопки — предмет
+     * задуман временным, см. {@link CenserItem}.
+     */
+    public static final DeferredItem<CenserItem> CENSER = ПРЕДМЕТЫ.registerItem(
+        "censer", свойства -> new CenserItem(свойства.stacksTo(1).durability(64)));
+
+    /**
      * Полуфабрикат андезитового очистителя — предмет ради сборочной
      * линии Create, а не ради игрока. `create:sequenced_assembly`
      * требует «переходный» предмет, в котором хранится прогресс сборки:

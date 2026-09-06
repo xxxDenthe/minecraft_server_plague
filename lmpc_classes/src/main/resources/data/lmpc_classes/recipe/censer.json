@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    " L "
+  ],
+  "key": {
+    "C": { "item": "minecraft:chain" },
+    "L": { "item": "minecraft:lantern" }
+  },
+  "result": {
+    "id": "lmpc_classes:censer",
+    "count": 1
+  }
+}

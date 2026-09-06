@@ -2,7 +2,10 @@ package dev.denthe.classes;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
@@ -111,11 +114,31 @@ public class PurifierBlock extends BaseEntityBlock {
             : createTickerHelper(тип, ClassBlockEntities.PURIFIER.get(), PurifierBlockEntity::тик);
     }
 
+    /**
+     * Сравнитель рядом показывает остаток реагента: 15 — полная стопка,
+     * 0 — пусто. Дешёвый способ повесить на базе лампу «заряд кончается»
+     * или включить автодозагрузку с ленты, ничего для этого не написав.
+     */
+    @Override
+    protected boolean hasAnalogOutputSignal(BlockState состояние) {
+        return true;
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState состояние, Level мир, BlockPos позиция) {
+        if (!(мир.getBlockEntity(позиция) instanceof PurifierBlockEntity очиститель)) return 0;
+        int реагента = очиститель.реагентаВнутри();
+        return реагента <= 0 ? 0 : Math.max(1, реагента * 15 / 64);
+    }
+
     /** Реагент в руке — заложить внутрь; всё прочее пропускаем дальше. */
     @Override
     protected ItemInteractionResult useItemOn(
             ItemStack стопка, BlockState состояние, Level мир, BlockPos позиция,
             Player игрок, InteractionHand рука, BlockHitResult попадание) {
+        if (ключКузнеца(стопка)) {
+            return форсаж(мир, позиция, игрок);
+        }
         if (!стопка.is(ClassItems.CLEANSING_AGENT.get())) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
@@ -127,6 +150,42 @@ public class PurifierBlock extends BaseEntityBlock {
         int взято = очиститель.принятьРеагент(стопка);
         игрок.displayClientMessage(очиститель.состояние(мир, позиция), true);
         return взято > 0 ? ItemInteractionResult.CONSUME : ItemInteractionResult.FAIL;
+    }
+
+    /** Гаечный ключ Create (или что стоит в конфиге) в руке. */
+    private static boolean ключКузнеца(ItemStack стопка) {
+        return ClassesConfig.ключиКузнеца().contains(
+            BuiltInRegistries.ITEM.getKey(стопка.getItem()).toString());
+    }
+
+    /**
+     * Форсаж — активка Кузнеца и ответ на открытый вопрос спека классов
+     * (раздел 13): «активка Кузнеца точно ноль?». Была ноль: вся сила
+     * класса выражалась постройками, и играть Кузнецом означало ждать.
+     *
+     * Теперь Кузнец бьёт ключом по своему очистителю и разово выжимает
+     * из него ночь по площади тира выше — вчетверо дороже по реагенту.
+     * Ни новой сущности, ни нового блока: жест, цена и одна ночь.
+     */
+    private static ItemInteractionResult форсаж(Level мир, BlockPos позиция, Player игрок) {
+        if (мир.isClientSide()) return ItemInteractionResult.SUCCESS;
+        if (!(мир.getBlockEntity(позиция) instanceof PurifierBlockEntity очиститель)) {
+            return ItemInteractionResult.FAIL;
+        }
+        if (PlayerClassData.данные(игрок).класс != PlayerClassData.Класс.SMITH) {
+            игрок.displayClientMessage(
+                Component.translatable("msg.lmpc_classes.purifier.overdrive_smith_only"), true);
+            return ItemInteractionResult.FAIL;
+        }
+        if (!очиститель.включитьФорсаж()) {
+            игрок.displayClientMessage(
+                Component.translatable("msg.lmpc_classes.purifier.overdrive_already"), true);
+            return ItemInteractionResult.FAIL;
+        }
+        игрок.displayClientMessage(
+            Component.translatable("msg.lmpc_classes.purifier.overdrive_on"), true);
+        мир.playSound(null, позиция, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 0.5f, 1.6f);
+        return ItemInteractionResult.SUCCESS;
     }
 
     /** Пустая рука — доклад о состоянии: есть ли вращение, реагент и Кузнец в партии. */
