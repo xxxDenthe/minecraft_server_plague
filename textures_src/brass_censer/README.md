@@ -1,6 +1,6 @@
 # Brass Censer — кадило
 
-Иконка предмета `lmpc_classes:brass_censer`. Кадило на короткой цепи:
+Иконка предмета `lmpc_classes:censer` (файлы здесь названы `brass_censer`, в моде предмет — `censer`). Кадило на короткой цепи:
 продырявленный купол, потемневшая латунь и тёмное железо, копоть на дне и
 вокруг дырок, тонкая струйка бледного дыма уходит вверх и вбок.
 Ничего не светится.
@@ -63,10 +63,11 @@ python brass_censer.py
 
 | файл | путь в ресурспаке |
 |------|-------------------|
-| `assets/textures/item/brass_censer.png` | `assets/lmpc_classes/textures/item/brass_censer.png` |
-| `assets/models/item/brass_censer.json` | `assets/lmpc_classes/models/item/brass_censer.json` |
+| `assets/textures/item/brass_censer.png` | `assets/lmpc_classes/textures/item/censer.png` |
+| `assets/models/item/brass_censer.json` | `assets/lmpc_classes/models/item/censer.json` |
 
-Неймспейс взят `lmpc_classes` — как у `clerics_pendant` и `plague_bloom`.
+Неймспейс `lmpc_classes` верный, но **имя предмета — `censer`**, не `brass_censer`:
+`ClassItems.java:63`. При копировании файлы переименовать.
 Если предмет живёт в `plaguecore`, поменять его в двух местах: в `.json`
 и в путях выше.
 
