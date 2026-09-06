@@ -66,8 +66,11 @@ public final class ClassesConfig {
     private static final ModConfigSpec.DoubleValue КУЛОН_БАЗОВАЯ_ЗАЩИТА = СТРОИТЕЛЬ
         .comment("Доп. защита от кулона Клирика (0..1), складывается с бронёй в plaguecore.",
                  "Полная — только у Клирика, у остальных классов — доля clericPendantOtherClassFraction.",
-                 "У Клирика растёт с тиром мастерства, но выше 0.9 не поднимается.")
-        .defineInRange("clericPendantProtection", 0.15, 0.0, 0.9);
+                 "У Клирика растёт с тиром мастерства, но выше 0.9 не поднимается.",
+                 "0.25 с 2026-09-06, было 0.15: в plaguecore 0.2.0 очко брони стало гасить",
+                 "два процента вместо одного, полный алмаз вырос до 0.40, и кулон на его",
+                 "фоне перестал быть заметной вещью класса. Решение владельца.")
+        .defineInRange("clericPendantProtection", 0.25, 0.0, 0.9);
 
     private static final ModConfigSpec.DoubleValue КУЛОН_ДОЛЯ_НЕ_КЛИРИКУ = СТРОИТЕЛЬ
         .comment("Доля clericPendantProtection, которую кулон даёт не-Клирику.")
