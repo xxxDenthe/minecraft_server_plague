@@ -9,12 +9,14 @@ import net.createmod.ponder.api.registration.PonderPlugin;
 import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
 import net.createmod.ponder.api.scene.SceneBuilder;
 import net.createmod.ponder.api.scene.SceneBuildingUtil;
+import net.createmod.ponder.api.scene.Selection;
 import net.createmod.ponder.foundation.PonderIndex;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -68,8 +70,28 @@ public class PurifierPonderPlugin implements PonderPlugin {
     }
 
     /**
+     * Раскрутить кинетику в сцене: Ponder-мир не считает поток воды,
+     * поэтому колесо в нём само не завертится. Скорость кладётся прямо
+     * в NBT блок-сущности — тем же ключом {@code Speed}, каким её пишет
+     * сам Create; так делают и его собственные сцены.
+     *
+     * Класс сущности намеренно {@code BlockEntity}: ссылаться отсюда
+     * на {@code KineticBlockEntity} значило бы завести жёсткую
+     * зависимость на Create, а выборка и так содержит только его блоки.
+     */
+    private static void крутить(SceneBuilder сцена, Selection что, float скорость) {
+        сцена.world().modifyBlockEntityNBT(что, BlockEntity.class,
+            тег -> тег.putFloat("Speed", скорость));
+    }
+
+    /**
      * Андезитовый тир: что это, откуда вращение, куда реагент
      * и что он делает по ночам.
+     *
+     * Привод в сцене — настоящее водяное колесо в жёлобе, а не
+     * творческий мотор: игрок должен увидеть тот механизм, который
+     * ему предстоит собрать. Как собирается само колесо, показывает
+     * сцена Create, повторять её здесь незачем.
      */
     private static void андезитовый(SceneBuilder сцена, SceneBuildingUtil утиль) {
         сцена.title("andesite_purifier", "Andesite Purifier");
@@ -79,7 +101,8 @@ public class PurifierPonderPlugin implements PonderPlugin {
 
         BlockPos очиститель = утиль.grid().at(2, 1, 2);
         BlockPos вал = утиль.grid().at(1, 1, 2);
-        BlockPos мотор = утиль.grid().at(0, 1, 2);
+        BlockPos колесо = утиль.grid().at(0, 1, 2);
+        Selection привод = утиль.select().fromTo(колесо, вал);
         Vec3 верх = утиль.vector().topOf(очиститель);
 
         сцена.world().showSection(утиль.select().position(очиститель), Direction.DOWN);
@@ -89,8 +112,9 @@ public class PurifierPonderPlugin implements PonderPlugin {
             .pointAt(верх).placeNearTarget().attachKeyFrame();
         сцена.idle(80);
 
-        сцена.world().showSection(утиль.select().fromTo(мотор, вал), Direction.EAST);
+        сцена.world().showSection(привод, Direction.EAST);
         сцена.idle(15);
+        крутить(сцена, привод, 8f);
         сцена.overlay().showText(70)
             .text("It runs on rotation only: a shaft or cogwheel must touch it")
             .pointAt(утиль.vector().centerOf(вал)).placeNearTarget().attachKeyFrame();
@@ -98,8 +122,8 @@ public class PurifierPonderPlugin implements PonderPlugin {
 
         сцена.overlay().showText(60)
             .colored(PonderPalette.MEDIUM)
-            .text("8 RPM is enough: one water wheel on a shaft, no gearing needed")
-            .pointAt(утиль.vector().centerOf(мотор)).placeNearTarget();
+            .text("One water wheel is enough: 8 RPM, no gearing needed")
+            .pointAt(утиль.vector().centerOf(колесо)).placeNearTarget();
         сцена.idle(70);
 
         сцена.overlay().showControls(верх, Pointing.DOWN, 40)
@@ -131,16 +155,29 @@ public class PurifierPonderPlugin implements PonderPlugin {
         сцена.idle(80);
     }
 
-    /** Латунный тир: чем отличается от андезитового и кто его ставит. */
+    /**
+     * Латунный тир: чем отличается от андезитового, как его разогнать
+     * до 32 об/мин и кто его ставит.
+     *
+     * Привод показан целиком: водяное колесо даёт восемь оборотов,
+     * контроллер скорости под большой шестернёй поднимает их до
+     * тридцати двух. Очиститель стоит на шестерне сверху — ему годится
+     * любой кинетический сосед из шести.
+     */
     private static void латунный(SceneBuilder сцена, SceneBuildingUtil утиль) {
         сцена.title("brass_purifier", "Brass Purifier");
         сцена.configureBasePlate(0, 0, 5);
+        сцена.scaleSceneView(0.8f);   // башня в четыре блока, иначе не влезает
         сцена.showBasePlate();
         сцена.idle(10);
 
-        BlockPos очиститель = утиль.grid().at(2, 1, 2);
+        BlockPos очиститель = утиль.grid().at(2, 3, 2);
+        BlockPos шестерня = утиль.grid().at(2, 2, 2);
+        BlockPos контроллер = утиль.grid().at(2, 1, 2);
         BlockPos вал = утиль.grid().at(1, 1, 2);
-        BlockPos мотор = утиль.grid().at(0, 1, 2);
+        BlockPos колесо = утиль.grid().at(0, 1, 2);
+        Selection привод = утиль.select().fromTo(колесо, вал);
+        Selection разгон = утиль.select().fromTo(контроллер, шестерня);
         Vec3 верх = утиль.vector().topOf(очиститель);
 
         сцена.world().showSection(утиль.select().position(очиститель), Direction.DOWN);
@@ -156,12 +193,29 @@ public class PurifierPonderPlugin implements PonderPlugin {
             .pointAt(верх).placeNearTarget().attachKeyFrame();
         сцена.idle(80);
 
-        сцена.world().showSection(утиль.select().fromTo(мотор, вал), Direction.EAST);
+        сцена.world().showSection(привод, Direction.EAST);
         сцена.idle(15);
+        крутить(сцена, привод, 8f);
         сцена.overlay().showText(70)
             .colored(PonderPalette.FAST)
-            .text("It needs 32 RPM: a lone water wheel is no longer enough, gear it up")
-            .pointAt(утиль.vector().centerOf(вал)).placeNearTarget().attachKeyFrame();
+            .text("It needs 32 RPM: a lone water wheel gives only 8")
+            .pointAt(утиль.vector().centerOf(колесо)).placeNearTarget().attachKeyFrame();
+        сцена.idle(80);
+
+        сцена.world().showSection(разгон, Direction.DOWN);
+        сцена.idle(15);
+        сцена.world().modifyBlockEntityNBT(утиль.select().position(контроллер),
+            BlockEntity.class, тег -> тег.putFloat("TargetSpeed", 32f));
+        крутить(сцена, разгон, 32f);
+        сцена.overlay().showText(80)
+            .colored(PonderPalette.FAST)
+            .text("A Rotation Speed Controller under a large cogwheel sets exactly the speed you ask for")
+            .pointAt(утиль.vector().centerOf(контроллер)).placeNearTarget().attachKeyFrame();
+        сцена.idle(90);
+
+        сцена.overlay().showText(70)
+            .text("The purifier takes rotation from the cogwheel below: any kinetic neighbour will do")
+            .pointAt(утиль.vector().centerOf(шестерня)).placeNearTarget();
         сцена.idle(80);
 
         сцена.world().modifyBlock(очиститель, с -> с.setValue(PurifierBlock.РАБОТАЕТ, true), false);

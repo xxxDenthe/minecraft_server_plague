@@ -3,6 +3,7 @@ package dev.denthe.classes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -124,14 +125,33 @@ public class PurifierBlockEntity extends BlockEntity {
     private boolean форсаж = false;
 
     /**
-     * Номер ночи, за которую Кузнецу уже сказали спасибо. Поле статическое
-     * и общее на все очистители нарочно: иначе владелец десяти блоков
-     * получал бы десять одинаковых строк каждое утро.
+     * Утренний отчёт копится на все очистители разом и уходит одной
+     * пачкой строк. Поля статические нарочно: иначе владелец десяти
+     * блоков получал бы десять одинаковых сообщений каждое утро.
      *
-     * ponytail: живёт только до перезапуска сервера. Худшее, что бывает
-     * при сбросе, — одна лишняя строка за ночь.
+     * <p><b>Почему с задержкой, а не сразу.</b> Очистители просыпаются
+     * вразнобой — каждый в своём чанке и в свою секунду, — поэтому
+     * первый проснувшийся не знает, что сделали остальные. Отчёт
+     * отправляется через {@link #ЗАДЕРЖКА_ОТЧЁТА} тиков после
+     * последнего отработавшего блока, и тогда в нём уже вся ночь.
+     *
+     * <p><b>И почему не только на удачу.</b> Раньше строка уходила
+     * лишь когда бросок снял уровень, а очистка — вероятность: в
+     * неудачную ночь Кузнец не получал ничего и решал, что блок сломан.
+     * Теперь отчёт приходит за каждую отработанную ночь, а вышло или
+     * нет — сказано в нём словами.
+     *
+     * ponytail: живёт только до перезапуска сервера. Худшее при сбросе —
+     * один потерянный отчёт за ночь.
      */
-    private static int ночьОтчёта = -1;
+    private static final int ЗАДЕРЖКА_ОТЧЁТА = 60;
+
+    private static int отчётНочь = -1;
+    private static long отчётСрок = 0;
+    private static int отчётВсего = 0;
+    private static int отчётУдачных = 0;
+    private static int отчётОпустело = 0;
+    private static boolean отчётФорсаж = false;
 
     /**
      * Приёмник реагента для воронок, лент и рук Create. Только на вход:
@@ -283,6 +303,7 @@ public class PurifierBlockEntity extends BlockEntity {
             сам.заражение = PlagueBridge.уровеньЧанка(
                 уровень, позиция.getX() >> 4, позиция.getZ() >> 4);
             ночнойШаг(уровень, позиция, сам);
+            сдатьОтчёт(уровень);
         }
         if (сам.работает) эффекты(уровень, позиция, сам.скорость, сам.заражение);
     }
@@ -475,18 +496,62 @@ public class PurifierBlockEntity extends BlockEntity {
             ServerPlayer кузнец = ClassParty.лучший(уровень.getServer(), PlayerClassData.Класс.SMITH);
             if (кузнец != null) {
                 PlayerClassData.прибавитьМастерство(кузнец, ClassesConfig.кузнецМастерствоЗаОчистку());
-                // Мастерство раньше капало молча, и Кузнец не знал, что его
-                // блок вообще отработал. Строка нарочно не техническая:
-                // «снято 2 уровня заражения в чанке -14,7» — это отчёт
-                // отладчика, а игроку нужно, чтобы за ночь что-то случилось.
-                if (ночь != ночьОтчёта) {
-                    ночьОтчёта = ночь;
-                    кузнец.displayClientMessage(Component.translatable(
-                        форсаж ? "msg.lmpc_classes.purifier.dawn_overdrive"
-                               : "msg.lmpc_classes.purifier.dawn"), false);
-                }
             }
         }
+        скопитьОтчёт(уровень, ночь, снизился, форсаж, сам.реагент.isEmpty());
+    }
+
+    /** Записать в утренний отчёт, что сделал за ночь один очиститель. */
+    private static void скопитьОтчёт(ServerLevel уровень, int ночь,
+            boolean снизился, boolean форсаж, boolean опустел) {
+        if (отчётНочь != ночь) {
+            отчётНочь = ночь;
+            отчётВсего = 0;
+            отчётУдачных = 0;
+            отчётОпустело = 0;
+            отчётФорсаж = false;
+        }
+        отчётСрок = уровень.getGameTime() + ЗАДЕРЖКА_ОТЧЁТА;
+        отчётВсего++;
+        if (снизился) отчётУдачных++;
+        if (опустел) отчётОпустело++;
+        отчётФорсаж |= форсаж;
+    }
+
+    /**
+     * Отдать накопленный отчёт Кузнецу — заголовок, итог ночи и, если
+     * есть, отдельная строка про кончившийся реагент. Цвета живут здесь,
+     * а текст в языковых файлах: править лор владельцу, не пересобирая мод.
+     */
+    private static void сдатьОтчёт(ServerLevel уровень) {
+        if (отчётНочь < 0 || уровень.getGameTime() < отчётСрок) return;
+
+        int всего = отчётВсего;
+        int удачных = отчётУдачных;
+        int опустело = отчётОпустело;
+        boolean форсаж = отчётФорсаж;
+        отчётНочь = -1;
+
+        ServerPlayer кузнец = ClassParty.лучший(уровень.getServer(), PlayerClassData.Класс.SMITH);
+        if (кузнец == null) return;
+
+        кузнец.sendSystemMessage(Component.translatable(форсаж
+                ? "msg.lmpc_classes.purifier.dawn.header_overdrive"
+                : "msg.lmpc_classes.purifier.dawn.header")
+            .withStyle(стиль -> стиль.withColor(ChatFormatting.GOLD).withBold(true)));
+        кузнец.sendSystemMessage(удачных > 0
+            ? Component.translatable("msg.lmpc_classes.purifier.dawn.cleansed", удачных, всего)
+                .withStyle(ChatFormatting.GREEN)
+            : Component.translatable("msg.lmpc_classes.purifier.dawn.held", всего)
+                .withStyle(ChatFormatting.GRAY));
+        if (опустело > 0) {
+            кузнец.sendSystemMessage(
+                Component.translatable("msg.lmpc_classes.purifier.dawn.empty", опустело)
+                    .withStyle(ChatFormatting.RED));
+        }
+        кузнец.playNotifySound(удачных > 0
+                ? SoundEvents.AMETHYST_BLOCK_CHIME : SoundEvents.FIRE_EXTINGUISH,
+            SoundSource.PLAYERS, 0.7f, удачных > 0 ? 1.2f : 1.0f);
     }
 
     @Override
