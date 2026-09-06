@@ -237,9 +237,24 @@ public final class ClassesConfig {
         .comment("Минимальная скорость вращения для латунного очистителя, об/мин.",
                  "32 против восьми у андезитового: одного водяного колеса напрямую",
                  "уже не хватает, нужны передачи или источник побыстрее. Это наша",
-                 "замена спековым 256 SU — стресс Create мы не потребляем",
-                 "(см. CreateBridge), а разница в питании между тирами нужна.")
+                 "замена спековым 256 SU по части ПОРОГА: сам стресс теперь",
+                 "потребляется по-настоящему, см. purifierStressImpact.")
         .defineInRange("brassPurifierMinSpeed", 32.0, 0.0, 256.0);
+
+    private static final ModConfigSpec.DoubleValue СТРЕСС_АНДЕЗИТОВЫЙ = СТРОИТЕЛЬ
+        .comment("Нагрузка андезитового очистителя на сеть Create (impact).",
+                 "8 — столько же, сколько у механического пресса. На восьми",
+                 "оборотах это ровно 64 SU, то есть цифра спека ядра 10.1",
+                 "сходится буквально: одно водяное колесо (256 SU) тянет",
+                 "четыре очистителя, большое (512 SU) — восемь.")
+        .defineInRange("purifierStressImpact", 8.0, 0.0, 256.0);
+
+    private static final ModConfigSpec.DoubleValue СТРЕСС_ЛАТУННЫЙ = СТРОИТЕЛЬ
+        .comment("Нагрузка латунного очистителя на сеть Create (impact).",
+                 "16 — вдвое дороже андезитового, а не вчетверо: латунь и так",
+                 "платит розовым кварцем, механическими сборщиками",
+                 "и четырёхкратным реагентом.")
+        .defineInRange("brassPurifierStressImpact", 16.0, 0.0, 256.0);
 
     private static final ModConfigSpec.IntValue КУЗНЕЦ_МАСТЕРСТВО_ЗА_ОЧИСТКУ = СТРОИТЕЛЬ
         .comment("Мастерство лучшего Кузнеца партии за удачную ночную очистку чанка (из 100).")
@@ -520,6 +535,15 @@ public final class ClassesConfig {
         return (латунный ? ЛАТУННЫЙ_МИН_СКОРОСТЬ : ОЧИСТИТЕЛЬ_МИН_СКОРОСТЬ).get().floatValue();
     }
 
+    /**
+     * Нагрузка очистителя на сеть Create — impact на оборот, как у машин
+     * Create. Умножается на скорость: восьмёрка на восьми оборотах даёт
+     * спековые 64 SU.
+     */
+    public static float очистительСтресс(boolean латунный) {
+        return (латунный ? СТРЕСС_ЛАТУННЫЙ : СТРЕСС_АНДЕЗИТОВЫЙ).get().floatValue();
+    }
+
     public static int кузнецМастерствоЗаОчистку() {
         return КУЗНЕЦ_МАСТЕРСТВО_ЗА_ОЧИСТКУ.get();
     }
@@ -693,6 +717,8 @@ public final class ClassesConfig {
         НАСТРАИВАЕМЫЕ.put("brassPurifierRadiusChunks", ЛАТУННЫЙ_РАДИУС);
         НАСТРАИВАЕМЫЕ.put("brassPurifierReagentPerNight", ЛАТУННЫЙ_РАСХОД);
         НАСТРАИВАЕМЫЕ.put("brassPurifierMinSpeed", ЛАТУННЫЙ_МИН_СКОРОСТЬ);
+        НАСТРАИВАЕМЫЕ.put("purifierStressImpact", СТРЕСС_АНДЕЗИТОВЫЙ);
+        НАСТРАИВАЕМЫЕ.put("brassPurifierStressImpact", СТРЕСС_ЛАТУННЫЙ);
         НАСТРАИВАЕМЫЕ.put("smithMasteryPerCleanse", КУЗНЕЦ_МАСТЕРСТВО_ЗА_ОЧИСТКУ);
         НАСТРАИВАЕМЫЕ.put("farmerFoodBonus", ФЕРМЕР_БОНУС_ЕДЫ);
         НАСТРАИВАЕМЫЕ.put("farmerMasteryPerHarvest", ФЕРМЕР_МАСТЕРСТВО_ЗА_УРОЖАЙ);

@@ -34,3 +34,16 @@ type = "required"
 versionRange = "[9.0.0,)"
 ordering = "AFTER"
 side = "BOTH"
+
+# Create — обязательная зависимость с 0.15.0. Очиститель наследуется
+# от KineticBlock и KineticBlockEntity: он настоящая машина Create,
+# с валом, вращением и стрессом. Без Create JVM не загрузит сами классы
+# блока и сущности, а с ними упадёт вся регистрация мода — та же
+# история, что с Curios выше. Курс проекта записан в
+# docs/superpowers/notes/2026-09-06-create-style-kurs.md.
+[[dependencies.${mod_id}]]
+modId = "create"
+type = "required"
+versionRange = "[6.0.0,)"
+ordering = "AFTER"
+side = "BOTH"

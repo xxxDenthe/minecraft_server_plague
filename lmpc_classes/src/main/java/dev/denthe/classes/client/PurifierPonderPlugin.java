@@ -115,14 +115,15 @@ public class PurifierPonderPlugin implements PonderPlugin {
         сцена.world().showSection(привод, Direction.EAST);
         сцена.idle(15);
         крутить(сцена, привод, 8f);
+        крутить(сцена, утиль.select().position(очиститель), 8f);
         сцена.overlay().showText(70)
-            .text("It runs on rotation only: a shaft or cogwheel right below it")
+            .text("It runs on rotation only: rotation must come from straight below")
             .pointAt(утиль.vector().centerOf(вал)).placeNearTarget().attachKeyFrame();
         сцена.idle(80);
 
         сцена.overlay().showText(60)
             .colored(PonderPalette.MEDIUM)
-            .text("One water wheel is enough: 8 RPM, no gearing needed")
+            .text("One water wheel is enough: a gearbox only stands the shaft upright")
             .pointAt(утиль.vector().centerOf(колесо)).placeNearTarget();
         сцена.idle(70);
 
@@ -207,6 +208,7 @@ public class PurifierPonderPlugin implements PonderPlugin {
         сцена.world().modifyBlockEntityNBT(утиль.select().position(контроллер),
             BlockEntity.class, тег -> тег.putFloat("TargetSpeed", 32f));
         крутить(сцена, разгон, 32f);
+        крутить(сцена, утиль.select().position(очиститель), 32f);
         сцена.overlay().showText(80)
             .colored(PonderPalette.FAST)
             .text("A Rotation Speed Controller under a large cogwheel sets exactly the speed you ask for")

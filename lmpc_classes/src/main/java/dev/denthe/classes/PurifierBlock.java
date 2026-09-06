@@ -13,9 +13,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BaseEntityBlock;
+import com.simibubi.create.content.kinetics.base.KineticBlock;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -36,7 +39,7 @@ import net.minecraft.world.phys.BlockHitResult;
  * Работу делает {@link PurifierBlockEntity}; тут только взаимодействие
  * и возврат содержимого при сломе.
  */
-public class PurifierBlock extends BaseEntityBlock {
+public class PurifierBlock extends KineticBlock implements EntityBlock {
 
     public static final MapCodec<PurifierBlock> CODEC = simpleCodec(PurifierBlock::new);
 
@@ -59,8 +62,29 @@ public class PurifierBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
+    protected MapCodec<? extends Block> codec() {
         return CODEC;
+    }
+
+    /**
+     * Ось вращения — вертикаль. Гнездо вала нарисовано на нижней грани,
+     * и настоящий вал в него входит снизу; принимать вращение сбоку
+     * значило бы, что модель врёт.
+     */
+    @Override
+    public Direction.Axis getRotationAxis(BlockState состояние) {
+        return Direction.Axis.Y;
+    }
+
+    /**
+     * Вал цепляется только снизу — решение владельца («вариант А, только
+     * снизу»). Сверху стоит сопло, и второе гнездо там отняло бы у него
+     * место.
+     */
+    @Override
+    public boolean hasShaftTowards(
+            LevelReader мир, BlockPos позиция, BlockState состояние, Direction сторона) {
+        return сторона == Direction.DOWN;
     }
 
     /**
@@ -102,16 +126,21 @@ public class PurifierBlock extends BaseEntityBlock {
         return null;
     }
 
-    @Override
-    protected RenderShape getRenderShape(BlockState состояние) {
-        return RenderShape.MODEL;
-    }
-
+    /**
+     * Тикер нужен на обеих сторонах, а не только на серверной, как было
+     * до 0.15.0: {@code SmartBlockEntity} Create тикает и на клиенте —
+     * этим он копит угол, под которым рисуется вал. Своей работы
+     * очиститель на клиенте по-прежнему не делает.
+     *
+     * {@code createTickerHelper} остался в {@code BaseEntityBlock},
+     * от которого мы больше не наследуемся, поэтому проверка типа —
+     * своя, и она же делает приведение безопасным.
+     */
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
             Level мир, BlockState состояние, BlockEntityType<T> тип) {
-        return мир.isClientSide() ? null
-            : createTickerHelper(тип, ClassBlockEntities.PURIFIER.get(), PurifierBlockEntity::тик);
+        if (тип != ClassBlockEntities.PURIFIER.get()) return null;
+        return (уровень, позиция, сост, сущность) -> ((PurifierBlockEntity) сущность).tick();
     }
 
     /**
@@ -136,9 +165,6 @@ public class PurifierBlock extends BaseEntityBlock {
     protected ItemInteractionResult useItemOn(
             ItemStack стопка, BlockState состояние, Level мир, BlockPos позиция,
             Player игрок, InteractionHand рука, BlockHitResult попадание) {
-        if (ключКузнеца(стопка)) {
-            return форсаж(мир, позиция, игрок);
-        }
         if (!стопка.is(ClassItems.CLEANSING_AGENT.get())) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
@@ -152,10 +178,22 @@ public class PurifierBlock extends BaseEntityBlock {
         return взято > 0 ? ItemInteractionResult.CONSUME : ItemInteractionResult.FAIL;
     }
 
-    /** Гаечный ключ Create (или что стоит в конфиге) в руке. */
-    private static boolean ключКузнеца(ItemStack стопка) {
-        return ClassesConfig.ключиКузнеца().contains(
-            BuiltInRegistries.ITEM.getKey(стопка.getItem()).toString());
+    /**
+     * Гаечный ключ Create по очистителю — Форсаж Кузнеца. Приседать при
+     * этом не надо: присед с ключом остаётся крейтовским, то есть
+     * разбирает блок в инвентарь ({@code onSneakWrenched} не тронут).
+     *
+     * До 0.15.0 ключ ловился в {@code useItemOn} по списку предметов
+     * из конфига, потому что жёсткой зависимости на Create не было.
+     * Теперь блок — настоящий {@code IWrenchable}, и ключ приходит
+     * сюда сам, каким бы он ни был.
+     *
+     * Владелец знает, что случайный клик стоит четырёхкратного реагента,
+     * и принял это.
+     */
+    @Override
+    public InteractionResult onWrenched(BlockState состояние, UseOnContext контекст) {
+        return форсаж(контекст.getLevel(), контекст.getClickedPos(), контекст.getPlayer());
     }
 
     /**
@@ -167,25 +205,26 @@ public class PurifierBlock extends BaseEntityBlock {
      * из него ночь по площади тира выше — вчетверо дороже по реагенту.
      * Ни новой сущности, ни нового блока: жест, цена и одна ночь.
      */
-    private static ItemInteractionResult форсаж(Level мир, BlockPos позиция, Player игрок) {
-        if (мир.isClientSide()) return ItemInteractionResult.SUCCESS;
+    private static InteractionResult форсаж(Level мир, BlockPos позиция, Player игрок) {
+        if (игрок == null) return InteractionResult.PASS;
+        if (мир.isClientSide()) return InteractionResult.SUCCESS;
         if (!(мир.getBlockEntity(позиция) instanceof PurifierBlockEntity очиститель)) {
-            return ItemInteractionResult.FAIL;
+            return InteractionResult.FAIL;
         }
         if (PlayerClassData.данные(игрок).класс != PlayerClassData.Класс.SMITH) {
             игрок.displayClientMessage(
                 Component.translatable("msg.lmpc_classes.purifier.overdrive_smith_only"), true);
-            return ItemInteractionResult.FAIL;
+            return InteractionResult.FAIL;
         }
         if (!очиститель.включитьФорсаж()) {
             игрок.displayClientMessage(
                 Component.translatable("msg.lmpc_classes.purifier.overdrive_already"), true);
-            return ItemInteractionResult.FAIL;
+            return InteractionResult.FAIL;
         }
         игрок.displayClientMessage(
             Component.translatable("msg.lmpc_classes.purifier.overdrive_on"), true);
         мир.playSound(null, позиция, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 0.5f, 1.6f);
-        return ItemInteractionResult.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     /** Пустая рука — доклад о состоянии: есть ли вращение, реагент и Кузнец в партии. */
@@ -205,7 +244,7 @@ public class PurifierBlock extends BaseEntityBlock {
      * вперёд, а не ставить один раз навсегда.
      */
     @Override
-    protected void onRemove(
+    public void onRemove(
             BlockState состояние, Level мир, BlockPos позиция, BlockState новое, boolean двигали) {
         if (!состояние.is(новое.getBlock())
                 && мир.getBlockEntity(позиция) instanceof PurifierBlockEntity очиститель) {

@@ -1,5 +1,8 @@
 package dev.denthe.classes;
 
+import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
+import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.particles.ParticleOptions;
@@ -51,7 +54,7 @@ import net.neoforged.neoforge.items.IItemHandler;
  * чанка — очиститель не «пропускает» ночь, а видит, что её номер
  * сменился.
  */
-public class PurifierBlockEntity extends BlockEntity {
+public class PurifierBlockEntity extends KineticBlockEntity {
 
     /** Проверяем условия раз в секунду: ночь наступает не чаще. */
     private static final int ИНТЕРВАЛ = 20;
@@ -223,6 +226,44 @@ public class PurifierBlockEntity extends BlockEntity {
         super(ClassBlockEntities.PURIFIER.get(), позиция, состояние);
     }
 
+    /**
+     * Поведений Create у очистителя нет: ни фильтра, ни воронки, ни
+     * скроллящихся значений. Метод абстрактный в {@code SmartBlockEntity},
+     * поэтому пустая реализация обязательна.
+     */
+    @Override
+    public void addBehaviours(List<BlockEntityBehaviour> поведения) {
+    }
+
+    /**
+     * Нагрузка на кинетическую сеть. Именно она делает спековые «64 SU
+     * на штуку» (ядро, 10.1) настоящим ограничением: до 0.15.0 очиститель
+     * скорость только читал, и одно водяное колесо крутило их сколько
+     * угодно.
+     *
+     * Число берётся из конфига и пишется в {@code lastStressApplied} —
+     * так требует Create: поле читают очки инженера и оверлей сети.
+     * Через конфиг самого Create его завести нельзя, {@code CStress}
+     * отказывается принимать блоки чужих модов.
+     */
+    @Override
+    public float calculateStressApplied() {
+        float нагрузка = ClassesConfig.очистительСтресс(латунный());
+        this.lastStressApplied = нагрузка;
+        return нагрузка;
+    }
+
+    /**
+     * Тик идёт на обеих сторонах: клиентская половина нужна самому
+     * Create — он крутит вал по накопленному углу. Наша работа целиком
+     * серверная, поэтому {@link #тик} сам отсеивает клиент.
+     */
+    @Override
+    public void tick() {
+        super.tick();
+        тик(level, getBlockPos(), getBlockState(), this);
+    }
+
     public ItemStack реагент() {
         return реагент;
     }
@@ -266,7 +307,7 @@ public class PurifierBlockEntity extends BlockEntity {
 
     /** Строка состояния для правого клика пустой рукой. */
     public Component состояние(Level мир, BlockPos позиция) {
-        float скорость = CreateBridge.скоростьРядом(мир, позиция);
+        float скорость = Math.abs(getSpeed());
         if (скорость < ClassesConfig.очистительМинСкорость(латунный())) {
             return Component.translatable("msg.lmpc_classes.purifier.no_power");
         }
@@ -285,7 +326,7 @@ public class PurifierBlockEntity extends BlockEntity {
         if (!(мир instanceof ServerLevel уровень)) return;
 
         if (уровень.getGameTime() % ИНТЕРВАЛ == 0) {
-            сам.скорость = CreateBridge.скоростьРядом(уровень, позиция);
+            сам.скорость = Math.abs(сам.getSpeed());
             сам.работает = !сам.реагент.isEmpty()
                 && сам.скорость
                    >= ClassesConfig.очистительМинСкорость(PurifierBlock.латунный(состояние));
@@ -554,17 +595,24 @@ public class PurifierBlockEntity extends BlockEntity {
             SoundSource.PLAYERS, 0.7f, удачных > 0 ? 1.2f : 1.0f);
     }
 
+    /**
+     * Своё в NBT пишется через {@code write}/{@code read} Create, а не
+     * через {@code saveAdditional}: у {@code SmartBlockEntity} тот объявлен
+     * final и сам зовёт эту пару. Флаг {@code клиентскийПакет} различает
+     * запись в сейв и рассылку на клиент; нам различать нечего — реагент
+     * и ночь нужны и там, и там.
+     */
     @Override
-    protected void saveAdditional(CompoundTag тег, HolderLookup.Provider реестры) {
-        super.saveAdditional(тег, реестры);
+    protected void write(CompoundTag тег, HolderLookup.Provider реестры, boolean клиентскийПакет) {
+        super.write(тег, реестры, клиентскийПакет);
         тег.putInt(КЛЮЧ_НОЧЬ, последняяНочь);
         if (форсаж) тег.putBoolean(КЛЮЧ_ФОРСАЖ, true);
         if (!реагент.isEmpty()) тег.put(КЛЮЧ_РЕАГЕНТ, реагент.save(реестры));
     }
 
     @Override
-    protected void loadAdditional(CompoundTag тег, HolderLookup.Provider реестры) {
-        super.loadAdditional(тег, реестры);
+    protected void read(CompoundTag тег, HolderLookup.Provider реестры, boolean клиентскийПакет) {
+        super.read(тег, реестры, клиентскийПакет);
         последняяНочь = тег.contains(КЛЮЧ_НОЧЬ) ? тег.getInt(КЛЮЧ_НОЧЬ) : -1;
         форсаж = тег.getBoolean(КЛЮЧ_ФОРСАЖ);
         реагент = тег.contains(КЛЮЧ_РЕАГЕНТ)

@@ -1,12 +1,13 @@
 {
   "_comment": [
-    "То же правило, что у андезитового: модель нарисована для axis=y,",
-    "две другие оси получаются ванильным поворотом столба.",
-    "Разбор — docs/superpowers/notes/2026-09-06-latunnyj-ochistitel-oblik.md"
+    "Один вариант на все состояния. Ось вращения у очистителя всегда",
+    "вертикальная (PurifierBlock.getRotationAxis), свойства axis у блока",
+    "нет: гнездо вала нарисовано на нижней грани, сопло на верхней,",
+    "и поворачивать блок значило бы класть сопло набок.",
+    "Свойство lit модель не меняет — оно светит, а не рисует, — поэтому",
+    "в ключах не упоминается: пустой ключ подходит любому состоянию."
   ],
   "variants": {
-    "axis=y": { "model": "lmpc_classes:block/brass_purifier" },
-    "axis=z": { "model": "lmpc_classes:block/brass_purifier", "x": 90 },
-    "axis=x": { "model": "lmpc_classes:block/brass_purifier", "x": 90, "y": 90 }
+    "": { "model": "lmpc_classes:block/brass_purifier" }
   }
 }
