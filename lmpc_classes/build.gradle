@@ -38,32 +38,40 @@ repositories {
 }
 
 /**
- * Ponder — движок «размышлений» Create — лежит джаром-в-джаре внутри
- * джарника Create и своего джарника на рынке не имеет. Достаём его
- * в build/ и компилируемся против него; в игре его подкладывает сам
- * Create, а копия джарника в репозитории противоречила бы правилу
- * «джарники модов не версионируются».
+ * Библиотеки Create лежат джарами-в-джаре внутри его джарника и своих
+ * джарников на рынке не имеют. Достаём их в build/ и компилируемся
+ * против них; в игре их подкладывает сам Create, а копии джарников
+ * в репозитории противоречили бы правилу «джарники модов
+ * не версионируются».
  *
  * Заодно оттуда же берётся catnip (Pointing и прочая мелочь) — он
  * упакован внутрь того же джарника.
  */
 def джарCreate = file("${projectDir}/../mods/create-1.21.1-6.0.10.jar")
-def папкаPonder = layout.buildDirectory.dir('ponder').get().asFile
-if (джарCreate.exists() && !папкаPonder.exists()) {
+def папкаБиблиотек = layout.buildDirectory.dir('create-libs').get().asFile
+if (джарCreate.exists() && !папкаБиблиотек.exists()) {
     copy {
         from zipTree(джарCreate)
-        include 'META-INF/jarjar/ponder-*.jar'
-        into папкаPonder
+        include 'META-INF/jarjar/*.jar'
+        into папкаБиблиотек
         eachFile { it.path = it.name }
         includeEmptyDirs = false
     }
 }
 
 dependencies {
-    // Сцены размышления — единственное место, где мы компилируемся против
-    // Create. Зависимость необязательная: без Ponder класс сцен просто
-    // не загружается (проверка ModList в PonderHook).
-    compileOnly fileTree(dir: папкаPonder, include: '*.jar')
+    // Create — зависимость ЖЁСТКАЯ, а не мягкая, как было раньше.
+    // Очиститель наследуется от KineticBlockEntity: он настоящая машина
+    // Create, с валом, вращением и стрессом. Курс проекта записан
+    // в docs/superpowers/notes/2026-09-06-create-style-kurs.md.
+    // Без Create мод не грузится, neoforge.mods.toml помечает его
+    // required, как curios.
+    //
+    // Вместе с Create на компиляцию идут его джары-в-джаре: ponder
+    // (сцены размышления), flywheel и Registrate — на их типы
+    // ссылается кинетика Create.
+    compileOnly files(джарCreate)
+    compileOnly fileTree(dir: папкаБиблиотек, include: '*.jar')
 
     // Curios не публикует джарник для рынка — компилируемся против джарника
     // из мод-пака, как plaguecore делает с Jade. Зависимость необязательная

@@ -99,8 +99,8 @@ public class PurifierPonderPlugin implements PonderPlugin {
         сцена.showBasePlate();
         сцена.idle(10);
 
-        BlockPos очиститель = утиль.grid().at(2, 1, 2);
-        BlockPos вал = утиль.grid().at(1, 1, 2);
+        BlockPos очиститель = утиль.grid().at(2, 2, 2);
+        BlockPos вал = утиль.grid().at(2, 1, 2);
         BlockPos колесо = утиль.grid().at(0, 1, 2);
         Selection привод = утиль.select().fromTo(колесо, вал);
         Vec3 верх = утиль.vector().topOf(очиститель);
@@ -116,7 +116,7 @@ public class PurifierPonderPlugin implements PonderPlugin {
         сцена.idle(15);
         крутить(сцена, привод, 8f);
         сцена.overlay().showText(70)
-            .text("It runs on rotation only: a shaft or cogwheel must touch it")
+            .text("It runs on rotation only: a shaft or cogwheel right below it")
             .pointAt(утиль.vector().centerOf(вал)).placeNearTarget().attachKeyFrame();
         сцена.idle(80);
 
@@ -214,7 +214,7 @@ public class PurifierPonderPlugin implements PonderPlugin {
         сцена.idle(90);
 
         сцена.overlay().showText(70)
-            .text("The purifier takes rotation from the cogwheel below: any kinetic neighbour will do")
+            .text("The purifier takes rotation from the cogwheel below: only below or above will do")
             .pointAt(утиль.vector().centerOf(шестерня)).placeNearTarget();
         сцена.idle(80);
 

@@ -108,7 +108,7 @@
   "msg.lmpc_classes.snapshot.no_data": "Снимать нечего: чума здесь не считается.",
   "lmpc_classes.ponder.andesite_purifier.header": "Андезитовый очиститель",
   "lmpc_classes.ponder.andesite_purifier.text_1": "Снимает заражение чумы с земли вокруг себя",
-  "lmpc_classes.ponder.andesite_purifier.text_2": "Работает только от вращения: рядом должен стоять вал или шестерня",
+  "lmpc_classes.ponder.andesite_purifier.text_2": "Работает только от вращения: вал или шестерня должны быть прямо под ним",
   "lmpc_classes.ponder.andesite_purifier.text_3": "Хватает восьми оборотов в минуту — столько даёт одно водяное колесо, передачи не нужны",
   "lmpc_classes.ponder.andesite_purifier.text_4": "Реагент кладётся правым кликом. За ночь тратится один",
   "lmpc_classes.ponder.andesite_purifier.text_5": "Пока крутится и заряжен — гудит, брызжет и светится",
@@ -119,7 +119,7 @@
   "lmpc_classes.ponder.brass_purifier.text_2": "Он чистит 7 × 7 чанков вокруг себя вместо 3 × 3",
   "lmpc_classes.ponder.brass_purifier.text_3": "Ему нужно 32 оборота в минуту, а водяное колесо даёт восемь",
   "lmpc_classes.ponder.brass_purifier.text_4": "Контроллер скорости под большой шестернёй выставляет ровно столько, сколько нужно",
-  "lmpc_classes.ponder.brass_purifier.text_5": "Очиститель берёт вращение у шестерни снизу: годится любой кинетический сосед",
+  "lmpc_classes.ponder.brass_purifier.text_5": "Очиститель берёт вращение у шестерни снизу: годится сосед только снизу или сверху",
   "lmpc_classes.ponder.brass_purifier.text_6": "За ночь съедает четыре реагента вместо одного",
   "lmpc_classes.ponder.brass_purifier.text_7": "Поставить его может только Кузнец. В чужих руках блок просто не встанет",
   "lmpc_classes.ponder.brass_purifier.text_8": "Собирается на механических сборщиках, а не на конвейере, как андезитовый"
