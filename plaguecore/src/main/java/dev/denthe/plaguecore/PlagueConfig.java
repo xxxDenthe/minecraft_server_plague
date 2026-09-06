@@ -1,5 +1,6 @@
 package dev.denthe.plaguecore;
 
+import dev.denthe.plaguecore.core.FightPhases;
 import dev.denthe.plaguecore.core.MaterializationMask;
 import dev.denthe.plaguecore.core.PhaseParams;
 import dev.denthe.plaguecore.core.PhaseTable;
@@ -43,6 +44,15 @@ public final class PlagueConfig {
     // ── Сердце чумы ───────────────────────────────────────────────────
     private static final ModConfigSpec.DoubleValue ЗДОРОВЬЕ_СЕРДЦА;
     private static final ModConfigSpec.DoubleValue РАЗМЕР_СЕРДЦА;
+    private static final ModConfigSpec.IntValue РАДИУС_ЗАЛА;
+    private static final ModConfigSpec.IntValue ВОЛНА_БАЗА;
+    private static final ModConfigSpec.IntValue ВОЛНА_НА_ИГРОКА;
+    private static final ModConfigSpec.IntValue ПЕРИОД_ИМПУЛЬСА;
+    private static final ModConfigSpec.DoubleValue[] СИЛА_ИМПУЛЬСА =
+        new ModConfigSpec.DoubleValue[FightPhases.ФАЗ];
+    private static final ModConfigSpec.IntValue ЧИСТЫЙ_УРОВЕНЬ;
+    private static final ModConfigSpec.IntValue НОЧЕЙ_СНА;
+    private static final ModConfigSpec.IntValue МИНУТ_ОЧИСТКИ;
 
     // ── одержимость ───────────────────────────────────────────────────
     private static final ModConfigSpec.IntValue СТАДИЯ_ОДЕРЖИМОСТИ;
@@ -538,6 +548,46 @@ public final class PlagueConfig {
                 "Правка доходит до уже поставленных Сердец после перезахода в мир.")
             .defineInRange("scale", окр(PlagueConstants.HEART_SCALE), 0.5, 6.0);
 
+        РАДИУС_ЗАЛА = СТРОИТЕЛЬ
+            .comment("Радиус зала логова вокруг Сердца, блоки.",
+                "Кто внутри — тот в бою: ловит импульс и не даёт Сердцу уснуть.",
+                "Считается по горизонтали: балкон над Сердцем — тоже зал.")
+            .defineInRange("arenaRadius", PlagueConstants.HEART_ARENA_RADIUS, 5, 128);
+
+        ВОЛНА_БАЗА = СТРОИТЕЛЬ
+            .comment("Мобов в волне вне зависимости от числа игроков.")
+            .defineInRange("waveBase", PlagueConstants.HEART_WAVE_BASE, 0, 60);
+
+        ВОЛНА_НА_ИГРОКА = СТРОИТЕЛЬ
+            .comment("Сколько мобов добавляет каждый игрок в зале.",
+                "Восьмером и вчетвером бой должен быть сравним по тяжести.")
+            .defineInRange("wavePerPlayer", PlagueConstants.HEART_WAVE_PER_PLAYER, 0, 20);
+
+        ПЕРИОД_ИМПУЛЬСА = СТРОИТЕЛЬ
+            .comment("Раз во сколько секунд Сердце давит чумой на зал.")
+            .defineInRange("pulseSeconds", PlagueConstants.HEART_PULSE_SECONDS, 1, 300);
+
+        for (int ф = 0; ф < FightPhases.ФАЗ; ф++) {
+            СИЛА_ИМПУЛЬСА[ф] = СТРОИТЕЛЬ
+                .comment("Сила импульса в фазе " + (ф + 1) + ", очков заражённости за раз.")
+                .defineInRange("pulsePhase" + (ф + 1),
+                    окр(PlagueConstants.HEART_PULSE[ф]), 0.0, 50.0);
+        }
+
+        ЧИСТЫЙ_УРОВЕНЬ = СТРОИТЕЛЬ
+            .comment("До какого уровня заражения нужно опустить чанк под Сердцем,",
+                "чтобы импульс резался вдвое. Это работа очистителя Кузнеца.")
+            .defineInRange("pulseCleanLevel", PlagueConstants.HEART_PULSE_CLEAN_LEVEL, 0, 5);
+
+        НОЧЕЙ_СНА = СТРОИТЕЛЬ
+            .comment("За сколько ночей спящее Сердце залечивается до полного.",
+                "Это и есть цена провала штурма: мир столько же гниёт дальше.")
+            .defineInRange("sleepNights", PlagueConstants.HEART_SLEEP_NIGHTS, 1, 30);
+
+        МИНУТ_ОЧИСТКИ = СТРОИТЕЛЬ
+            .comment("Сколько минут идёт победная очистка мира кругами.")
+            .defineInRange("cleanseMinutes", PlagueConstants.HEART_CLEANSE_MINUTES, 1, 30);
+
         СТРОИТЕЛЬ.pop().comment(
             "Одержимость: чужие руки на пульте тела.",
             "Команды /plague possess, /plague seize, /plague release.",
@@ -637,6 +687,18 @@ public final class PlagueConfig {
     private static void применить() {
         PlagueConstants.HEART_HEALTH = ЗДОРОВЬЕ_СЕРДЦА.get().floatValue();
         PlagueConstants.HEART_SCALE = РАЗМЕР_СЕРДЦА.get().floatValue();
+        PlagueConstants.HEART_ARENA_RADIUS = РАДИУС_ЗАЛА.get();
+        PlagueConstants.HEART_WAVE_BASE = ВОЛНА_БАЗА.get();
+        PlagueConstants.HEART_WAVE_PER_PLAYER = ВОЛНА_НА_ИГРОКА.get();
+        PlagueConstants.HEART_PULSE_SECONDS = ПЕРИОД_ИМПУЛЬСА.get();
+        float[] силаИмпульса = new float[FightPhases.ФАЗ];
+        for (int ф = 0; ф < FightPhases.ФАЗ; ф++) {
+            силаИмпульса[ф] = СИЛА_ИМПУЛЬСА[ф].get().floatValue();
+        }
+        PlagueConstants.HEART_PULSE = силаИмпульса;
+        PlagueConstants.HEART_PULSE_CLEAN_LEVEL = ЧИСТЫЙ_УРОВЕНЬ.get();
+        PlagueConstants.HEART_SLEEP_NIGHTS = НОЧЕЙ_СНА.get();
+        PlagueConstants.HEART_CLEANSE_MINUTES = МИНУТ_ОЧИСТКИ.get();
 
         PlagueConstants.POSSESS_MIN_STAGE = СТАДИЯ_ОДЕРЖИМОСТИ.get();
         PlagueConstants.POSSESS_TICKS = ТИКОВ_ОДЕРЖИМОСТИ.get();
