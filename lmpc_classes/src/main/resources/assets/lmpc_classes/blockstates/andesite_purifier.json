@@ -1,6 +1,18 @@
 {
+  "_comment": [
+    "Ось вращения выбирается при постановке (RotatedPillarKineticBlock).",
+    "Модель нарисована для axis=y: гнездо вала на нижней грани, сопло",
+    "на верхней. Остальные две оси — тот же файл, повёрнутый по",
+    "ванильному правилу столбов (как stripped_log), поэтому новой",
+    "геометрии не нужно: у лежащего очистителя гнездо смотрит вбок,",
+    "а сопло — в противоположную сторону.",
+    "Свойство lit модель не меняет (оно светит, а не рисует), поэтому",
+    "в ключах не упоминается: вариант подбирается по перечисленным",
+    "парам, остальные состояния ему безразличны."
+  ],
   "variants": {
-    "lit=false": { "model": "lmpc_classes:block/andesite_purifier" },
-    "lit=true":  { "model": "lmpc_classes:block/andesite_purifier" }
+    "axis=y": { "model": "lmpc_classes:block/andesite_purifier" },
+    "axis=z": { "model": "lmpc_classes:block/andesite_purifier", "x": 90 },
+    "axis=x": { "model": "lmpc_classes:block/andesite_purifier", "x": 90, "y": 90 }
   }
 }

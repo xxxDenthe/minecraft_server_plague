@@ -1,6 +1,12 @@
 {
+  "_comment": [
+    "То же правило, что у андезитового: модель нарисована для axis=y,",
+    "две другие оси получаются ванильным поворотом столба.",
+    "Разбор — docs/superpowers/notes/2026-09-06-latunnyj-ochistitel-oblik.md"
+  ],
   "variants": {
-    "lit=false": { "model": "lmpc_classes:block/brass_purifier" },
-    "lit=true":  { "model": "lmpc_classes:block/brass_purifier" }
+    "axis=y": { "model": "lmpc_classes:block/brass_purifier" },
+    "axis=z": { "model": "lmpc_classes:block/brass_purifier", "x": 90 },
+    "axis=x": { "model": "lmpc_classes:block/brass_purifier", "x": 90, "y": 90 }
   }
 }
