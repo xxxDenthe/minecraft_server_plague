@@ -146,6 +146,23 @@ public final class PlagueNetwork {
     }
 
     /**
+     * Белая вспышка на весь экран. Полей нет: момент — это и есть
+     * всё содержание, а кривую затухания клиент знает сам.
+     */
+    public record Flash() implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<Flash> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "flash"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Flash> CODEC =
+            StreamCodec.of((buf, f) -> {}, buf -> new Flash());
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /**
      * Ручки голоса на клиент — чтобы ползунки в панели мастера игры
      * встали туда, где сервер их держит на самом деле. Значения идут
      * массивом в порядке {@link VoiceKnobs#ВСЕ}: имена клиент знает сам
@@ -325,6 +342,10 @@ public final class PlagueNetwork {
             (payload, ctx) -> ctx.enqueueWork(
                 () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьСтадию(payload)));
 
+        registrar.playToClient(Flash.TYPE, Flash.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(
+                () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьВспышку(payload)));
+
         registrar.playToClient(Words.TYPE, Words.CODEC,
             (payload, ctx) -> ctx.enqueueWork(
                 () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьСлова(payload)));
@@ -399,5 +420,10 @@ public final class PlagueNetwork {
     /** Сказать игроку его стадию. Шлётся при смене, а не каждый тик. */
     public static void отправитьСтадию(ServerPlayer игрок, int стадия) {
         PacketDistributor.sendToPlayer(игрок, new Stage(стадия));
+    }
+
+    /** Ослепить игрока белым. Зовёт финал в момент смерти Сердца. */
+    public static void отправитьВспышку(ServerPlayer игрок) {
+        PacketDistributor.sendToPlayer(игрок, new Flash());
     }
 }

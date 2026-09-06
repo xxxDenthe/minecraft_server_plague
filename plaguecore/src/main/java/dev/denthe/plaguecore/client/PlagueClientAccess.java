@@ -21,6 +21,19 @@ public final class PlagueClientAccess {
     }
 
     /**
+     * Игровое время начала вспышки, в тиках клиента. Отрицательное —
+     * вспышки нет. Рисует {@link PlagueOverlay}.
+     */
+    private static long вспышкаС = -1L;
+
+    public static long вспышкаС() { return вспышкаС; }
+
+    public static void принятьВспышку(PlagueNetwork.Flash пакет) {
+        Minecraft mc = Minecraft.getInstance();
+        вспышкаС = mc.level == null ? -1L : mc.level.getGameTime();
+    }
+
+    /**
      * Ручки голоса, как их держит сервер. Пусто, пока сервер не прислал:
      * панель мастера игры тогда покажет свои местные значения.
      * Порядок — {@link dev.denthe.plaguecore.VoiceKnobs#ВСЕ}.
