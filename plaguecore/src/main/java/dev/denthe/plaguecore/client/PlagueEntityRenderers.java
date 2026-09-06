@@ -9,10 +9,14 @@ import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.PigModel;
 import net.minecraft.client.model.ZombieModel;
 import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
 import net.minecraft.client.renderer.entity.MobRenderer;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -63,6 +67,22 @@ public final class PlagueEntityRenderers {
     @SubscribeEvent
     public static void слои(EntityRenderersEvent.RegisterLayerDefinitions событие) {
         событие.registerLayerDefinition(MutatedZombieModel.СЛОЙ, MutatedZombieModel::создатьСлой);
+        событие.registerLayerDefinition(PlagueMaskLayer.СЛОЙ, PlagueMaskLayer::создатьСлой);
+    }
+
+    /**
+     * Повязка на лице. Слой цепляется к обеим моделям игрока — обычной
+     * и тонкой: скин выбирает сам игрок, и пропустить одну из них значит
+     * оставить половину сессии без повязки.
+     */
+    @SubscribeEvent
+    public static void слоиИгрока(EntityRenderersEvent.AddLayers событие) {
+        for (PlayerSkin.Model вид : событие.getSkins()) {
+            EntityRenderer<? extends Player> рендерер = событие.getSkin(вид);
+            if (рендерер instanceof PlayerRenderer игрок) {
+                игрок.addLayer(new PlagueMaskLayer(игрок, событие.getEntityModels()));
+            }
+        }
     }
 
     /**

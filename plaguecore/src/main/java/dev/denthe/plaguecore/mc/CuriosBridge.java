@@ -16,7 +16,7 @@ import java.util.Optional;
  * Один метод вместо двух: `findFirstCurio` сразу отвечает и «надета ли»,
  * и «какой это стек» — второй нужен, чтобы стачивать прочность.
  */
-final class CuriosBridge {
+public final class CuriosBridge {
     private CuriosBridge() {}
 
     private static Method методИнвентарь;
@@ -49,7 +49,7 @@ final class CuriosBridge {
      * Любая осечка отражения — пустой стек, а не краш: без Curios
      * подсистема должна работать ровно так же, только без повязки.
      */
-    static ItemStack надето(LivingEntity кто, Item предмет) {
+    public static ItemStack надето(LivingEntity кто, Item предмет) {
         инициализировать();
         if (!доступен) return ItemStack.EMPTY;
         try {
