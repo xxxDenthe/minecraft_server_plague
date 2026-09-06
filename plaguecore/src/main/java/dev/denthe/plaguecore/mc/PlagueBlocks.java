@@ -257,6 +257,18 @@ public final class PlagueBlocks {
         ПРЕДМЕТЫ.registerItem("plague_brew",
             свойства -> new BrewItem(свойства.stacksTo(16)));
 
+    /**
+     * Тряпичная повязка. Гасит часть заразы и снимает вдохи спор —
+     * та самая подготовка, без которой днём в гнили нечем дышать.
+     *
+     * Надевается в слот Curios; без Curios предмет крафтится, но лежит
+     * без дела. Прочность стачивается только в гнили, разбор — заметка
+     * `2026-09-06-simptomy-dnyom.md`.
+     */
+    public static final DeferredItem<net.minecraft.world.item.Item> PLAGUE_MASK =
+        ПРЕДМЕТЫ.registerItem("plague_mask",
+            свойства -> new net.minecraft.world.item.Item(свойства.durability(256)));
+
     public static void register(IEventBus modEventBus) {
         БЛОКИ.register(modEventBus);
         ПРЕДМЕТЫ.register(modEventBus);

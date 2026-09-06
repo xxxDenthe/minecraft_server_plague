@@ -109,6 +109,23 @@ public final class PlagueConfig {
         new ModConfigSpec.IntValue[5];
     private static final ModConfigSpec.DoubleValue[] ШАНС_КАШЛЯ =
         new ModConfigSpec.DoubleValue[5];
+    private static final ModConfigSpec.DoubleValue ПРИСТУП_СЕКУНД;
+    private static final ModConfigSpec.DoubleValue ПРИСТУП_ГОЛОД;
+    private static final ModConfigSpec.DoubleValue ПРИСТУП_ЖАЖДА;
+    private static final ModConfigSpec.IntValue[] УСТАЛОСТЬ_СТАДИИ =
+        new ModConfigSpec.IntValue[5];
+    private static final ModConfigSpec.IntValue[] СЛАБОСТЬ_СТАДИИ =
+        new ModConfigSpec.IntValue[5];
+    private static final ModConfigSpec.DoubleValue[] ГОЛОД_СТАДИИ =
+        new ModConfigSpec.DoubleValue[5];
+    private static final ModConfigSpec.DoubleValue[] ЖАЖДА_СТАДИИ =
+        new ModConfigSpec.DoubleValue[5];
+    private static final ModConfigSpec.DoubleValue ШАНС_ВДОХА;
+    private static final ModConfigSpec.DoubleValue ОЧКОВ_ЗА_ВДОХ;
+    private static final ModConfigSpec.IntValue УРОВЕНЬ_ВДОХА;
+    private static final ModConfigSpec.DoubleValue ЗАЩИТА_БРОНИ;
+    private static final ModConfigSpec.DoubleValue ЗАЩИТА_ПОВЯЗКИ;
+    private static final ModConfigSpec.IntValue ИЗНОС_ПОВЯЗКИ;
     private static final ModConfigSpec.DoubleValue РАДИУС_КАШЛЯ;
     private static final ModConfigSpec.DoubleValue ОЧКОВ_ЗА_КАШЕЛЬ;
     private static final ModConfigSpec.DoubleValue[] СИЛА_ОТВАРА =
@@ -352,6 +369,66 @@ public final class PlagueConfig {
                 .defineInRange("stage" + с + "CoughChance",
                     окр(PlagueConstants.PLAYER_COUGH_CHANCE[с]), 0.0, 1.0);
         }
+
+        ПРИСТУП_СЕКУНД = СТРОИТЕЛЬ
+            .comment("Секунды слабости в ногах после приступа кашля. Ноль — приступов нет.")
+            .defineInRange("coughStunSeconds",
+                окр(PlagueConstants.COUGH_STUN_SECONDS), 0.0, 30.0);
+
+        ПРИСТУП_ГОЛОД = СТРОИТЕЛЬ
+            .comment("Сколько голода съедает приступ. 4.0 — полбедра.")
+            .defineInRange("coughExhaustion",
+                окр(PlagueConstants.COUGH_EXHAUSTION), 0.0, 40.0);
+
+        ПРИСТУП_ЖАЖДА = СТРОИТЕЛЬ
+            .comment("Сколько жажды съедает приступ. Нужен мод жажды, иначе ноль.")
+            .defineInRange("coughThirst",
+                окр(PlagueConstants.COUGH_THIRST), 0.0, 40.0);
+
+        for (int с = 0; с < 5; с++) {
+            УСТАЛОСТЬ_СТАДИИ[с] = СТРОИТЕЛЬ
+                .comment("Уровень шахтёрской усталости на стадии " + с + ". Ноль — нет.")
+                .defineInRange("stage" + с + "Fatigue",
+                    PlagueConstants.STAGE_FATIGUE[с], 0, 4);
+            СЛАБОСТЬ_СТАДИИ[с] = СТРОИТЕЛЬ
+                .comment("Уровень слабости на стадии " + с + ". Ноль — нет.")
+                .defineInRange("stage" + с + "Weakness",
+                    PlagueConstants.STAGE_WEAKNESS[с], 0, 4);
+            ГОЛОД_СТАДИИ[с] = СТРОИТЕЛЬ
+                .comment("Сколько голода в секунду сверх обычного тратит стадия " + с + ".")
+                .defineInRange("stage" + с + "Exhaustion",
+                    окр(PlagueConstants.STAGE_EXHAUSTION[с]), 0.0, 1.0);
+            ЖАЖДА_СТАДИИ[с] = СТРОИТЕЛЬ
+                .comment("Сколько жажды в секунду сверх обычного тратит стадия " + с + ".")
+                .defineInRange("stage" + с + "Thirst",
+                    окр(PlagueConstants.STAGE_THIRST[с]), 0.0, 1.0);
+        }
+
+        ШАНС_ВДОХА = СТРОИТЕЛЬ
+            .comment("Шанс за секунду вдохнуть спор под открытым небом. 0.025 — раз в 40 с.")
+            .defineInRange("gustChance", окр(PlagueConstants.GUST_CHANCE), 0.0, 1.0);
+
+        ОЧКОВ_ЗА_ВДОХ = СТРОИТЕЛЬ
+            .comment("Сколько очков даёт один вдох спор.")
+            .defineInRange("gustPoints", окр(PlagueConstants.GUST_POINTS), 0.0, 50.0);
+
+        УРОВЕНЬ_ВДОХА = СТРОИТЕЛЬ
+            .comment("Ниже этого уровня чанка вдохов не бывает.")
+            .defineInRange("gustMinLevel", PlagueConstants.GUST_MIN_LEVEL, 0, 4);
+
+        ЗАЩИТА_БРОНИ = СТРОИТЕЛЬ
+            .comment("Какую долю заразы гасит одно очко брони. 0.02 — полный алмаз даёт 40 %.")
+            .defineInRange("armorProtectionPerPoint",
+                окр(PlagueConstants.ARMOR_PROTECTION_PER_POINT), 0.0, 0.2);
+
+        ЗАЩИТА_ПОВЯЗКИ = СТРОИТЕЛЬ
+            .comment("Какую долю заразы гасит повязка. Вдохи спор она снимает целиком.")
+            .defineInRange("maskProtection",
+                окр(PlagueConstants.MASK_PROTECTION), 0.0, 0.9);
+
+        ИЗНОС_ПОВЯЗКИ = СТРОИТЕЛЬ
+            .comment("Раз во сколько секунд в гнили повязка теряет единицу прочности.")
+            .defineInRange("maskWearSeconds", PlagueConstants.MASK_WEAR_SECONDS, 1, 600);
 
         РАДИУС_КАШЛЯ = СТРОИТЕЛЬ
             .comment("Радиус кашля в блоках. Шесть: больного нельзя вести с собой.")
@@ -609,6 +686,15 @@ public final class PlagueConfig {
         PlagueConstants.PLAYER_FOOD_MULTIPLIER = ЕДА.get().floatValue();
         PlagueConstants.PLAYER_STAGE4_DAMAGE_TICKS = УРОН_КАЖДЫЕ.get();
         PlagueConstants.PLAYER_STAGE4_DAMAGE = УРОН_СТАДИИ_4.get().floatValue();
+        PlagueConstants.COUGH_STUN_SECONDS = ПРИСТУП_СЕКУНД.get().floatValue();
+        PlagueConstants.COUGH_EXHAUSTION = ПРИСТУП_ГОЛОД.get().floatValue();
+        PlagueConstants.COUGH_THIRST = ПРИСТУП_ЖАЖДА.get().floatValue();
+        PlagueConstants.GUST_CHANCE = ШАНС_ВДОХА.get().floatValue();
+        PlagueConstants.GUST_POINTS = ОЧКОВ_ЗА_ВДОХ.get().floatValue();
+        PlagueConstants.GUST_MIN_LEVEL = УРОВЕНЬ_ВДОХА.get();
+        PlagueConstants.ARMOR_PROTECTION_PER_POINT = ЗАЩИТА_БРОНИ.get().floatValue();
+        PlagueConstants.MASK_PROTECTION = ЗАЩИТА_ПОВЯЗКИ.get().floatValue();
+        PlagueConstants.MASK_WEAR_SECONDS = ИЗНОС_ПОВЯЗКИ.get();
         PlagueConstants.PLAYER_COUGH_RADIUS = РАДИУС_КАШЛЯ.get().floatValue();
         PlagueConstants.PLAYER_COUGH_AMOUNT = ОЧКОВ_ЗА_КАШЕЛЬ.get().floatValue();
         PlagueConstants.PLAYER_BREW_RESET_TICKS = СБРОС_ОТВАРА.get();
@@ -632,11 +718,19 @@ public final class PlagueConfig {
         float[] экспозиция = new float[5];
         float[] здоровьеСтадии = new float[5];
         int[] кашельКаждые = new int[5];
+        int[] усталость = new int[5];
+        int[] слабость = new int[5];
+        float[] голодСтадии = new float[5];
+        float[] жаждаСтадии = new float[5];
         float[] шансКашля = new float[5];
         for (int с = 0; с < 5; с++) {
             экспозиция[с] = ЭКСПОЗИЦИЯ[с].get().floatValue();
             здоровьеСтадии[с] = ЗДОРОВЬЕ_СТАДИИ[с].get().floatValue();
             кашельКаждые[с] = КАШЕЛЬ_КАЖДЫЕ[с].get();
+            усталость[с] = УСТАЛОСТЬ_СТАДИИ[с].get();
+            слабость[с] = СЛАБОСТЬ_СТАДИИ[с].get();
+            голодСтадии[с] = ГОЛОД_СТАДИИ[с].get().floatValue();
+            жаждаСтадии[с] = ЖАЖДА_СТАДИИ[с].get().floatValue();
             шансКашля[с] = ШАНС_КАШЛЯ[с].get().floatValue();
         }
         PlagueConstants.VOICE_MIN_STAGE = МИН_СТАДИЯ.get();
@@ -664,6 +758,10 @@ public final class PlagueConfig {
         PlagueConstants.PLAYER_EXPOSURE = экспозиция;
         PlagueConstants.PLAYER_STAGE_HEALTH = здоровьеСтадии;
         PlagueConstants.PLAYER_COUGH_TICKS = кашельКаждые;
+        PlagueConstants.STAGE_FATIGUE = усталость;
+        PlagueConstants.STAGE_WEAKNESS = слабость;
+        PlagueConstants.STAGE_EXHAUSTION = голодСтадии;
+        PlagueConstants.STAGE_THIRST = жаждаСтадии;
         PlagueConstants.PLAYER_COUGH_CHANCE = шансКашля;
 
         float[] силаОтвара = new float[6];

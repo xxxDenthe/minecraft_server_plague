@@ -75,14 +75,56 @@ public final class PlayerInfection {
 
         int уровень = сетка.getLevel(cx, cz);
         boolean подЗемлёй = !мир.canSeeSky(игрок.blockPosition());
-        return InfectionMath.экспозиция(уровень, подЗемлёй, защита(игрок));
+        ItemStack повязка = CuriosBridge.надето(игрок, PlagueBlocks.PLAGUE_MASK.get());
+
+        float экспозиция = InfectionMath.экспозиция(уровень, подЗемлёй, защита(игрок, повязка));
+        if (экспозиция > 0f) {
+            стачиватьПовязку(игрок, повязка, мир);
+            вдохнуть(игрок, мир, уровень, подЗемлёй, повязка);
+        }
+        return экспозиция;
+    }
+
+    /**
+     * Вдох спор — рывок заражения под открытым небом.
+     *
+     * Только на поверхности и только с повязкой не на лице: под землёй
+     * своя цена (множитель 1.35), а закрытое лицо и есть та подготовка,
+     * ради которой всё затевалось. Разбор — заметка
+     * `2026-09-06-simptomy-dnyom.md`.
+     */
+    private static void вдохнуть(ServerPlayer игрок, ServerLevel мир, int уровень,
+                                 boolean подЗемлёй, ItemStack повязка) {
+        if (подЗемлёй || !повязка.isEmpty()) return;
+        if (уровень < PlagueConstants.GUST_MIN_LEVEL) return;
+        if (мир.random.nextFloat() >= PlagueConstants.GUST_CHANCE) return;
+
+        PlayerPlagueData д = PlayerPlagueData.данные(игрок);
+        int была = д.стадия;
+        д.заражённость = Math.min(100f, д.заражённость + PlagueConstants.GUST_POINTS);
+        д.стадия = InfectionMath.стадия(д.заражённость);
+        if (д.стадия != была) пересчитатьЗдоровье(игрок);
+
+        PlagueSymptoms.вдох(мир, игрок);
+    }
+
+    /**
+     * Повязка изнашивается только там, где работает, — в гнили.
+     * Сношенная в труху ломается сама, как любой инструмент.
+     */
+    private static void стачиватьПовязку(ServerPlayer игрок, ItemStack повязка, ServerLevel мир) {
+        if (повязка.isEmpty() || !повязка.isDamageableItem()) return;
+        int период = Math.max(1, PlagueConstants.MASK_WEAR_SECONDS);
+        if ((мир.getGameTime() / PlagueConstants.PLAYER_TICK_INTERVAL) % период != 0) return;
+        повязка.hurtAndBreak(1, игрок, net.minecraft.world.entity.EquipmentSlot.HEAD);
     }
 
     /**
      * Доля погашенной экспозиции, 0..1.
      *
-     * Броня: очко брони гасит один процент, полный алмаз (20 очков) —
-     * пятая часть. Плюс необязательная добавка от классового кулона
+     * Броня: очко брони гасит `ARMOR_PROTECTION_PER_POINT` (по умолчанию
+     * два процента), полный алмаз — сорок. Плюс повязка на лице, если
+     * она есть: от вдохов спор спасает только она. Плюс необязательная добавка от классового кулона
      * ({@link ClassBridge}) — рефлексия на `lmpc_classes`, без него
      * добавка нулевая.
      *
@@ -90,9 +132,15 @@ public final class PlayerInfection {
      * когда появятся маски
      */
     public static float защита(ServerPlayer игрок) {
-        float отБрони = игрок.getArmorValue() * 0.01f;
+        return защита(игрок, CuriosBridge.надето(игрок, PlagueBlocks.PLAGUE_MASK.get()));
+    }
+
+    /** То же, когда повязка уже найдена: два обращения к Curios за тик ни к чему. */
+    public static float защита(ServerPlayer игрок, ItemStack повязка) {
+        float отБрони = игрок.getArmorValue() * PlagueConstants.ARMOR_PROTECTION_PER_POINT;
+        float отПовязки = повязка.isEmpty() ? 0f : PlagueConstants.MASK_PROTECTION;
         float отКлассов = ClassBridge.дополнительнаяЗащита(игрок);
-        return Math.min(0.9f, отБрони + отКлассов);
+        return Math.min(0.9f, отБрони + отПовязки + отКлассов);
     }
 
     /** Выставить заражённость снаружи: команда, отвар, лекарство Клирика. */

@@ -26,6 +26,9 @@ import java.util.List;
  * Радиус шесть блоков, а не два. При двух достаточно отойти на три шага,
  * и болезнь становится личной проблемой каждого. При шести больного
  * нельзя просто взять с собой — его либо лечат, либо оставляют.
+ *
+ * Сам кашель к тому же сбивает дыхание: приступ живёт
+ * в {@link PlagueSymptoms} и цепляется к каждому кашлю.
  */
 @EventBusSubscriber(modid = PlagueCore.MODID)
 public final class PlagueCough {
@@ -44,6 +47,7 @@ public final class PlagueCough {
         if (больной.tickCount % период != 0) return;
 
         кашлянуть(мир, больной);
+        PlagueSymptoms.приступ(больной, стадия);
         заразитьРядом(мир, больной, PlagueConstants.PLAYER_COUGH_CHANCE[стадия]);
     }
 
@@ -54,7 +58,7 @@ public final class PlagueCough {
      * ±6 % от броска к броску: два кашля подряд не должны звучать
      * как один файл, проигранный дважды.
      */
-    private static void кашлянуть(ServerLevel мир, ServerPlayer больной) {
+    static void кашлянуть(ServerLevel мир, ServerPlayer больной) {
         float тон = 0.94f + мир.random.nextFloat() * 0.12f;
         мир.playSound(null, больной.getX(), больной.getY(), больной.getZ(),
             PlagueSounds.PLAYER_COUGH.get(), SoundSource.PLAYERS, 1.0f, тон);
