@@ -137,10 +137,18 @@ public class PurifierBlockEntity extends BlockEntity {
         return всё;
     }
 
+    /**
+     * Латунный ли это тир. Спрашиваем блок, а не своё поле: тир задан
+     * тем, что стоит в мире, и в NBT его хранить незачем.
+     */
+    private boolean латунный() {
+        return PurifierBlock.латунный(getBlockState());
+    }
+
     /** Строка состояния для правого клика пустой рукой. */
     public Component состояние(Level мир, BlockPos позиция) {
         float скорость = CreateBridge.скоростьРядом(мир, позиция);
-        if (скорость < ClassesConfig.очистительМинСкорость()) {
+        if (скорость < ClassesConfig.очистительМинСкорость(латунный())) {
             return Component.translatable("msg.lmpc_classes.purifier.no_power");
         }
         if (реагент.isEmpty()) {
@@ -160,7 +168,8 @@ public class PurifierBlockEntity extends BlockEntity {
         if (уровень.getGameTime() % ИНТЕРВАЛ == 0) {
             сам.скорость = CreateBridge.скоростьРядом(уровень, позиция);
             сам.работает = !сам.реагент.isEmpty()
-                && сам.скорость >= ClassesConfig.очистительМинСкорость();
+                && сам.скорость
+                   >= ClassesConfig.очистительМинСкорость(PurifierBlock.латунный(состояние));
 
             // Свечение и «включённый» вид — то же поле, что и эффекты,
             // поэтому состояние переставляется здесь же, раз в секунду
@@ -298,7 +307,7 @@ public class PurifierBlockEntity extends BlockEntity {
         int тир = ClassParty.тир(уровень.getServer(), PlayerClassData.Класс.SMITH);
         float сила = ClassesConfig.очистительСила(тир);
         float сопротивление = ClassesConfig.очистительСопротивление();
-        int радиус = ClassesConfig.очистительРадиус();
+        int радиус = ClassesConfig.очистительРадиус(сам.латунный());
         int попыток = ClassesConfig.очистительПопыток();
         int чанкX = позиция.getX() >> 4;
         int чанкZ = позиция.getZ() >> 4;
@@ -322,7 +331,11 @@ public class PurifierBlockEntity extends BlockEntity {
         // 3 × 3 съедала бы стопку за неделю, и очиститель превращался бы
         // в кормушку. ponytail: плоская цена, вводить цену за чанк,
         // если реагент окажется слишком дешёвым.
-        сам.реагент.shrink(1);
+        // Расход тира: андезитовый съедает один реагент за ночь, латунный —
+        // четыре (спек 10.1). Если внутри осталось меньше, забираем сколько
+        // есть: работа уже сделана, а недодавать за неё нечем.
+        сам.реагент.shrink(Math.min(
+            ClassesConfig.очистительРасход(сам.латунный()), сам.реагент.getCount()));
         сам.setChanged();
 
         ночнойВсплеск(уровень, позиция, радиус, снизился);

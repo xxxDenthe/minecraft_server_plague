@@ -1,25 +1,15 @@
 {
-  "type": "create:mechanical_crafting",
-  "category": "misc",
-  "accept_mirrored": false,
-  "show_notification": true,
-  "pattern": [
-    "AFA",
-    "PXP",
-    "CMC"
+  "type": "create:compacting",
+  "ingredients": [
+    { "item": "create:andesite_casing" },
+    { "item": "create:copper_sheet" },
+    { "item": "create:copper_sheet" },
+    { "item": "create:filter" },
+    { "item": "lmpc_classes:cleansing_agent" }
   ],
-  "key": {
-    "A": { "item": "create:andesite_alloy" },
-    "F": { "item": "create:filter" },
-    "P": { "item": "create:fluid_pipe" },
-    "X": { "item": "create:precision_mechanism" },
-    "C": { "item": "create:andesite_casing" },
-    "M": { "item": "create:mechanical_pump" }
-  },
-  "result": {
-    "id": "lmpc_classes:andesite_purifier",
-    "count": 1
-  },
+  "results": [
+    { "id": "lmpc_classes:andesite_purifier" }
+  ],
   "neoforge:conditions": [
     { "type": "neoforge:mod_loaded", "modid": "create" }
   ]

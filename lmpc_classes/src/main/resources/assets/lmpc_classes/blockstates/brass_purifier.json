@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "lit=false": { "model": "lmpc_classes:block/brass_purifier" },
+    "lit=true":  { "model": "lmpc_classes:block/brass_purifier" }
+  }
+}

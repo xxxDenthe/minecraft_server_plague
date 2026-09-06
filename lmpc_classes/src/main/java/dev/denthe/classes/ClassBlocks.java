@@ -62,6 +62,30 @@ public final class ClassBlocks {
     public static final DeferredItem<BlockItem> ANDESITE_PURIFIER_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(ANDESITE_PURIFIER);
 
+    /**
+     * Латунный очиститель — второй тир спека ядра 10.1: шире область,
+     * выше требуемая скорость, вчетверо больше расход реагента.
+     *
+     * Тот же класс блока и та же сущность блока, что у андезитового:
+     * различия целиком в числах конфига, а не в поведении. Тир читается
+     * из состояния ({@link PurifierBlock#латунный}), поэтому второго
+     * класса, второго тикера и второй копии ночного шага не заведено.
+     *
+     * <b>Ставит только Кузнец</b> — единственное поведенческое отличие,
+     * и оно тоже в {@link PurifierBlock}. Это требование спека:
+     * доступным без класса должен быть первый тир, а не все.
+     */
+    public static final DeferredBlock<PurifierBlock> BRASS_PURIFIER = БЛОКИ.registerBlock(
+        "brass_purifier",
+        PurifierBlock::new,
+        BlockBehaviour.Properties.ofFullCopy(Blocks.POLISHED_ANDESITE)
+            .mapColor(MapColor.GOLD)
+            .lightLevel(состояние -> состояние.getValue(PurifierBlock.РАБОТАЕТ) ? 9 : 0)
+            .noOcclusion());
+
+    public static final DeferredItem<BlockItem> BRASS_PURIFIER_ITEM =
+        ПРЕДМЕТЫ.registerSimpleBlockItem(BRASS_PURIFIER);
+
     public static void register(IEventBus modEventBus) {
         БЛОКИ.register(modEventBus);
         ПРЕДМЕТЫ.register(modEventBus);

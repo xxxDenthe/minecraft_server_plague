@@ -2,11 +2,13 @@ package dev.denthe.classes;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -58,9 +60,43 @@ public class PurifierBlock extends BaseEntityBlock {
         return CODEC;
     }
 
+    /**
+     * Латунный ли это тир. Тир живёт в самом блоке, а не в поле сущности:
+     * так его видно и там, где сущности ещё нет — например при постановке.
+     */
+    public static boolean латунный(BlockState состояние) {
+        return состояние.is(ClassBlocks.BRASS_PURIFIER.get());
+    }
+
     @Override
     public BlockEntity newBlockEntity(BlockPos позиция, BlockState состояние) {
         return new PurifierBlockEntity(позиция, состояние);
+    }
+
+    /**
+     * Латунный очиститель ставит только Кузнец (спек ядра 10.1).
+     * Возврат {@code null} отменяет постановку — блок не тратится.
+     *
+     * Проверка стоит на постановке, а не на крафте, тем же приёмом, что
+     * у грядки Фермера и отвара Клирика: собрать вещь может кто угодно,
+     * толк от неё — у класса. Иначе Кузнец без сборщиков не может дать
+     * компании второй тир, даже когда всё для него добыто.
+     */
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext контекст) {
+        BlockState состояние = super.getStateForPlacement(контекст);
+        if (состояние == null || !латунный(состояние)) return состояние;
+
+        Player игрок = контекст.getPlayer();
+        if (игрок == null
+                || PlayerClassData.данные(игрок).класс == PlayerClassData.Класс.SMITH) {
+            return состояние;
+        }
+        if (!контекст.getLevel().isClientSide()) {
+            игрок.displayClientMessage(
+                Component.translatable("msg.lmpc_classes.purifier.smith_only"), true);
+        }
+        return null;
     }
 
     @Override
