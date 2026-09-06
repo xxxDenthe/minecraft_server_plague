@@ -56,6 +56,8 @@ public class RottenHeart extends Mob implements GeoEntity {
 
     private final AnimatableInstanceCache кэш = GeckoLibUtil.createInstanceCache(this);
 
+    private final HeartFight бой = new HeartFight(this);
+
     public RottenHeart(EntityType<? extends RottenHeart> тип, Level уровень) {
         super(тип, уровень);
         setNoAi(true);
@@ -90,6 +92,20 @@ public class RottenHeart extends Mob implements GeoEntity {
         return this.entityData.get(МАСКА);
     }
 
+    /** Состояние финального боя. Читают волны, импульс и панель мастера. */
+    public HeartFight бой() {
+        return бой;
+    }
+
+    /**
+     * Пересчитать куски по текущему здоровью. Публично, потому что
+     * Сердце меняет здоровье не только от удара: во сне оно лечится,
+     * и дырки обязаны зарастать вместе со здоровьем.
+     */
+    public void обновитьКуски() {
+        пересчитатьКуски();
+    }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder строитель) {
         super.defineSynchedData(строитель);
@@ -99,7 +115,10 @@ public class RottenHeart extends Mob implements GeoEntity {
     @Override
     public boolean hurt(DamageSource источник, float урон) {
         boolean попали = super.hurt(источник, урон);
-        if (попали && !level().isClientSide) пересчитатьКуски();
+        if (попали && !level().isClientSide) {
+            пересчитатьКуски();
+            бой.приУдаре();
+        }
         return попали;
     }
 
@@ -109,6 +128,8 @@ public class RottenHeart extends Mob implements GeoEntity {
      */
     @Override
     public boolean isInvulnerableTo(DamageSource источник) {
+        // Спазм: пока волна жива, по Сердцу не проходит вообще ничего.
+        if (бой.закрыто()) return true;
         return super.isInvulnerableTo(источник)
             || источник.is(DamageTypeTags.IS_FIRE)
             || источник.is(DamageTypeTags.IS_FREEZING)
@@ -159,6 +180,12 @@ public class RottenHeart extends Mob implements GeoEntity {
     // ── смерть ────────────────────────────────────────────────────────
 
     @Override
+    public void tick() {
+        super.tick();
+        if (!level().isClientSide) бой.тик();
+    }
+
+    @Override
     public void die(DamageSource источник) {
         super.die(источник);
         if (level() instanceof ServerLevel сервер) сердцеУничтожено(сервер);
@@ -194,6 +221,7 @@ public class RottenHeart extends Mob implements GeoEntity {
     public void addAdditionalSaveData(CompoundTag тег) {
         super.addAdditionalSaveData(тег);
         тег.putInt(КЛЮЧ_МАСКИ, маскаКусков());
+        бой.сохранить(тег);
     }
 
     @Override
@@ -204,6 +232,7 @@ public class RottenHeart extends Mob implements GeoEntity {
         // Расхождение возможно после правки здоровья в конфиге,
         // и побеждает здоровье.
         this.entityData.set(МАСКА, HeartDecay.маска(getHealth(), getMaxHealth()));
+        бой.загрузить(тег);
     }
 
     // ── неподвижность ─────────────────────────────────────────────────
