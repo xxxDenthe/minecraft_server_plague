@@ -40,6 +40,7 @@ coroutil-neoforge-1.21.0-1.3.8.jar
 corpse-neoforge-1.21.1-1.1.13.jar
 corpsecurioscompat-1.21.1-NeoForge-4.0.1.jar
 create-1.21.1-6.0.10.jar
+create-collision-fix-1.0.0.jar   # заплатка к Create 6.0.10, снять на 6.0.11, см. заметку 2026-09-06-krashi-create-i-veil
 create_connected-1.3.3-mc1.21.1.jar
 create_power_loader-2.0.5-mc1.21.1.jar
 createaddition-1.7.0.jar
