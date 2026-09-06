@@ -43,6 +43,11 @@ public final class HeartFight {
 
     private static final String КЛЮЧ_ФАЗЫ = "FightPhase";
     private static final String КЛЮЧ_ВОЛНЫ = "FightWave";
+    private static final String КЛЮЧ_НОЧИ_СНА = "SleepNight";
+    private static final String КЛЮЧ_ЗДОРОВЬЯ_СНА = "SleepHealth";
+
+    /** Как часто проверять, не опустел ли зал. Раз в секунду хватает. */
+    private static final int ПЕРИОД_ПРОВЕРКИ_ЗАЛА = 20;
 
     /** Сколько раз пробуем найти место под одного моба. */
     private static final int ПОПЫТОК_НА_МОБА = 24;
@@ -76,6 +81,15 @@ public final class HeartFight {
      */
     private int доИмпульса = 0;
 
+    /** Ночь, в которую Сердце уснуло. -1 — не спит. */
+    private int ночьСна = -1;
+
+    /** Здоровье в момент засыпания: от него считается лечение. */
+    private float здоровьеСна = 0f;
+
+    /** Тиков до следующей проверки зала. */
+    private int доПроверкиЗала = 0;
+
     public HeartFight(RottenHeart сердце) {
         this.сердце = сердце;
     }
@@ -85,6 +99,12 @@ public final class HeartFight {
     /** Каждый тик сущности, только на сервере. */
     public void тик() {
         if (фазаСпазма == 0) return;   // бой ещё не начинался
+
+        if (--доПроверкиЗала <= 0) {
+            доПроверкиЗала = ПЕРИОД_ПРОВЕРКИ_ЗАЛА;
+            следитьЗаЗалом();
+        }
+        if (спит()) return;
 
         if (--доИмпульса > 0) return;
         доИмпульса = Math.max(1, PlagueConstants.HEART_PULSE_SECONDS * 20);
@@ -259,6 +279,61 @@ public final class HeartFight {
         волна.clear();
     }
 
+    /** Сердце спит: зал пуст, бой брошен, идёт лечение. */
+    public boolean спит() {
+        return ночьСна >= 0;
+    }
+
+    /**
+     * Уснуть, когда зал опустел, и проснуться, когда в него вошли.
+     *
+     * Провал не отменяет сессию: цена — три ночи, за которые мир гниёт
+     * дальше по обычной кривой. Одна попытка с закрытой навсегда дверью
+     * означала бы, что вайп восьмерых в первые две минуты ломает вечер.
+     */
+    private void следитьЗаЗалом() {
+        if (!(сердце.level() instanceof ServerLevel мир)) return;
+
+        boolean естьЛюди = !залВСборе().isEmpty();
+
+        if (!спит()) {
+            if (естьЛюди) return;
+            ночьСна = PlagueState.get(мир).night();
+            здоровьеСна = сердце.getHealth();
+            разогнатьВолну();
+            return;
+        }
+
+        лечиться(мир);
+        if (естьЛюди) {
+            ночьСна = -1;
+            доИмпульса = Math.max(1, PlagueConstants.HEART_PULSE_SECONDS * 20);
+        }
+    }
+
+    /**
+     * Здоровье растёт от ночи засыпания к полному за столько ночей,
+     * сколько стоит в конфиге. Куски зарастают сами: маска считается
+     * из здоровья, и обновить её — одна строка.
+     */
+    private void лечиться(ServerLevel мир) {
+        int ночей = Math.max(1, PlagueConstants.HEART_SLEEP_NIGHTS);
+        int прошло = PlagueState.get(мир).night() - ночьСна;
+        if (прошло <= 0) return;
+
+        float максимум = сердце.getMaxHealth();
+        float доля = Math.min(1f, (float) прошло / ночей);
+        float цель = здоровьеСна + (максимум - здоровьеСна) * доля;
+        if (цель <= сердце.getHealth()) return;
+
+        сердце.setHealth(цель);
+        сердце.обновитьКуски();
+
+        // Целое Сердце — это новый бой с самого начала: первый же удар
+        // должен снова выпустить первую волну.
+        if (сердце.getHealth() >= максимум) фазаСпазма = 0;
+    }
+
     // ── зал ───────────────────────────────────────────────────────────
 
     /**
@@ -292,6 +367,9 @@ public final class HeartFight {
         ListTag список = new ListTag();
         for (UUID ид : волна) список.add(NbtUtils.createUUID(ид));
         тег.put(КЛЮЧ_ВОЛНЫ, список);
+
+        тег.putInt(КЛЮЧ_НОЧИ_СНА, ночьСна);
+        тег.putFloat(КЛЮЧ_ЗДОРОВЬЯ_СНА, здоровьеСна);
     }
 
     public void загрузить(CompoundTag тег) {
@@ -301,5 +379,8 @@ public final class HeartFight {
         for (Tag элемент : тег.getList(КЛЮЧ_ВОЛНЫ, Tag.TAG_INT_ARRAY)) {
             волна.add(NbtUtils.loadUUID(элемент));
         }
+
+        ночьСна = тег.contains(КЛЮЧ_НОЧИ_СНА) ? тег.getInt(КЛЮЧ_НОЧИ_СНА) : -1;
+        здоровьеСна = тег.getFloat(КЛЮЧ_ЗДОРОВЬЯ_СНА);
     }
 }
