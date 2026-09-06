@@ -3,6 +3,7 @@ package dev.denthe.plaguecore.mc;
 import dev.denthe.plaguecore.PlagueConstants;
 import dev.denthe.plaguecore.core.FightPhases;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
@@ -68,6 +69,13 @@ public final class HeartFight {
      */
     private final List<UUID> волна = new ArrayList<>();
 
+    /**
+     * Тиков до следующего импульса. Не сохраняется: после перезахода
+     * счёт пойдёт заново, и это ровно то, что нужно — иначе игрок
+     * получал бы удар чумой в момент входа в мир.
+     */
+    private int доИмпульса = 0;
+
     public HeartFight(RottenHeart сердце) {
         this.сердце = сердце;
     }
@@ -76,7 +84,46 @@ public final class HeartFight {
 
     /** Каждый тик сущности, только на сервере. */
     public void тик() {
-        // Волны, импульс и сон приедут сюда в задачах 4–6.
+        if (фазаСпазма == 0) return;   // бой ещё не начинался
+
+        if (--доИмпульса > 0) return;
+        доИмпульса = Math.max(1, PlagueConstants.HEART_PULSE_SECONDS * 20);
+        импульс();
+    }
+
+    /**
+     * Сердце давит чумой на весь зал.
+     *
+     * Всю работу делает подсистема 2: экран тускнеет, голос хрипнет,
+     * идёт кашель. К третьей фазе восемь человек в голосовом чате
+     * перестают разбирать друг друга — дописывать для этого нечего.
+     *
+     * Импульс режется вдвое, если чанк под Сердцем опущен до чистого
+     * уровня. Опустить его может только очиститель Кузнеца, поставленный
+     * до боя: у штурма появляется подготовка, а у Кузнеца — роль.
+     */
+    private void импульс() {
+        if (!(сердце.level() instanceof ServerLevel мир)) return;
+
+        List<ServerPlayer> зал = залВСборе();
+        if (зал.isEmpty()) return;
+
+        int фаза = Math.min(фазаСпазма, FightPhases.ФАЗ);
+        float сила = PlagueConstants.HEART_PULSE[фаза - 1];
+
+        int уровень = PlagueApi.getChunkLevelAt(мир, сердце.blockPosition());
+        if (уровень <= PlagueConstants.HEART_PULSE_CLEAN_LEVEL) сила *= 0.5f;
+        if (сила <= 0f) return;
+
+        for (ServerPlayer игрок : зал) {
+            PlayerInfection.задать(игрок, PlagueApi.getInfection(игрок) + сила);
+        }
+
+        мир.sendParticles(ParticleTypes.SCULK_SOUL,
+            сердце.getX(), сердце.getY() + сердце.getBbHeight() * 0.5, сердце.getZ(),
+            60, 2.0, 1.0, 2.0, 0.05);
+        мир.playSound(null, сердце.getX(), сердце.getY(), сердце.getZ(),
+            SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.HOSTILE, 2.0F, 0.5F);
     }
 
     /**
