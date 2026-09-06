@@ -37,7 +37,7 @@ public final class PlagueNetwork {
     private PlagueNetwork() {}
 
     /** Версия протокола. Меняется, если поменяется формат пакетов. */
-    private static final String VERSION = "4";
+    private static final String VERSION = "5";
 
     // ── номера действий ────────────────────────────────────────────────
     public static final int ACTION_REFRESH = 0;
