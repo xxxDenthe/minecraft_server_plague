@@ -53,6 +53,19 @@ public final class ClassItems {
     public static final DeferredItem<net.minecraft.world.item.Item> CLEANSING_AGENT =
         ПРЕДМЕТЫ.registerSimpleItem("cleansing_agent");
 
+    /**
+     * Полуфабрикат андезитового очистителя — предмет ради сборочной
+     * линии Create, а не ради игрока. `create:sequenced_assembly`
+     * требует «переходный» предмет, в котором хранится прогресс сборки:
+     * корпус едет по ленте, на каждом шаге превращается в него же,
+     * и только после последнего круга становится очистителем.
+     *
+     * Своими руками его не сделать и незачем: крафта у него нет,
+     * а на депоте он живёт секунды.
+     */
+    public static final DeferredItem<net.minecraft.world.item.Item> INCOMPLETE_ANDESITE_PURIFIER =
+        ПРЕДМЕТЫ.registerSimpleItem("incomplete_andesite_purifier");
+
     public static void register(IEventBus modEventBus) {
         ПРЕДМЕТЫ.register(modEventBus);
         modEventBus.addListener(ClassItems::настройка);

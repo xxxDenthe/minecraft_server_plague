@@ -1,14 +1,35 @@
 {
-  "type": "create:compacting",
-  "ingredients": [
-    { "item": "create:andesite_casing" },
-    { "item": "create:copper_sheet" },
-    { "item": "create:copper_sheet" },
-    { "item": "create:filter" },
-    { "item": "lmpc_classes:cleansing_agent" }
-  ],
+  "type": "create:sequenced_assembly",
+  "ingredient": { "item": "create:andesite_casing" },
+  "transitional_item": { "id": "lmpc_classes:incomplete_andesite_purifier" },
+  "loops": 2,
   "results": [
     { "id": "lmpc_classes:andesite_purifier" }
+  ],
+  "sequence": [
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        { "item": "lmpc_classes:incomplete_andesite_purifier" },
+        { "item": "create:copper_sheet" }
+      ],
+      "results": [ { "id": "lmpc_classes:incomplete_andesite_purifier" } ]
+    },
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        { "item": "lmpc_classes:incomplete_andesite_purifier" },
+        { "item": "lmpc_classes:cleansing_agent" }
+      ],
+      "results": [ { "id": "lmpc_classes:incomplete_andesite_purifier" } ]
+    },
+    {
+      "type": "create:pressing",
+      "ingredients": [
+        { "item": "lmpc_classes:incomplete_andesite_purifier" }
+      ],
+      "results": [ { "id": "lmpc_classes:incomplete_andesite_purifier" } ]
+    }
   ],
   "neoforge:conditions": [
     { "type": "neoforge:mod_loaded", "modid": "create" }
