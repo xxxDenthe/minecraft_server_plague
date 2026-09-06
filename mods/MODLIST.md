@@ -115,6 +115,7 @@ t_and_t-fabric-neoforge-1.13.11.jar
 tectonic-3.0.26-neoforge-21.1.jar
 ThirstWasTaken-1.21.1-2.1.5-nojade.jar   # пропатчен, см. заметку 2026-09-05-jade-otkachen-radi-zhazhdy
 TravelersTitles-1.21.1-NeoForge-5.1.3.jar
+veil-neoforge-1.21.1-4.4.1.jar   # поверх Veil 4.3.2 из sable, см. заметку 2026-09-06-krashi-create-i-veil
 visuality-forge-3.0.0.jar
 voicechat-neoforge-1.21.1-2.6.22.jar
 worldedit-mod-7.3.8.jar
