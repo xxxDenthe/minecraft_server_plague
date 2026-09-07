@@ -1,4 +1,4 @@
 {
   "parent": "item/generated",
-  "textures": { "layer0": "minecraft:item/dragon_breath" }
+  "textures": { "layer0": "create:item/antioxidant" }
 }
