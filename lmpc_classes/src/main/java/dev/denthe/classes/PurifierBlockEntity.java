@@ -2,6 +2,7 @@ package dev.denthe.classes;
 
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
+import net.createmod.catnip.lang.LangBuilder;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -86,6 +87,7 @@ public class PurifierBlockEntity extends KineticBlockEntity {
     private static final String КЛЮЧ_РЕАГЕНТ = "Reagent";
     private static final String КЛЮЧ_НОЧЬ = "LastNight";
     private static final String КЛЮЧ_ФОРСАЖ = "Overdrive";
+    private static final String КЛЮЧ_ТИР = "SmithTier";
 
     private ItemStack реагент = ItemStack.EMPTY;
 
@@ -115,6 +117,22 @@ public class PurifierBlockEntity extends KineticBlockEntity {
      * это лучше нас, спросим заново через секунду.
      */
     private int заражение = 0;
+
+    /**
+     * Тир Кузнеца в партии на последнем пересчёте — только ради очков
+     * инженера. В NBT пишется и уезжает на клиент, потому что панель
+     * очков рисуется на клиенте, а списка игроков и их мастерства там
+     * нет. Работа очистителя это поле не читает: ночной шаг спрашивает
+     * {@link ClassParty} заново и на сервере.
+     */
+    private int тирПартии = 0;
+
+    /**
+     * Что о реагенте и тире уже уехало на клиент. Пакет шлём только
+     * при смене: сам по себе очиститель молчалив, а очки инженера
+     * терпят задержку до секунды.
+     */
+    private int показанныйРеагент = -1;
 
     /**
      * Форсаж Кузнеца: ближайшая ночь отрабатывается по площади тира
@@ -322,6 +340,55 @@ public class PurifierBlockEntity extends KineticBlockEntity {
                 : Component.literal(ClassMastery.римская(тир)));
     }
 
+    /**
+     * Панель очков инженера. Скорость и нагрузку {@link KineticBlockEntity}
+     * рисует сам — дописываем только то, что знает один очиститель:
+     * остаток реагента, тир Кузнеца в партии и хватает ли оборотов
+     * на ночную работу.
+     *
+     * <p>Метод целиком клиентский, поэтому спрашивать сервер тут нельзя:
+     * реагент и тир приезжают в NBT (см. {@link #тик}), скорость Create
+     * синхронизирует сам, а порог скорости лежит в общем конфиге,
+     * который есть и на клиенте.
+     */
+    @Override
+    public boolean addToGoggleTooltip(List<Component> подсказка, boolean приседает) {
+        super.addToGoggleTooltip(подсказка, приседает);
+
+        float нужно = ClassesConfig.очистительМинСкорость(латунный());
+        boolean хватает = Math.abs(getSpeed()) >= нужно;
+
+        строка().translate("gui.goggles.purifier").forGoggles(подсказка);
+
+        (реагент.isEmpty()
+            ? строка().translate("gui.goggles.purifier.no_reagent").style(ChatFormatting.RED)
+            : строка().translate("gui.goggles.purifier.reagent", реагент.getCount())
+                .style(ChatFormatting.AQUA))
+            .forGoggles(подсказка, 1);
+
+        (тирПартии == 0
+            ? строка().translate("gui.goggles.purifier.no_smith").style(ChatFormatting.GRAY)
+            : строка().translate("gui.goggles.purifier.smith", ClassMastery.римская(тирПартии))
+                .style(ChatFormatting.AQUA))
+            .forGoggles(подсказка, 1);
+
+        (хватает
+            ? строка().translate("gui.goggles.purifier.speed_ok").style(ChatFormatting.GREEN)
+            : строка().translate("gui.goggles.purifier.speed_low", (int) нужно)
+                .style(ChatFormatting.RED))
+            .forGoggles(подсказка, 1);
+
+        return true;
+    }
+
+    /**
+     * Строка перевода в нашем пространстве имён: {@code CreateLang}
+     * умеет только ключи самого Create.
+     */
+    private static LangBuilder строка() {
+        return new LangBuilder(LmpcClasses.MODID);
+    }
+
     public static void тик(Level мир, BlockPos позиция, BlockState состояние, PurifierBlockEntity сам) {
         if (!(мир instanceof ServerLevel уровень)) return;
 
@@ -343,6 +410,15 @@ public class PurifierBlockEntity extends KineticBlockEntity {
             }
             сам.заражение = PlagueBridge.уровеньЧанка(
                 уровень, позиция.getX() >> 4, позиция.getZ() >> 4);
+
+            // Очки инженера: пакет уходит только когда показывать стало
+            // что-то другое, а не шестьдесят раз в секунду.
+            int тир = ClassParty.тир(уровень.getServer(), PlayerClassData.Класс.SMITH);
+            if (тир != сам.тирПартии || сам.показанныйРеагент != сам.реагент.getCount()) {
+                сам.тирПартии = тир;
+                сам.показанныйРеагент = сам.реагент.getCount();
+                сам.notifyUpdate();
+            }
             ночнойШаг(уровень, позиция, сам);
             сдатьОтчёт(уровень);
         }
@@ -607,6 +683,7 @@ public class PurifierBlockEntity extends KineticBlockEntity {
         super.write(тег, реестры, клиентскийПакет);
         тег.putInt(КЛЮЧ_НОЧЬ, последняяНочь);
         if (форсаж) тег.putBoolean(КЛЮЧ_ФОРСАЖ, true);
+        if (тирПартии > 0) тег.putInt(КЛЮЧ_ТИР, тирПартии);
         if (!реагент.isEmpty()) тег.put(КЛЮЧ_РЕАГЕНТ, реагент.save(реестры));
     }
 
@@ -615,6 +692,7 @@ public class PurifierBlockEntity extends KineticBlockEntity {
         super.read(тег, реестры, клиентскийПакет);
         последняяНочь = тег.contains(КЛЮЧ_НОЧЬ) ? тег.getInt(КЛЮЧ_НОЧЬ) : -1;
         форсаж = тег.getBoolean(КЛЮЧ_ФОРСАЖ);
+        тирПартии = тег.getInt(КЛЮЧ_ТИР);
         реагент = тег.contains(КЛЮЧ_РЕАГЕНТ)
             ? ItemStack.parse(реестры, тег.getCompound(КЛЮЧ_РЕАГЕНТ)).orElse(ItemStack.EMPTY)
             : ItemStack.EMPTY;
