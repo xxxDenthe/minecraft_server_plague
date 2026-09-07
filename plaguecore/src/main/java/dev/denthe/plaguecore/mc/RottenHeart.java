@@ -201,9 +201,8 @@ public class RottenHeart extends Mob implements GeoEntity {
     }
 
     /**
-     * Крючок подсистемы 6 «Финал». Сейчас здесь только вспышка и звук.
-     * Очистка мира, конец сессии и всё прочее впишутся сюда, когда финал
-     * спроектируют, — искать это место больше нигде не придётся.
+     * Финал: Сердце пало. Вспышка и три стадии победы —
+     * в {@link HeartVictory}, здесь только грохот на месте события.
      */
     private void сердцеУничтожено(ServerLevel сервер) {
         double центр = getY() + getBbHeight() * 0.5;
@@ -213,6 +212,9 @@ public class RottenHeart extends Mob implements GeoEntity {
             300, 1.5, 1.5, 1.5, 0.08);
         сервер.playSound(null, getX(), getY(), getZ(),
             SoundEvents.SCULK_CATALYST_BREAK, SoundSource.HOSTILE, 2.0F, 0.4F);
+
+        бой.разогнатьВолну();
+        HeartVictory.начать(сервер, blockPosition());
     }
 
     // ── сохранение ────────────────────────────────────────────────────

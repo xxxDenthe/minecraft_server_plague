@@ -22,5 +22,6 @@
   "item.plaguecore.plague_mask": "Cloth Mask",
   "item.plaguecore.rotten_heart_spawn_egg": "Plague Heart Spawn Egg",
   "itemGroup.plaguecore": "Plague",
+  "message.plaguecore.victory": "The Heart has fallen. The land breathes.",
   "subtitles.plaguecore.player_cough": "Coughing"
 }

@@ -22,5 +22,6 @@
   "item.plaguecore.plague_mask": "Тряпичная повязка",
   "item.plaguecore.rotten_heart_spawn_egg": "Яйцо призыва Сердца чумы",
   "itemGroup.plaguecore": "Чума",
+  "message.plaguecore.victory": "Сердце пало. Земля дышит.",
   "subtitles.plaguecore.player_cough": "Кашель"
 }
