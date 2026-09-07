@@ -13,11 +13,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
-
-import java.util.List;
 
 /**
  * Улучшенный отвар Клирика. Спек — 2026-09-04-klassy-design.md, раздел 4.
@@ -52,20 +49,6 @@ public class ClericsBrewItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level мир, Player игрок, InteractionHand рука) {
         return ItemUtils.startUsingInstantly(мир, игрок, рука);
-    }
-
-    /**
-     * Подсказка в инвентаре. Класс-гейт у предмета невидимый: без
-     * строчки в тултипе не-Клирик узнаёт о нём, только потеряв
-     * бутылку. Второй строкой — что отвар можно не только выпить.
-     */
-    @Override
-    public void appendHoverText(
-            ItemStack стопка, TooltipContext контекст, List<Component> строки, TooltipFlag флаг) {
-        строки.add(Component.translatable("tooltip.lmpc_classes.clerics_brew.gate")
-            .withStyle(net.minecraft.ChatFormatting.GRAY));
-        строки.add(Component.translatable("tooltip.lmpc_classes.clerics_brew.feed")
-            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
     }
 
     /**

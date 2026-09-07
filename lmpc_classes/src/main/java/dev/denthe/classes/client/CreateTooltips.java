@@ -2,6 +2,7 @@ package dev.denthe.classes.client;
 
 import com.simibubi.create.foundation.item.ItemDescription;
 import com.simibubi.create.foundation.item.TooltipModifier;
+import dev.denthe.classes.ClassBlocks;
 import dev.denthe.classes.ClassItems;
 import dev.denthe.classes.LmpcClasses;
 import net.createmod.catnip.lang.FontHelper;
@@ -45,6 +46,12 @@ public final class CreateTooltips {
             подключить(ClassItems.PLAGUE_BLOOM);
             подключить(ClassItems.CLEANSING_AGENT);
             подключить(ClassItems.CENSER);
+            подключить(ClassItems.CLERICS_BREW);
+            // Блочные предметы подключаются той же строкой: Create
+            // строит ключ из getDescriptionId(), поэтому у очистителей
+            // он начинается с block., а не с item.
+            подключить(ClassBlocks.ANDESITE_PURIFIER_ITEM);
+            подключить(ClassBlocks.BRASS_PURIFIER_ITEM);
         });
     }
 

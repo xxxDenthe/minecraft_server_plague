@@ -21,29 +21,40 @@ import sys
 ЯЗЫКИ = КОРЕНЬ / "src/main/resources/assets/lmpc_classes/lang"
 ИСХОДНИК = КОРЕНЬ / "src/main/java/dev/denthe/classes/client/CreateTooltips.java"
 ПРЕДМЕТЫ = КОРЕНЬ / "src/main/java/dev/denthe/classes/ClassItems.java"
+БЛОКИ = КОРЕНЬ / "src/main/java/dev/denthe/classes/ClassBlocks.java"
 
 
 def зарегистрированные() -> list[str]:
-    """Имена предметов, подключённых к подсказкам Create."""
-    поля = re.findall(r"подключить\(ClassItems\.(\w+)\)", ИСХОДНИК.read_text(encoding="utf-8"))
-    исходник = ПРЕДМЕТЫ.read_text(encoding="utf-8")
-    имена = []
-    for поле in поля:
+    """Корни ключей подсказок: `item.lmpc_classes.<имя>.tooltip` и `block....`.
+
+    Create строит ключ из `getDescriptionId()`, поэтому у блочных предметов
+    (оба очистителя) он начинается с `block.`, а не с `item.`.
+    """
+    поля = re.findall(r"подключить\((ClassItems|ClassBlocks)\.(\w+)\)",
+                      ИСХОДНИК.read_text(encoding="utf-8"))
+    исходники = {"ClassItems": ПРЕДМЕТЫ.read_text(encoding="utf-8"),
+                 "ClassBlocks": БЛОКИ.read_text(encoding="utf-8")}
+    корни = []
+    for откуда, поле in поля:
+        блочный = откуда == "ClassBlocks"
+        # У блочного предмета имени при нём нет, оно стоит при самом блоке:
+        # `ANDESITE_PURIFIER_ITEM = ПРЕДМЕТЫ.registerSimpleBlockItem(ANDESITE_PURIFIER)`.
+        искать = поле[:-len("_ITEM")] if блочный and поле.endswith("_ITEM") else поле
         # `registerItem("censer", ...)` / `registerSimpleItem("cleansing_agent")`
+        # / `registerBlock("andesite_purifier", ...)`
         совпадение = re.search(
-            поле + r"\s*=[\s\S]{0,200}?register\w*\(\s*\n?\s*\"([a-z_]+)\"", исходник)
+            искать + r'\s*=[\s\S]{0,200}?register\w*\(\s*\n?\s*"([a-z_]+)"', исходники[откуда])
         if not совпадение:
-            sys.exit(f"не нашёл имя предмета для ClassItems.{поле}")
-        имена.append(совпадение.group(1))
-    return имена
+            sys.exit(f"не нашёл имя для {откуда}.{поле}")
+        корни.append(f"{'block' if блочный else 'item'}.lmpc_classes.{совпадение.group(1)}.tooltip")
+    return корни
 
 
 def main() -> int:
     языки = {ф.stem: json.loads(ф.read_text(encoding="utf-8")) for ф in ЯЗЫКИ.glob("*.json")}
     беды = []
 
-    for предмет in зарегистрированные():
-        корень = f"item.lmpc_classes.{предмет}.tooltip"
+    for корень in зарегистрированные():
         for язык, строки in языки.items():
             if f"{корень}.summary" not in строки:
                 беды.append(f"{язык}: нет {корень}.summary")
