@@ -21,7 +21,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.ServerChatEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -167,9 +167,15 @@ public final class PlagueWords {
 
     // раздача клиенту
 
+    /**
+     * Раздать словарь. Событие приходит и при входе игрока, и после
+     * {@code /reload} — второе важно: без него правка slova.json меняла
+     * список на сервере, а клиенты продолжали рисовать старый.
+     */
     @SubscribeEvent
-    public static void приВходе(PlayerEvent.PlayerLoggedInEvent событие) {
-        if (событие.getEntity() instanceof ServerPlayer игрок) синхронизировать(игрок);
+    public static void приСинхронизацииДатапака(OnDatapackSyncEvent событие) {
+        if (событие.getPlayer() != null) синхронизировать(событие.getPlayer());
+        else синхронизироватьВсех(событие.getPlayerList().getServer());
     }
 
     /** Послать одному игроку весь словарь. Подсказки — только Летописцу. */

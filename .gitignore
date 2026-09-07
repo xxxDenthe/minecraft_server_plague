@@ -1,6 +1,10 @@
 # Моды: джарники не версионируем — список зафиксирован в mods/MODLIST.md
 mods/*.jar
 mods/*.disabled
+mods/*.rar
+mods/*.zip
+mods/*.7z
+*.bak
 
 # Папка раздачи лаунчера: копия пака, 268 МБ джарников
 pack-build/

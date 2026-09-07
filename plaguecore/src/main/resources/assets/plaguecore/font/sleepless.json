@@ -5,10 +5,6 @@
       "id": "minecraft:include/space"
     },
     {
-      "type": "reference",
-      "id": "minecraft:include/default"
-    },
-    {
       "type": "bitmap",
       "file": "minecraft:font/ascii_sga.png",
       "ascent": 7,
@@ -55,6 +51,10 @@
         "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
         "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
       ]
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:include/default"
     }
   ]
 }
