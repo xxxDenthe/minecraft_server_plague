@@ -119,7 +119,7 @@
   "lmpc_classes.ponder.brass_purifier.text_2": "Он чистит 7 × 7 чанков вокруг себя вместо 3 × 3",
   "lmpc_classes.ponder.brass_purifier.text_3": "Ему нужно 32 оборота в минуту, а водяное колесо даёт восемь",
   "lmpc_classes.ponder.brass_purifier.text_4": "Контроллер скорости под большой шестернёй выставляет ровно столько, сколько нужно",
-  "lmpc_classes.ponder.brass_purifier.text_5": "Очиститель берёт вращение у шестерни снизу: годится сосед только снизу или сверху",
+  "lmpc_classes.ponder.brass_purifier.text_5": "Очиститель берёт вращение у шестерни снизу: вал подключается только снизу, и никак иначе",
   "lmpc_classes.ponder.brass_purifier.text_6": "За ночь съедает четыре реагента вместо одного",
   "lmpc_classes.ponder.brass_purifier.text_7": "Поставить его может только Кузнец. В чужих руках блок просто не встанет",
   "lmpc_classes.ponder.brass_purifier.text_8": "Собирается на механических сборщиках, а не на конвейере, как андезитовый"

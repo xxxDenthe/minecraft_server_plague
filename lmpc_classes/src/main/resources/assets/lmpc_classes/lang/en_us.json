@@ -119,7 +119,7 @@
   "lmpc_classes.ponder.brass_purifier.text_2": "It cleanses 7x7 chunks around itself instead of 3x3",
   "lmpc_classes.ponder.brass_purifier.text_3": "It needs 32 RPM: a lone water wheel gives only 8",
   "lmpc_classes.ponder.brass_purifier.text_4": "A Rotation Speed Controller under a large cogwheel sets exactly the speed you ask for",
-  "lmpc_classes.ponder.brass_purifier.text_5": "The purifier takes rotation from the cogwheel below: only below or above will do",
+  "lmpc_classes.ponder.brass_purifier.text_5": "The purifier takes rotation from the cogwheel below: the shaft connects from below and nowhere else",
   "lmpc_classes.ponder.brass_purifier.text_6": "It eats four reagents per night instead of one",
   "lmpc_classes.ponder.brass_purifier.text_7": "Only a Smith can place it. In other hands the block will not go down",
   "lmpc_classes.ponder.brass_purifier.text_8": "Assembled on Mechanical Crafters, not on a belt like the andesite one"

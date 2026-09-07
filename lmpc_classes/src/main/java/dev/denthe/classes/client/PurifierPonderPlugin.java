@@ -162,8 +162,9 @@ public class PurifierPonderPlugin implements PonderPlugin {
      *
      * Привод показан целиком: водяное колесо даёт восемь оборотов,
      * контроллер скорости под большой шестернёй поднимает их до
-     * тридцати двух. Очиститель стоит на шестерне сверху — ему годится
-     * любой кинетический сосед из шести.
+     * тридцати двух. Очиститель стоит на шестерне сверху: с 0.15.0 вал
+     * подключается только снизу, и шестерня с осью Y под блоком —
+     * единственный вид привода, который ему годится.
      */
     private static void латунный(SceneBuilder сцена, SceneBuildingUtil утиль) {
         сцена.title("brass_purifier", "Brass Purifier");
@@ -216,7 +217,7 @@ public class PurifierPonderPlugin implements PonderPlugin {
         сцена.idle(90);
 
         сцена.overlay().showText(70)
-            .text("The purifier takes rotation from the cogwheel below: only below or above will do")
+            .text("The purifier takes rotation from the cogwheel below: the shaft connects from below and nowhere else")
             .pointAt(утиль.vector().centerOf(шестерня)).placeNearTarget();
         сцена.idle(80);
 
