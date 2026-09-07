@@ -1,5 +1,8 @@
 {
   "variants": {
-    "": { "model": "lmpc_classes:block/class_altar" }
+    "facing=north": { "model": "lmpc_classes:block/class_altar" },
+    "facing=east":  { "model": "lmpc_classes:block/class_altar", "y": 90 },
+    "facing=south": { "model": "lmpc_classes:block/class_altar", "y": 180 },
+    "facing=west":  { "model": "lmpc_classes:block/class_altar", "y": 270 }
   }
 }

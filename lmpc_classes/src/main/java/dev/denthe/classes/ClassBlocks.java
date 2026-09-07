@@ -23,7 +23,12 @@ public final class ClassBlocks {
         "class_altar",
         ClassAltarBlock::new,
         BlockBehaviour.Properties.ofFullCopy(Blocks.CHISELED_STONE_BRICKS)
-            .mapColor(MapColor.STONE));
+            .mapColor(MapColor.STONE)
+            // Модель не заполняет куб (ножка тоньше, стол выступает),
+            // поэтому блок не должен считаться сплошным: иначе игра
+            // срезает верхнюю грань пола под алтарём и сквозь щели
+            // видно пещеры.
+            .noOcclusion());
 
     public static final DeferredItem<BlockItem> CLASS_ALTAR_ITEM =
         ПРЕДМЕТЫ.registerSimpleBlockItem(CLASS_ALTAR);

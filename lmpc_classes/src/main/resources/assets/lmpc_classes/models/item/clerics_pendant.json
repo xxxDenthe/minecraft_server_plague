@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "lmpc_classes:item/clerics_pendant"
+    "layer0": "createaddition:item/electrum_amulet"
   }
 }
