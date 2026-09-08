@@ -7,7 +7,7 @@ layout-meta {
   randomonlyfirsttime = false
   render_custom_elements_behind_vanilla = false
   layout_index = 0
-  last_edited_time = 1788896897161
+  last_edited_time = 1788898473543
 }
 
 element {
@@ -27,7 +27,7 @@ element {
   x = -2000
   y = 0
   width = 4000
-  height = 30
+  height = 60
   anchor_point = top-centered
   color = #0A0908
   instance_identifier = lmpc_rect_2
@@ -36,9 +36,9 @@ element {
 element {
   element_type = shape
   x = -2000
-  y = -32
+  y = -64
   width = 4000
-  height = 32
+  height = 64
   anchor_point = bottom-centered
   color = #0A0908
   instance_identifier = lmpc_rect_3
@@ -47,9 +47,9 @@ element {
 element {
   element_type = text_v2
   x = -200
-  y = 3
+  y = 6
   width = 400
-  height = 30
+  height = 54
   anchor_point = top-centered
   source_mode = direct
   source = ^^^%n%%#C2A87C%LMPC — %#%%#E5DDCB%Чума%#%%n%^^^
@@ -58,16 +58,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 2.0
+  scale = 4.0
   instance_identifier = lmpc_text_4
 }
 
 element {
   element_type = shape
-  x = -107
-  y = 33
+  x = -214
+  y = 66
   width = 1
-  height = 195
+  height = 390
   anchor_point = top-centered
   color = #2B2820
   instance_identifier = lmpc_rect_5
@@ -75,10 +75,10 @@ element {
 
 element {
   element_type = shape
-  x = 107
-  y = 33
+  x = 214
+  y = 66
   width = 1
-  height = 195
+  height = 390
   anchor_point = top-centered
   color = #2B2820
   instance_identifier = lmpc_rect_6
@@ -86,10 +86,10 @@ element {
 
 element {
   element_type = text_v2
-  x = -229
-  y = 33
-  width = 115
-  height = 14
+  x = -458
+  y = 66
+  width = 230
+  height = 25
   anchor_point = top-centered
   source_mode = direct
   source = ^^^%n%**%#D8D0BE%ГДЕ ВЫ%#%**%n%^^^
@@ -98,16 +98,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.9
+  scale = 1.8
   instance_identifier = lmpc_text_7
 }
 
 element {
   element_type = text_v2
-  x = -100
-  y = 33
-  width = 200
-  height = 14
+  x = -200
+  y = 66
+  width = 400
+  height = 25
   anchor_point = top-centered
   source_mode = direct
   source = ^^^%n%**%#D8D0BE%ЧТО ЗДЕСЬ УСТРОЕНО%#%**%n%^^^
@@ -116,16 +116,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.9
+  scale = 1.8
   instance_identifier = lmpc_text_8
 }
 
 element {
   element_type = text_v2
-  x = 114
-  y = 33
-  width = 115
-  height = 14
+  x = 228
+  y = 66
+  width = 230
+  height = 25
   anchor_point = top-centered
   source_mode = direct
   source = ^^^%n%**%#D8D0BE%ЧТО ЗНАТЬ СРАЗУ%#%**%n%^^^
@@ -134,16 +134,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.9
+  scale = 1.8
   instance_identifier = lmpc_text_9
 }
 
 element {
   element_type = text_v2
-  x = -229
-  y = 46
-  width = 115
-  height = 182
+  x = -458
+  y = 92
+  width = 230
+  height = 364
   anchor_point = top-centered
   source_mode = direct
   source = %#9A948A%Деревня находится в низине, у подножия высочайших гор. Уже четвёртый месяц земли этой местности поражены неизвестным недугом. Почва истощается и гниёт, люди слабеют по неведомым причинам, а руководство деревни в спешке покинуло эти места.%#%%n%%n%%#9A948A%Вас наняли как последнюю надежду на спасение.%#%%n%%n%%#9A948A%Ваша задача — выяснить, что за таинственная хворь поразила местные земли, откуда берёт начало её источник и, главное, успеть спасти эту землю и сотни тысяч жизней от того, что грядёт.%#%
@@ -152,16 +152,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_10
 }
 
 element {
   element_type = item
-  x = -100
-  y = 46
-  width = 16
-  height = 16
+  x = -200
+  y = 92
+  width = 32
+  height = 32
   anchor_point = top-centered
   item_key = minecraft:rotten_flesh
   show_tooltip = false
@@ -171,10 +171,10 @@ element {
 
 element {
   element_type = text_v2
-  x = -78
-  y = 46
-  width = 178
-  height = 11
+  x = -156
+  y = 92
+  width = 356
+  height = 19
   anchor_point = top-centered
   source_mode = direct
   source = **%#C2A87C%Земля болеет%#%**
@@ -183,16 +183,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_12
 }
 
 element {
   element_type = text_v2
-  x = -78
-  y = 53
-  width = 178
-  height = 35
+  x = -156
+  y = 107
+  width = 356
+  height = 49
   anchor_point = top-centered
   source_mode = direct
   source = %#9A948A%Окружение истощено и поражено болезнью. Что-то растёт и накапливается совсем рядом, становясь всё опаснее с каждым днём.%#%
@@ -201,16 +201,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_13
 }
 
 element {
   element_type = item
-  x = -100
-  y = 91
-  width = 16
-  height = 16
+  x = -200
+  y = 164
+  width = 32
+  height = 32
   anchor_point = top-centered
   item_key = lmpc_classes:clerics_brew
   show_tooltip = false
@@ -220,10 +220,10 @@ element {
 
 element {
   element_type = text_v2
-  x = -78
-  y = 91
-  width = 178
-  height = 11
+  x = -156
+  y = 164
+  width = 356
+  height = 19
   anchor_point = top-centered
   source_mode = direct
   source = **%#C2A87C%Болеете и вы%#%**
@@ -232,16 +232,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_15
 }
 
 element {
   element_type = text_v2
-  x = -78
-  y = 98
-  width = 178
-  height = 43
+  x = -156
+  y = 179
+  width = 356
+  height = 79
   anchor_point = top-centered
   source_mode = direct
   source = %#9A948A%Вы не неуязвимы. Местное управление утверждало, что отвар местного клирика способен ненадолго облегчить состояние, а его рецепт был передан вам перед их отъездом.%#%
@@ -250,16 +250,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_16
 }
 
 element {
   element_type = item
-  x = -100
-  y = 143
-  width = 16
-  height = 16
+  x = -200
+  y = 266
+  width = 32
+  height = 32
   anchor_point = top-centered
   item_key = lmpc_classes:class_codex
   show_tooltip = false
@@ -269,10 +269,10 @@ element {
 
 element {
   element_type = text_v2
-  x = -78
-  y = 143
-  width = 178
-  height = 11
+  x = -156
+  y = 266
+  width = 356
+  height = 19
   anchor_point = top-centered
   source_mode = direct
   source = **%#C2A87C%Четыре призвания%#%**
@@ -281,16 +281,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_18
 }
 
 element {
   element_type = text_v2
-  x = -78
-  y = 151
-  width = 178
-  height = 35
+  x = -156
+  y = 281
+  width = 356
+  height = 49
   anchor_point = top-centered
   source_mode = direct
   source = %#9A948A%Чтобы деревня продолжала функционировать, вам придётся взять на себя четыре важнейшие роли: клирика, кузнеца, фермера и летописца.%#%
@@ -299,16 +299,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_19
 }
 
 element {
   element_type = item
-  x = -100
-  y = 188
-  width = 16
-  height = 16
+  x = -200
+  y = 338
+  width = 32
+  height = 32
   anchor_point = top-centered
   item_key = lmpc_classes:andesite_purifier
   show_tooltip = false
@@ -318,46 +318,46 @@ element {
 
 element {
   element_type = text_v2
-  x = -78
-  y = 188
-  width = 178
-  height = 11
+  x = -156
+  y = 338
+  width = 356
+  height = 19
   anchor_point = top-centered
   source_mode = direct
-  source = **%#C2A87C%Землю ещё спасти%#%**
+  source = **%#C2A87C%Последствия обратимы%#%**
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_21
 }
 
 element {
   element_type = text_v2
-  x = -78
-  y = 196
-  width = 178
-  height = 35
+  x = -156
+  y = 353
+  width = 356
+  height = 94
   anchor_point = top-centered
   source_mode = direct
-  source = %#9A948A%Землю всё ещё можно спасти — с помощью очистителей и экспериментальных систем орошения, а также современных теплиц, переделанных под нужды нынешнего времени.%#%
+  source = %#9A948A%Землю всё ещё можно спасти с помощью очистителей и экспериментальных систем орошения, которые ранее использовались в промышленных теплицах в столичном городе. Сейчас их переделали под нужды нынешнего времени.%#%
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_22
 }
 
 element {
   element_type = text_v2
-  x = 114
-  y = 46
-  width = 115
-  height = 182
+  x = 228
+  y = 92
+  width = 230
+  height = 364
   anchor_point = top-centered
   source_mode = direct
   source = %#9A948A%**Карту придётся чертить самостоятельно** — без неё вы не выживете.%#%%n%%n%%#9A948A%**Край отсутствует в игре.**%#%%n%%n%%#9A948A%**Работает голосовой чат**, который напрямую влияет на игровой процесс.%#%%n%%n%%#9A948A%**Смерть больше не обыденность:** погибнуть от болезни — значит понести неприятный штраф.%#%%n%%n%%#9A948A%**И главное — читайте все бумаги**, которые найдёте в мире.%#%
@@ -366,16 +366,16 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  scale = 0.65
+  scale = 1.25
   instance_identifier = lmpc_text_23
 }
 
 element {
   element_type = custom_button
   x = 0
-  y = -6
-  width = 150
-  height = 20
+  y = -12
+  width = 300
+  height = 40
   anchor_point = bottom-centered
   sticky_anchor = true
   label = Войти в деревню

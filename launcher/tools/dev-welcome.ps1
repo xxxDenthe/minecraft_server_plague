@@ -159,20 +159,30 @@ B:advanced_customization_mode = 'false';
 B:custom_guis_ported = 'true';
 '@
 
-# Масштаб интерфейса 4 — тот самый тесный случай 480 × 270, под который
-# считается раскладка. Окно ниже разворачивается на весь экран, иначе
-# при масштабе 4 интерфейс получается уже макета и колонки срезает.
+# Масштаб интерфейса 2 — тот, на котором зафиксирована игровая сессия;
+# на окне 1920 × 1080 он даёт ровно 960 × 540, под которые считается
+# раскладка.
+#
+# Полноэкранный режим здесь выключается принудительно, и это не
+# косметика: развёрнутое на весь экран окно Minecraft при потере фокуса
+# сворачивается и перестаёт рисовать, а PrintWindow отдаёт с него
+# сплошную черноту. Снимать его, не отнимая фокус у владельца,
+# невозможно (поймано 2026-09-08: три прогона подряд дали чёрный кадр
+# при полностью загруженном экране).
 $настройкиИгры = Join-Path $рант 'options.txt'
+$нужно = @{ 'guiScale' = '2'; 'fullscreen' = 'false' }
 if (Test-Path $настройкиИгры) {
     $строки = Get-Content $настройкиИгры
-    if ($строки -match '^guiScale:') {
-        $строки = $строки -replace '^guiScale:.*', 'guiScale:4'
-    } else {
-        $строки += 'guiScale:4'
+    foreach ($ключ in $нужно.Keys) {
+        if ($строки -match ('^' + $ключ + ':')) {
+            $строки = $строки -replace ('^' + $ключ + ':.*'), ($ключ + ':' + $нужно[$ключ])
+        } else {
+            $строки += ($ключ + ':' + $нужно[$ключ])
+        }
     }
     Записать-Текст $настройкиИгры (($строки -join "`n") + "`n")
 } else {
-    Записать-Текст $настройкиИгры "guiScale:4`n"
+    Записать-Текст $настройкиИгры "guiScale:2`nfullscreen:false`n"
 }
 
 # --- 3. Поднять клиент -------------------------------------------------
@@ -233,8 +243,8 @@ while ((Get-Date) -lt $дедлайн) {
 }
 if (-not $окно) { throw "своё окно Minecraft не появилось за $ЖдатьСекунд с, смотри $лог" }
 
-# Размер окна под 1920 × 1080 клиентской области: при масштабе интерфейса 4
-# это ровно те 480 × 270, под которые считается раскладка. Ставится без
+# Размер окна под 1920 × 1080 клиентской области: при масштабе интерфейса 2
+# это ровно те 960 × 540, под которые считается раскладка. Ставится без
 # активации — окно владельца поверх остаётся, ничего не мигает.
 [void]$u::SetWindowPos($окно.MainWindowHandle, [IntPtr]::Zero, 40, 20, 1936, 1119, 0x0014)  # NOZORDER|NOACTIVATE
 
@@ -252,20 +262,37 @@ while ((Get-Date) -lt $дедлайн) {
 if (-not $готово) { throw "стартовый экран не открылся за $ЖдатьСекунд с, смотри $лог" }
 
 # Экран открылся, но кадр с ним ещё не отрисован.
-Start-Sleep -Seconds 4
+Start-Sleep -Seconds 6
 
 if (-not $БезСнимка) {
-    $r = New-Object Dev.ОкноApi+RECT
-    [void]$u::GetWindowRect($окно.MainWindowHandle, [ref]$r)
-    $bmp = New-Object System.Drawing.Bitmap ($r.R - $r.L), ($r.B - $r.T)
-    $g = [System.Drawing.Graphics]::FromImage($bmp)
-    $dc = $g.GetHdc()
-    # PW_RENDERFULLCONTENT: без него у окна с OpenGL снимок выходит чёрным.
-    [void]$u::PrintWindow($окно.MainWindowHandle, $dc, 2)
-    $g.ReleaseHdc($dc)
+    # Снимок берётся до трёх раз: сразу после появления экрана PrintWindow
+    # успевает поймать ещё не отрисованный кадр и вернуть сплошную черноту
+    # (поймано 2026-09-08). Проверяем несколько точек по диагонали:
+    # у настоящего кадра хоть одна из них не чёрная.
+    $bmp = $null
+    for ($попытка = 1; $попытка -le 3; $попытка++) {
+        if ($bmp) { $bmp.Dispose() }
+        $r = New-Object Dev.ОкноApi+RECT
+        [void]$u::GetWindowRect($окно.MainWindowHandle, [ref]$r)
+        $bmp = New-Object System.Drawing.Bitmap ($r.R - $r.L), ($r.B - $r.T)
+        $g = [System.Drawing.Graphics]::FromImage($bmp)
+        $dc = $g.GetHdc()
+        # PW_RENDERFULLCONTENT: без него у окна с OpenGL снимок выходит чёрным.
+        [void]$u::PrintWindow($окно.MainWindowHandle, $dc, 2)
+        $g.ReleaseHdc($dc)
+        $g.Dispose()
+        $пусто = $true
+        foreach ($доля in 0.2, 0.35, 0.5, 0.65, 0.8) {
+            $точка = $bmp.GetPixel([int]($bmp.Width * $доля), [int]($bmp.Height * $доля))
+            if ($точка.R + $точка.G + $точка.B -gt 30) { $пусто = $false; break }
+        }
+        if (-not $пусто) { break }
+        Write-Host "кадр ещё пустой, жду (попытка $попытка)"
+        Start-Sleep -Seconds 5
+    }
     $файл = Join-Path $снимки ('экран-' + (Get-Date -Format 'HHmmss') + '.png')
     $bmp.Save($файл, [System.Drawing.Imaging.ImageFormat]::Png)
-    $g.Dispose(); $bmp.Dispose()
+    $bmp.Dispose()
     Write-Host "снимок: $файл"
 }
 
