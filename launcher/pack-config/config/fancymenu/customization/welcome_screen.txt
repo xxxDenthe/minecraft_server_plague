@@ -7,7 +7,7 @@ layout-meta {
   randomonlyfirsttime = false
   render_custom_elements_behind_vanilla = false
   layout_index = 0
-  last_edited_time = 1788886256455
+  last_edited_time = 1788887012081
 }
 
 element {
@@ -109,7 +109,7 @@ element {
   height = 12
   anchor_point = top-centered
   source_mode = direct
-  source = ^^^**%#D8D0BE%ГДЕ ВЫ ОКАЗАЛИСЬ%#%**
+  source = ^^^**%#D8D0BE%ГДЕ ВЫ%#%**
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
@@ -160,7 +160,7 @@ element {
   height = 154
   anchor_point = top-centered
   source_mode = direct
-  source = %#9A948A%Деревня в низине. Четвёртый месяц как больна.%#%%n%%n%%#9A948A%Весной по полям пошла серая плесень. Думали — сырость. К осени она была в домах, в колодцах, в людях.%#%%n%%n%%#9A948A%Управа уехала. Вас позвали не лечить: лечить уже некого. Вас позвали найти, откуда оно растёт.%#%%n%%n%%#9A948A%Никто здесь этого не знает.%#%
+  source = %#9A948A%Деревня в низине. Четвёртый месяц как больна.%#%%n%%n%%#9A948A%Земля гниёт, люди слабеют, управа уехала.%#%%n%%n%%#9A948A%Вас позвали не лечить. Вас позвали найти, откуда оно растёт.%#%
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
@@ -207,7 +207,7 @@ element {
   height = 24
   anchor_point = top-centered
   source_mode = direct
-  source = %#9A948A%Идёт по чанкам и растёт каждую ночь.%#%
+  source = %#9A948A%И растёт каждую ночь.%#%
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
@@ -254,7 +254,7 @@ element {
   height = 24
   anchor_point = top-centered
   source_mode = direct
-  source = %#9A948A%Копится молча. Отвар Клирика лечит.%#%
+  source = %#9A948A%Отвар Клирика лечит.%#%
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
@@ -348,7 +348,7 @@ element {
   height = 24
   anchor_point = top-centered
   source_mode = direct
-  source = %#9A948A%Очиститель — машина Create: вал и реагент.%#%
+  source = %#9A948A%Очиститель — машина Create.%#%
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
@@ -365,7 +365,7 @@ element {
   height = 154
   anchor_point = top-centered
   source_mode = direct
-  source = %#9A948A%**Координат нет.** Карту чертят руками.%#%%n%%n%%#9A948A%**Ад и Край закрыты.**%#%%n%%n%%#9A948A%**Голос слышно.** Рация и расстояние работают.%#%%n%%n%%#9A948A%**Смерть помнят.** Умереть больным — минус полсердца навсегда.%#%%n%%n%%#9A948A%**Читайте бумаги.** Они не для красоты.%#%
+  source = %#9A948A%**Координат нет.** Карту чертят руками.%#%%n%%n%%#9A948A%**Ад и Край закрыты.**%#%%n%%n%%#9A948A%**Голос слышно.** Рация и расстояние работают.%#%%n%%n%%#9A948A%**Смерть помнят.** Умереть больным — минус полсердца.%#%%n%%n%%#9A948A%**Читайте бумаги.**%#%
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
