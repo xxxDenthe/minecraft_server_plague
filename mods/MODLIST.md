@@ -12,7 +12,14 @@ Minecraft 1.21.1 · NeoForge 21.1.249 · Create 6.0.10
 (`ModrinthApp/profiles/LMPCCHUMA/mods`) в тот же момент совпадал
 с папкой файл в файл.
 
-Всего: 103 сторонних мода + 4 наших. Один джарник отключён
+**2026-09-08:** добавлены пять клиентских джарников ради стартового
+экрана — `welcomescreen` и его обязательная цепочка зависимостей
+(`fancymenu`, `necronomicon`, `melody`, `konkrete`). На сервер их
+класть не надо, это клиентская сторона; сам экран лежит в раздаче,
+`launcher/pack-config/config/fancymenu/customization/welcome_screen.txt`.
+Заметка `docs/superpowers/notes/2026-09-08-startovyj-ekran.md`.
+
+Всего: 108 сторонних модов + 4 наших. Один джарник отключён
 (`.disabled`), он в списке не значится.
 
 ## Сторонние моды
@@ -55,6 +62,7 @@ entity_texture_features-7.2.1-1.21-neoforge.jar
 exposure-neoforge-1.21.1-1.9.18.jar
 extrasounds-1.5.6+1.21.1-neoforge.jar
 FallingTree-1.21.1-1.21.1.11.jar
+fancymenu_neoforge_3.9.12_MC_1.21.1.jar
 FarmersDelight-1.21.1-1.3.4.jar
 ferritecore-7.0.3-neoforge.jar
 forgified-fabric-api-0.116.15+2.3.5+1.21.1.jar
@@ -71,6 +79,7 @@ InvMoveCompats-0.5.0+1.21.8-NeoForge.jar
 Jade-1.21.1-NeoForge-15.10.6.jar
 JadeAddons-1.21.1-NeoForge-6.1.1.jar
 jei-1.21.1-neoforge-19.51.0.418.jar
+konkrete_neoforge_1.9.9_MC_1.21.jar
 kotlinforforge-5.12.0-all.jar
 krypton_fnp-neoforge-1.21.1-0.2.28.1-1.21.1.jar
 kubejs-create-neoforge-2101.3.1-build.18.jar
@@ -81,10 +90,12 @@ LegendaryTooltips-1.21.1-neoforge-1.5.5.jar
 lithium-neoforge-0.15.4+mc1.21.1.jar
 lithostitched-1.8.0+beta4-neoforge-21.1.jar
 mapwright-neoforge-1.21.1-1.0.6.jar
+melody_neoforge_1.0.10_MC_1.21.jar
 modernfix-neoforge-5.27.24+mc1.21.1.jar
 moonlight-1.21.1-3.6.0-neoforge.jar
 MouseTweaks-neoforge-mc1.21-2.26.1.jar
 mru-1.0.19+LTS+1.21.1+neoforge.jar
+Necronomicon-NeoForge-1.6.0+1.21.jar
 OctoLib-NEOFORGE-0.6.2+1.21.jar
 ok_zoomer-neo-10.0.0-beta.13.jar
 particlerain-4.0.0-beta.11+1.21.1-neoforge.jar
@@ -119,6 +130,7 @@ TravelersTitles-1.21.1-NeoForge-5.1.3.jar
 veil-neoforge-1.21.1-4.4.1.jar   # поверх Veil 4.3.2 из sable, см. заметку 2026-09-06-krashi-create-i-veil
 visuality-forge-3.0.0.jar
 voicechat-neoforge-1.21.1-2.6.22.jar
+welcomescreen-neoforge-1.0.0-1.21.1.jar
 worldedit-mod-7.3.8.jar
 yet_another_config_lib_v3-3.8.2+1.21.1-neoforge.jar
 YungsApi-1.21.1-NeoForge-5.1.8.jar

@@ -35,6 +35,18 @@
   и облака, а два цвета тумана дрались за один кадр). За `lmpc_shade`
   остались цветокор кадра, чёрная ночь через lightmap, дальность
   подземного тумана, HP и споры.
+- **`config/fancymenu/customization/welcome_screen.txt`** — стартовый
+  экран, который видит игрок при первом входе в мир. Показывает его мод
+  `welcomescreen`, а рисует FancyMenu: мод только заводит пустой
+  кастомный GUI, всё содержимое — этот макет. Три колонки: лор без
+  разгадки, основные механики с иконками предметов и памятка о правилах
+  мира. **Править руками не надо** — текст и раскладка живут в
+  `launcher/tools/make-welcome-screen.py`, файл перегенерируется
+  командой `python launcher/tools/make-welcome-screen.py`.
+  Экран открывается для проверки командой
+  `/openguiscreen welcomescreen_welcome`, а показывается заново после
+  удаления `welcomescreen_cache.json` из папки игры.
+
 - **`config/particular-common.toml`** — конфиг мода Particular, только
   `[enabledEffects] fireflies = false`. У Particular тоже есть свои
   светлячки, отдельные от SubtleEffects — оставили их выключенными,
