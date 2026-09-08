@@ -1,0 +1,16 @@
+place structure nova_structures:nether_keep 3712 64 -384
+place structure nova_structures:nether_port 3712 64 -128
+place structure nova_structures:nether_skeleton_tower_crimson 3712 64 128
+place structure nova_structures:nether_skeleton_tower_soul 3712 64 384
+place structure nova_structures:nether_skeleton_tower_warped 3968 64 -384
+place structure nova_structures:nether_skeleton_tower_waste 3968 64 -128
+place structure nova_structures:piglin_camp 3968 64 128
+place structure nova_structures:piglin_donjon 3968 64 384
+place structure nova_structures:piglin_outstation 4224 64 -384
+place structure nova_structures:remnant_bee_keeper 4224 64 -128
+place structure nova_structures:remnant_big_remnant 4224 64 128
+place structure nova_structures:remnant_big_remnant_2 4224 64 384
+place structure nova_structures:remnant_big_remnant_3 4480 64 -384
+place structure nova_structures:remnant_birch_graveyard 4480 64 -128
+place structure nova_structures:remnant_bridge_remnant 4480 64 128
+place structure nova_structures:remnant_bunny_base 4480 64 384

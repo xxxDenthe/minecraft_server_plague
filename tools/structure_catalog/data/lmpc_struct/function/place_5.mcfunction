@@ -1,0 +1,16 @@
+place structure nova_structures:remnant_zombie_horse_ranch 7808 64 -384
+place structure nova_structures:ruin_town 7808 64 -128
+place structure nova_structures:shrine_combat_tier_1 7808 64 128
+place structure nova_structures:shrine_combat_tier_2 7808 64 384
+place structure nova_structures:shrine_combat_tier_3 8064 64 -384
+place structure nova_structures:shrine_combat_tier_4 8064 64 -128
+place structure nova_structures:shrine_combat_tier_5 8064 64 128
+place structure nova_structures:shrine_tower 8064 64 384
+place structure nova_structures:skeleton_camp_crimson 8320 64 -384
+place structure nova_structures:skeleton_camp_soul 8320 64 -128
+place structure nova_structures:skeleton_camp_warped 8320 64 128
+place structure nova_structures:skeleton_camp_waste 8320 64 384
+place structure nova_structures:stray_fort 8576 64 -384
+place structure nova_structures:tavern_acacia 8576 64 -128
+place structure nova_structures:tavern_birch 8576 64 128
+place structure nova_structures:tavern_cherry 8576 64 384

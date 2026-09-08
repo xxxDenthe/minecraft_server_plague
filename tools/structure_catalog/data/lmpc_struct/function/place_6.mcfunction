@@ -1,0 +1,16 @@
+place structure nova_structures:tavern_dark_oak 9856 64 -384
+place structure nova_structures:tavern_desert 9856 64 -128
+place structure nova_structures:tavern_jungle 9856 64 128
+place structure nova_structures:tavern_mangrove 9856 64 384
+place structure nova_structures:tavern_oak 10112 64 -384
+place structure nova_structures:tavern_snowy 10112 64 -128
+place structure nova_structures:tavern_spruce 10112 64 128
+place structure nova_structures:tavern_swamp 10112 64 384
+place structure nova_structures:toxic_lair 10368 64 -384
+place structure nova_structures:trident_trial_monument 10368 64 -128
+place structure nova_structures:undead_crypt 10368 64 128
+place structure nova_structures:underground_house 10368 64 384
+place structure nova_structures:village_birch 10624 64 -384
+place structure nova_structures:village_jungle 10624 64 -128
+place structure nova_structures:village_swamp 10624 64 128
+place structure nova_structures:well_birch 10624 64 384

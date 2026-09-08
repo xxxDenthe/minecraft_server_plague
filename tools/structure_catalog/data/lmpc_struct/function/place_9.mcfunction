@@ -1,0 +1,16 @@
+place structure towns_and_towers:pillager_outpost_wooded_badlands 16000 64 -384
+place structure towns_and_towers:village_badlands 16000 64 -128
+place structure towns_and_towers:village_beach 16000 64 128
+place structure towns_and_towers:village_birch_forest 16000 64 384
+place structure towns_and_towers:village_flower_forest 16256 64 -384
+place structure towns_and_towers:village_forest 16256 64 -128
+place structure towns_and_towers:village_grove 16256 64 128
+place structure towns_and_towers:village_jungle 16256 64 384
+place structure towns_and_towers:village_meadow 16512 64 -384
+place structure towns_and_towers:village_mushroom_fields 16512 64 -128
+place structure towns_and_towers:village_ocean 16512 64 128
+place structure towns_and_towers:village_old_growth_taiga 16512 64 384
+place structure towns_and_towers:village_savanna_plateau 16768 64 -384
+place structure towns_and_towers:village_snowy_slopes 16768 64 -128
+place structure towns_and_towers:village_snowy_taiga 16768 64 128
+place structure towns_and_towers:village_sparse_jungle 16768 64 384

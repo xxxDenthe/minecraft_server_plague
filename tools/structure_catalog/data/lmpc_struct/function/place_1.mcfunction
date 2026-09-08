@@ -1,0 +1,16 @@
+place structure aquamirae:pirate_outpost -384 64 -384
+place structure aquamirae:pirate_shelter -384 64 -128
+place structure aquamirae:pirate_ship -384 64 128
+place structure aquamirae:shipwreck -384 64 384
+place structure galosphere:forgotten_ruins -128 64 -384
+place structure galosphere:pink_salt_shrine -128 64 -128
+place structure minecraft:village_taiga -128 64 128
+place structure nova_structures:badlands_miner_outpost -128 64 384
+place structure nova_structures:bunker 128 64 -384
+place structure nova_structures:conduit_ruin 128 64 -128
+place structure nova_structures:creeping_crypt 128 64 128
+place structure nova_structures:deepslate_camp 128 64 384
+place structure nova_structures:desert_ruins 384 64 -384
+place structure nova_structures:end_castle 384 64 -128
+place structure nova_structures:end_lighthouse 384 64 128
+place structure nova_structures:end_ship 384 64 384

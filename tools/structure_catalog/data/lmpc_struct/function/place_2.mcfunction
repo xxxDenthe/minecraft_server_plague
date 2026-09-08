@@ -1,0 +1,16 @@
+place structure nova_structures:firewatch_tower_birch 1664 64 -384
+place structure nova_structures:firewatch_tower_cherry 1664 64 -128
+place structure nova_structures:firewatch_tower_dark_oak 1664 64 128
+place structure nova_structures:firewatch_tower_forest 1664 64 384
+place structure nova_structures:firewatch_tower_jungle 1920 64 -384
+place structure nova_structures:firewatch_tower_mangrove 1920 64 -128
+place structure nova_structures:firewatch_tower_savanna 1920 64 128
+place structure nova_structures:firewatch_tower_swamp 1920 64 384
+place structure nova_structures:firewatch_tower_taiga 2176 64 -384
+place structure nova_structures:hamlet 2176 64 -128
+place structure nova_structures:illager_camp 2176 64 128
+place structure nova_structures:illager_hideout 2176 64 384
+place structure nova_structures:illager_manor 2432 64 -384
+place structure nova_structures:jungle_ruins 2432 64 -128
+place structure nova_structures:lone_citadel 2432 64 128
+place structure nova_structures:mangrove_witch_hut 2432 64 384

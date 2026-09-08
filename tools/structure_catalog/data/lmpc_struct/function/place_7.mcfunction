@@ -1,0 +1,16 @@
+place structure nova_structures:well_dark_oak 11904 64 -384
+place structure nova_structures:well_jungle 11904 64 -128
+place structure nova_structures:well_oak 11904 64 128
+place structure nova_structures:well_savana 11904 64 384
+place structure nova_structures:well_spruce 12160 64 -384
+place structure nova_structures:wild_ruin 12160 64 -128
+place structure nova_structures:witch_villa 12160 64 128
+place structure supplementaries:galleon 12160 64 384
+place structure supplementaries:road_sign 12416 64 -384
+place structure towns_and_towers:mimic_desert 12416 64 -128
+place structure towns_and_towers:pillager_outpost_badlands 12416 64 128
+place structure towns_and_towers:pillager_outpost_beach 12416 64 384
+place structure towns_and_towers:pillager_outpost_birch_forest 12672 64 -384
+place structure towns_and_towers:pillager_outpost_desert 12672 64 -128
+place structure towns_and_towers:pillager_outpost_flower_forest 12672 64 128
+place structure towns_and_towers:pillager_outpost_forest 12672 64 384

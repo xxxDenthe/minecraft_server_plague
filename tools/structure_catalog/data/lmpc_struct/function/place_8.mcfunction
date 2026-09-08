@@ -1,0 +1,16 @@
+place structure towns_and_towers:pillager_outpost_grove 13952 64 -384
+place structure towns_and_towers:pillager_outpost_jungle 13952 64 -128
+place structure towns_and_towers:pillager_outpost_meadow 13952 64 128
+place structure towns_and_towers:pillager_outpost_mushroom_fields 13952 64 384
+place structure towns_and_towers:pillager_outpost_ocean 14208 64 -384
+place structure towns_and_towers:pillager_outpost_old_growth_taiga 14208 64 -128
+place structure towns_and_towers:pillager_outpost_savanna 14208 64 128
+place structure towns_and_towers:pillager_outpost_savanna_plateau 14208 64 384
+place structure towns_and_towers:pillager_outpost_snowy_beach 14464 64 -384
+place structure towns_and_towers:pillager_outpost_snowy_plains 14464 64 -128
+place structure towns_and_towers:pillager_outpost_snowy_slopes 14464 64 128
+place structure towns_and_towers:pillager_outpost_snowy_taiga 14464 64 384
+place structure towns_and_towers:pillager_outpost_sparse_jungle 14720 64 -384
+place structure towns_and_towers:pillager_outpost_sunflower_plains 14720 64 -128
+place structure towns_and_towers:pillager_outpost_swamp 14720 64 128
+place structure towns_and_towers:pillager_outpost_taiga 14720 64 384

@@ -1,0 +1,16 @@
+place structure nova_structures:remnant_classic_village 5760 64 -384
+place structure nova_structures:remnant_desert_remnant 5760 64 -128
+place structure nova_structures:remnant_forest_smith 5760 64 128
+place structure nova_structures:remnant_frog_ranch 5760 64 384
+place structure nova_structures:remnant_graveyard 6016 64 -384
+place structure nova_structures:remnant_medium_remnant 6016 64 -128
+place structure nova_structures:remnant_medium_remnant_2 6016 64 128
+place structure nova_structures:remnant_miner_hut 6016 64 384
+place structure nova_structures:remnant_mud_brick_constructor 6272 64 -384
+place structure nova_structures:remnant_ominous_shop 6272 64 -128
+place structure nova_structures:remnant_ruin_farmer 6272 64 128
+place structure nova_structures:remnant_ruin_smith 6272 64 384
+place structure nova_structures:remnant_sawmill 6528 64 -384
+place structure nova_structures:remnant_school_remnant 6528 64 -128
+place structure nova_structures:remnant_taiga_castle 6528 64 128
+place structure nova_structures:remnant_woodland_hud 6528 64 384
