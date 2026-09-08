@@ -90,6 +90,12 @@ Get-ChildItem (Join-Path $рант 'config\fancymenu\customization') -Filter '*.
 
 Copy-Item $макет (Join-Path $рант 'config\fancymenu\customization\welcome_screen.txt') -Force
 
+# Картинки кнопки. В макете они записаны как `local:config/fancymenu/...`,
+# то есть FancyMenu ищет их от корня папки игры, а не от папки макетов.
+$картинки = Join-Path $рант 'config\fancymenu\assets'
+New-Item -ItemType Directory -Force -Path $картинки | Out-Null
+Copy-Item (Join-Path $корень 'launcher\pack-config\config\fancymenu\assets\*') $картинки -Force
+
 # Мир для входа. Дев-клиент мир создать не умеет — `--quickPlaySingleplayer`
 # входит только в существующий, — поэтому берём готовый из дев-клиента
 # lmpc_classes.
@@ -221,7 +227,12 @@ $sig = @'
 [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags);
 [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int w, int he, uint flags);
 [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+[DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+[DllImport("user32.dll")] public static extern bool GetCursorPos(out TOCHKA p);
+[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
 public struct RECT { public int L, T, R, B; }
+public struct TOCHKA { public int X, Y; }
 '@
 $u = Add-Type -MemberDefinition $sig -Name 'ОкноApi' -Namespace 'Dev' -PassThru |
      Where-Object { $_.Name -eq 'ОкноApi' }
@@ -290,10 +301,42 @@ if (-not $БезСнимка) {
         Write-Host "кадр ещё пустой, жду (попытка $попытка)"
         Start-Sleep -Seconds 5
     }
-    $файл = Join-Path $снимки ('экран-' + (Get-Date -Format 'HHmmss') + '.png')
+    $метка = Get-Date -Format 'HHmmss'
+    $файл = Join-Path $снимки ('экран-' + $метка + '.png')
     $bmp.Save($файл, [System.Drawing.Imaging.ImageFormat]::Png)
     $bmp.Dispose()
     Write-Host "снимок: $файл"
+
+    # Второй кадр — с курсором на кнопке. У кнопки анимированная подложка,
+    # и без наведения её на снимке просто не видно. Курсор владельца
+    # возвращается на место сразу после кадра.
+    $былКурсор = New-Object Dev.ОкноApi+TOCHKA
+    [void]$u::GetCursorPos([ref]$былКурсор)
+    $r = New-Object Dev.ОкноApi+RECT
+    [void]$u::GetWindowRect($окно.MainWindowHandle, [ref]$r)
+    # Окно должно быть в фокусе: без фокуса игра события мыши не читает
+    # и подсветку кнопки не включает. И курсор надо именно подвигать —
+    # одна установка позиции движением не считается.
+    [void]$u::ShowWindow($окно.MainWindowHandle, 9)
+    [void]$u::SetForegroundWindow($окно.MainWindowHandle)
+    Start-Sleep -Seconds 2
+    $центрX = [int](($r.L + $r.R) / 2)
+    foreach ($сдвиг in -30, -10, 10, 0) {
+        [void]$u::SetCursorPos($центрX + $сдвиг, $r.B - 74)
+        Start-Sleep -Milliseconds 200
+    }
+    Start-Sleep -Seconds 2
+    $bmp = New-Object System.Drawing.Bitmap ($r.R - $r.L), ($r.B - $r.T)
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $dc = $g.GetHdc()
+    [void]$u::PrintWindow($окно.MainWindowHandle, $dc, 2)
+    $g.ReleaseHdc($dc)
+    $g.Dispose()
+    $файлНаведения = Join-Path $снимки ('кнопка-' + $метка + '.png')
+    $bmp.Save($файлНаведения, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+    [void]$u::SetCursorPos($былКурсор.X, $былКурсор.Y)
+    Write-Host "снимок с наведением: $файлНаведения"
 }
 
 Write-Host "клиент оставлен запущенным (pid $($процесс.Id)); закрыть: Stop-Process -Id $($процесс.Id)"

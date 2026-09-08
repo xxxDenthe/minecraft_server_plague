@@ -7,7 +7,7 @@ layout-meta {
   randomonlyfirsttime = false
   render_custom_elements_behind_vanilla = false
   layout_index = 0
-  last_edited_time = 1788898971949
+  last_edited_time = 1788899923986
 }
 
 element {
@@ -371,77 +371,25 @@ element {
 }
 
 element {
-  element_type = shape
-  x = -170
-  y = -57
-  width = 340
-  height = 48
-  anchor_point = bottom-centered
-  color = #191612
-  instance_identifier = lmpc_rect_24
-}
-
-element {
-  element_type = shape
-  x = -170
-  y = -57
-  width = 340
-  height = 2
-  anchor_point = bottom-centered
-  color = #C2A87C
-  instance_identifier = lmpc_rect_25
-}
-
-element {
-  element_type = shape
-  x = -170
-  y = -11
-  width = 340
-  height = 2
-  anchor_point = bottom-centered
-  color = #C2A87C
-  instance_identifier = lmpc_rect_26
-}
-
-element {
-  element_type = shape
-  x = -170
-  y = -57
-  width = 2
-  height = 48
-  anchor_point = bottom-centered
-  color = #C2A87C
-  instance_identifier = lmpc_rect_27
-}
-
-element {
-  element_type = shape
-  x = 168
-  y = -57
-  width = 2
-  height = 48
-  anchor_point = bottom-centered
-  color = #C2A87C
-  instance_identifier = lmpc_rect_28
-}
-
-element {
   element_type = custom_button
   x = 0
-  y = -9
-  width = 340
-  height = 48
+  y = -12
+  width = 300
+  height = 42
   anchor_point = bottom-centered
   sticky_anchor = true
   label = Войти в деревню
-  transparent_background = true
-  label_scale = 2.0
+  backgroundnormal = [source:local]config/fancymenu/assets/lmpc_button.png
+  backgroundhovered = [source:local]config/fancymenu/assets/lmpc_button_hover.apng
+  restartbackgroundanimations = true
+  loopbackgroundanimations = true
+  label_scale = 1.7
   label_base_color = #E5DDCB
   label_hover_color = #C2A87C
   label_shadow = true
   underline_label_on_hover = false
-  button_element_executable_block_identifier = lmpc_block_29
-  [executable_block:lmpc_block_29][type:generic] = [executables:lmpc_act_30;]
-  [executable_action_instance:lmpc_act_30][action_type:closegui] = 
-  instance_identifier = lmpc_button_31
+  button_element_executable_block_identifier = lmpc_block_24
+  [executable_block:lmpc_block_24][type:generic] = [executables:lmpc_act_25;]
+  [executable_action_instance:lmpc_act_25][action_type:closegui] = 
+  instance_identifier = lmpc_button_26
 }
