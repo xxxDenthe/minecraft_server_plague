@@ -1,5 +1,0 @@
-- [Параллельная сессия в plaguecore](parallelnaya-sessiya-v-plaguecore.md) — никогда `git add -A` в этом репозитории
-- [Сервер владельца D:\LMPC-server](server-vladelca-d-lmpc-server.md) — запуск start.bat, играем через Radmin
-- [Раздача пака LMPC настроена](razdacha-paka-lmpc-nastroena.md) — где токены, чем публиковать, что стирает файлы у игрока
-- [Токены LMPC отозвать](tokeny-lmpc-otozvat.md) — засвечены в чате 2026-09-08, сменить после сессии
-- [Крафты отваров и реагента](krafty-otvarov-i-reagenta.md) — рецепты лежат в двух модах, KubeJS их не переопределяет
