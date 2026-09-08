@@ -1,8 +1,8 @@
-# Стартовый экран через Welcome Screen — сделано, живьём не проверено
+# Стартовый экран через Welcome Screen
 
 **Дата:** 2026-09-08
-**Статус:** файлы в репозитории и проверены парсером,
-в игре НЕ открывали ни разу
+**Статус:** проверен в игре, выглядит как задумано.
+Осталось выложить в пак.
 
 ## Что сделано
 
@@ -38,6 +38,8 @@
   чуму (плесень по полям, колодцы, «лечить уже некого») убраны, в лоре
   осталось три строки, в механиках — по одной строке объяснения.
   Длинный текст на стартовом экране не читают.
+- **Подписи под заголовком нет.** Строку «Восемь человек. Четыре дня.
+  Одна низина.» владелец убрал 2026-09-08, посмотрев экран живьём.
 
 ## Формат макета — снят с байткода FancyMenu 3.9.12
 
@@ -52,56 +54,60 @@
   `[executable_block:<id>][type:generic] = [executables:<act>;]`
   и `[executable_action_instance:<act>][action_type:closegui] =`.
 
-## Проверено без игры
+## Как проверять экран не трогая чужую игру
 
-- Файл разбирается **настоящим парсером FancyMenu** — 26 секций,
-  `identifier = welcomescreen_welcome`, кириллица в UTF-8 доходит.
-  Повторить (JDK 21, jar-ы из `mods/`, log4j из кэша Gradle):
+Дев-клиент умеет открыть экран сам, без единого клика: синтетические
+нажатия до Minecraft не доходят (ни `SendKeys`, ни `keybd_event`), а
+вот аргумент запуска — доходит.
 
-  ```bash
-  cat > /tmp/Check.java <<'J'
-  import de.keksuccino.fancymenu.util.properties.*;
-  import java.nio.file.*;
-  public class Check { public static void main(String[] a) throws Exception {
-      PropertyContainerSet s = PropertiesParser.deserializeSetFromFancyString(
-          Files.readString(Path.of(a[0])));
-      System.out.println(s.getType() + " / " + s.getContainers().size() + " секций / "
-          + s.getFirstContainerOfType("layout-meta").getValue("identifier")); } }
-  J
-  L4J=$(ls ~/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-api/*/*/*.jar | head -1)
-  "/c/Program Files/Java/jdk-21/bin/java.exe" -Dfile.encoding=UTF-8       -cp "mods/fancymenu_neoforge_3.9.12_MC_1.21.1.jar;mods/konkrete_neoforge_1.9.9_MC_1.21.jar;$(cygpath -w $L4J)"       /tmp/Check.java launcher/pack-config/config/fancymenu/customization/welcome_screen.txt
+1. Разложить в `plaguecore/run/client/`: пять джарников экрана
+   в `mods/`, макет в `config/fancymenu/customization/`, копию
+   `config/fancymenu/custom_gui_screens.txt` из рабочей сборки
+   (её пишет сам мод `welcomescreen`, но проще скопировать).
+2. Сбросить `plaguecore/run/client/welcomescreen_cache.json`
+   в `"shownWelcomeScreen": false`.
+3. Временно дописать в `plaguecore/build.gradle`, в блок `client`:
+
+   ```groovy
+   programArgument '--quickPlaySingleplayer'
+   programArgument 'New World'
+   ```
+
+4. `./gradlew runClient` — клиент сам заходит в мир и сам показывает
+   экран. Ждать в логе строку
+   `ScreenCustomizationLayer registered: welcomescreen_welcome`,
+   потом снимать экран.
+5. Панель FancyMenu сверху («Customization / Tools / Help») в дев-режиме
+   закрывает заголовок. Убирается в `config/fancymenu/options.txt`:
+   `B:show_customization_overlay = 'false';`.
+6. После проверки вернуть `build.gradle` и убрать разложенное.
+
+Цикл «правка → пересборка → снимок» занимает около двух минут.
+
+## Грабли разметки, найденные живьём
+
+- **Каретки центрирования живут на своих строках.** Работает только
+  `^^^%n%текст%n%^^^`. И `^^^текст^^^`, и `^^^текст%n%^^^` FancyMenu
+  печатает буквально — на экране видны сами каретки. В документации
+  это сказано как «`^^^` before and after the **lines**».
+- **Кегль — свойство `scale`, не решётка.** Решётка `# ` работает,
+  но тянет за собой подчёркивающую линию во всю ширину элемента.
+  У заголовка стоит `scale = 2.0`.
+- **Высота текстового элемента режет хвосты букв.** При 12 у «у» и «р»
+  срезало низ; у строк-названий теперь 14.
+- **В колонку влезает около двадцати знаков**, а не двадцати четырёх:
+  у пунктов ещё отступ под иконку. Объяснения переносятся на вторую
+  строку, поэтому шаг пункта 38, а не 36.
+
+## Что осталось
+
+- **Пустой низ.** Экран рассчитан под 480 × 270, а на 1920 × 1080
+  содержимое занимает верхние две пятых, ниже — пустота. Не мешает,
+  но выглядит редко. Правится координатами в генераторе.
+- **Раздать игрокам.** Новый конфиг и пять клиентских джарников в паке
+  ещё не выложены. Токена раздачи в дереве нет, выкладывает владелец:
+
   ```
-
-- Ключи предметов `lmpc_classes:clerics_brew`, `class_codex`,
-  `andesite_purifier` сверены с регистрацией в `lmpc_classes/` — есть все три.
-- Раскладка по высоте после сокращения текста: лор ~90 точек,
-  памятка ~120, механики кончаются на 212 при потолке 222.
-  При масштабе интерфейса 4 (480 × 270) запас есть.
-
-## Что осталось проверить в игре
-
-Ни один пункт не проверен: клиента Minecraft на машине владельца нет,
-профиля Modrinth `LMPCCHUMA` тоже нет — `sync-profile.py` разложить пак
-некуда.
-
-1. Открывается ли экран вообще: `/openguiscreen welcomescreen_welcome`.
-2. Крупный заголовок: строка `# ^^^ЧУМА`. В байткоде FancyMenu 3.9.12
-   заголовок и центрирование разбираются в одном проходе по строке,
-   так что вместе они должны работать — но проверено это только чтением.
-   Увидите литеральную решётку — уберите `# `, оставьте `^^^**ЧУМА**`,
-   это одна строка в генераторе.
-3. Рисуются ли иконки предметов (мод `lmpc_classes` обязан быть загружен).
-4. Не светит ли мир сквозь фон: свой тёмный прямоугольник лежит поверх
-   мира с прозрачностью 0.94.
-
-Показать экран заново — удалить `welcomescreen_cache.json` из папки игры.
-
-## Что осталось сделать руками
-
-Раздать игрокам: новый конфиг и пять клиентских джарников в паке ещё
-не выложены. Токена раздачи в дереве нет, выкладывает владелец:
-
-```
-cp -r launcher/pack-config/* pack-build/
-node launcher/tools/publish-pack.js --repo xxxDenthe/minecraft_server_plague      --tag pack --token <ghp_...> --managed mods,CustomSkinLoader
-```
+  cp -r launcher/pack-config/* pack-build/
+  node launcher/tools/publish-pack.js --repo xxxDenthe/minecraft_server_plague --tag pack --token <ghp_...> --managed mods,CustomSkinLoader
+  ```

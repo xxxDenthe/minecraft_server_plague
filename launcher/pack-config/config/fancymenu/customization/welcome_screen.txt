@@ -7,7 +7,7 @@ layout-meta {
   randomonlyfirsttime = false
   render_custom_elements_behind_vanilla = false
   layout_index = 0
-  last_edited_time = 1788887012081
+  last_edited_time = 1788889766688
 }
 
 element {
@@ -47,36 +47,19 @@ element {
 element {
   element_type = text_v2
   x = -200
-  y = 10
+  y = 14
   width = 400
-  height = 22
+  height = 26
   anchor_point = top-centered
   source_mode = direct
-  source = # ^^^%#E5DDCB%ЧУМА%#%
+  source = ^^^%n%%#E5DDCB%ЧУМА%#%%n%^^^
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
   interactable = false
   shadow = true
-  headline_line_color = #0A0908
+  scale = 2.0
   instance_identifier = lmpc_text_4
-}
-
-element {
-  element_type = text_v2
-  x = -200
-  y = 32
-  width = 400
-  height = 12
-  anchor_point = top-centered
-  source_mode = direct
-  source = ^^^%#6E6960%Восемь человек. Четыре дня. Одна низина.%#%
-  parse_markdown = true
-  auto_line_wrapping = true
-  enable_scrolling = false
-  interactable = false
-  shadow = true
-  instance_identifier = lmpc_text_5
 }
 
 element {
@@ -87,7 +70,7 @@ element {
   height = 168
   anchor_point = top-centered
   color = #2B2820
-  instance_identifier = lmpc_rect_6
+  instance_identifier = lmpc_rect_5
 }
 
 element {
@@ -98,7 +81,7 @@ element {
   height = 168
   anchor_point = top-centered
   color = #2B2820
-  instance_identifier = lmpc_rect_7
+  instance_identifier = lmpc_rect_6
 }
 
 element {
@@ -106,10 +89,27 @@ element {
   x = -230
   y = 54
   width = 145
-  height = 12
+  height = 14
   anchor_point = top-centered
   source_mode = direct
-  source = ^^^**%#D8D0BE%ГДЕ ВЫ%#%**
+  source = ^^^%n%**%#D8D0BE%ГДЕ ВЫ%#%**%n%^^^
+  parse_markdown = true
+  auto_line_wrapping = true
+  enable_scrolling = false
+  interactable = false
+  shadow = true
+  instance_identifier = lmpc_text_7
+}
+
+element {
+  element_type = text_v2
+  x = -72
+  y = 54
+  width = 145
+  height = 14
+  anchor_point = top-centered
+  source_mode = direct
+  source = ^^^%n%**%#D8D0BE%ЧТО ЗДЕСЬ УСТРОЕНО%#%**%n%^^^
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
@@ -120,36 +120,19 @@ element {
 
 element {
   element_type = text_v2
-  x = -72
+  x = 86
   y = 54
   width = 145
-  height = 12
+  height = 14
   anchor_point = top-centered
   source_mode = direct
-  source = ^^^**%#D8D0BE%ЧТО ЗДЕСЬ УСТРОЕНО%#%**
+  source = ^^^%n%**%#D8D0BE%ЧТО ЗНАТЬ СРАЗУ%#%**%n%^^^
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
   interactable = false
   shadow = true
   instance_identifier = lmpc_text_9
-}
-
-element {
-  element_type = text_v2
-  x = 86
-  y = 54
-  width = 145
-  height = 12
-  anchor_point = top-centered
-  source_mode = direct
-  source = ^^^**%#D8D0BE%ЧТО ЗНАТЬ СРАЗУ%#%**
-  parse_markdown = true
-  auto_line_wrapping = true
-  enable_scrolling = false
-  interactable = false
-  shadow = true
-  instance_identifier = lmpc_text_10
 }
 
 element {
@@ -166,7 +149,7 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  instance_identifier = lmpc_text_11
+  instance_identifier = lmpc_text_10
 }
 
 element {
@@ -179,7 +162,7 @@ element {
   item_key = minecraft:rotten_flesh
   show_tooltip = false
   enchanted = false
-  instance_identifier = lmpc_item_12
+  instance_identifier = lmpc_item_11
 }
 
 element {
@@ -187,10 +170,27 @@ element {
   x = -50
   y = 68
   width = 123
-  height = 12
+  height = 14
   anchor_point = top-centered
   source_mode = direct
   source = **%#C2A87C%Земля болеет%#%**
+  parse_markdown = true
+  auto_line_wrapping = true
+  enable_scrolling = false
+  interactable = false
+  shadow = true
+  instance_identifier = lmpc_text_12
+}
+
+element {
+  element_type = text_v2
+  x = -50
+  y = 81
+  width = 123
+  height = 25
+  anchor_point = top-centered
+  source_mode = direct
+  source = %#9A948A%И растёт каждую ночь.%#%
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
@@ -200,44 +200,44 @@ element {
 }
 
 element {
-  element_type = text_v2
-  x = -50
-  y = 80
-  width = 123
-  height = 24
-  anchor_point = top-centered
-  source_mode = direct
-  source = %#9A948A%И растёт каждую ночь.%#%
-  parse_markdown = true
-  auto_line_wrapping = true
-  enable_scrolling = false
-  interactable = false
-  shadow = true
-  instance_identifier = lmpc_text_14
-}
-
-element {
   element_type = item
   x = -72
-  y = 104
+  y = 106
   width = 16
   height = 16
   anchor_point = top-centered
   item_key = lmpc_classes:clerics_brew
   show_tooltip = false
   enchanted = false
-  instance_identifier = lmpc_item_15
+  instance_identifier = lmpc_item_14
 }
 
 element {
   element_type = text_v2
   x = -50
-  y = 104
+  y = 106
   width = 123
-  height = 12
+  height = 14
   anchor_point = top-centered
   source_mode = direct
   source = **%#C2A87C%Болеете и вы%#%**
+  parse_markdown = true
+  auto_line_wrapping = true
+  enable_scrolling = false
+  interactable = false
+  shadow = true
+  instance_identifier = lmpc_text_15
+}
+
+element {
+  element_type = text_v2
+  x = -50
+  y = 119
+  width = 123
+  height = 25
+  anchor_point = top-centered
+  source_mode = direct
+  source = %#9A948A%Отвар Клирика лечит.%#%
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
@@ -247,44 +247,44 @@ element {
 }
 
 element {
-  element_type = text_v2
-  x = -50
-  y = 116
-  width = 123
-  height = 24
-  anchor_point = top-centered
-  source_mode = direct
-  source = %#9A948A%Отвар Клирика лечит.%#%
-  parse_markdown = true
-  auto_line_wrapping = true
-  enable_scrolling = false
-  interactable = false
-  shadow = true
-  instance_identifier = lmpc_text_17
-}
-
-element {
   element_type = item
   x = -72
-  y = 140
+  y = 144
   width = 16
   height = 16
   anchor_point = top-centered
   item_key = lmpc_classes:class_codex
   show_tooltip = false
   enchanted = false
-  instance_identifier = lmpc_item_18
+  instance_identifier = lmpc_item_17
 }
 
 element {
   element_type = text_v2
   x = -50
-  y = 140
+  y = 144
   width = 123
-  height = 12
+  height = 14
   anchor_point = top-centered
   source_mode = direct
   source = **%#C2A87C%Четыре призвания%#%**
+  parse_markdown = true
+  auto_line_wrapping = true
+  enable_scrolling = false
+  interactable = false
+  shadow = true
+  instance_identifier = lmpc_text_18
+}
+
+element {
+  element_type = text_v2
+  x = -50
+  y = 157
+  width = 123
+  height = 25
+  anchor_point = top-centered
+  source_mode = direct
+  source = %#9A948A%Клирик, Кузнец, Фермер, Летописец.%#%
   parse_markdown = true
   auto_line_wrapping = true
   enable_scrolling = false
@@ -294,41 +294,24 @@ element {
 }
 
 element {
-  element_type = text_v2
-  x = -50
-  y = 152
-  width = 123
-  height = 24
-  anchor_point = top-centered
-  source_mode = direct
-  source = %#9A948A%Клирик, Кузнец, Фермер, Летописец.%#%
-  parse_markdown = true
-  auto_line_wrapping = true
-  enable_scrolling = false
-  interactable = false
-  shadow = true
-  instance_identifier = lmpc_text_20
-}
-
-element {
   element_type = item
   x = -72
-  y = 176
+  y = 182
   width = 16
   height = 16
   anchor_point = top-centered
   item_key = lmpc_classes:andesite_purifier
   show_tooltip = false
   enchanted = false
-  instance_identifier = lmpc_item_21
+  instance_identifier = lmpc_item_20
 }
 
 element {
   element_type = text_v2
   x = -50
-  y = 176
+  y = 182
   width = 123
-  height = 12
+  height = 14
   anchor_point = top-centered
   source_mode = direct
   source = **%#C2A87C%Землю отбивают%#%**
@@ -337,15 +320,15 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  instance_identifier = lmpc_text_22
+  instance_identifier = lmpc_text_21
 }
 
 element {
   element_type = text_v2
   x = -50
-  y = 188
+  y = 195
   width = 123
-  height = 24
+  height = 25
   anchor_point = top-centered
   source_mode = direct
   source = %#9A948A%Очиститель — машина Create.%#%
@@ -354,7 +337,7 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  instance_identifier = lmpc_text_23
+  instance_identifier = lmpc_text_22
 }
 
 element {
@@ -371,7 +354,7 @@ element {
   enable_scrolling = false
   interactable = false
   shadow = true
-  instance_identifier = lmpc_text_24
+  instance_identifier = lmpc_text_23
 }
 
 element {
@@ -383,8 +366,8 @@ element {
   anchor_point = bottom-centered
   sticky_anchor = true
   label = Войти в деревню
-  button_element_executable_block_identifier = lmpc_block_25
-  [executable_block:lmpc_block_25][type:generic] = [executables:lmpc_act_26;]
-  [executable_action_instance:lmpc_act_26][action_type:closegui] = 
-  instance_identifier = lmpc_button_27
+  button_element_executable_block_identifier = lmpc_block_24
+  [executable_block:lmpc_block_24][type:generic] = [executables:lmpc_act_25;]
+  [executable_action_instance:lmpc_act_25][action_type:closegui] = 
+  instance_identifier = lmpc_button_26
 }
