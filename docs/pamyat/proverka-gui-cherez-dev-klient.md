@@ -15,23 +15,34 @@ metadata:
 и сама всё проверить, не трогая мой компьютер». Он прав: аргумент
 запуска доходит там, где не доходит клавиатура.
 
-**How to apply:** в `plaguecore/build.gradle`, блок `runs { client }`,
-временно дописать:
+**How to apply:** цикл собран в один скрипт и правок сборки больше
+не требует:
 
-```groovy
-programArgument '--quickPlaySingleplayer'
-programArgument 'New World'
+```
+powershell -File launcher/tools/dev-welcome.ps1
 ```
 
-Разложить нужные джарники в `plaguecore/run/client/mods/`, конфиг —
-в `run/client/config/`, `./gradlew runClient` в фоне, ждать в логе
-нужную строку, снимать экран через PowerShell (`CopyFromScreen` после
-`SetForegroundWindow`). Панель FancyMenu сверху убирается в
-`run/client/config/fancymenu/options.txt`:
-`B:show_customization_overlay = 'false';`. После проверки вернуть
-`build.gradle` и убрать разложенное. Цикл — около двух минут.
+Вход в мир заведён в `plaguecore/build.gradle` свойством, а не временной
+строкой: `./gradlew runClient -PquickPlay="New World"`. Мир дев-клиент
+создать не умеет — берётся готовый из `lmpc_classes/run/client/saves`.
+
+Три вещи, на которых я споткнулся 2026-09-08 и которые легко повторить:
+
+- **BOM ломает FancyMenu.** `Set-Content -Encoding utf8` в Windows
+  PowerShell 5.1 ставит BOM, и файл молча не грузится. Писать конфиги
+  через `[System.IO.File]::WriteAllText` с `UTF8Encoding($false)`.
+- **Титульный экран не годится в подмену.** Макет с
+  `identifier = title_screen` FancyMenu грузит без ошибок, но не
+  применяет. Проверять надо настоящим входом в мир.
+- **Свой клиент узнавать по командной строке процесса, а не по названию
+  окна.** У владельца рядом свой дев-клиент с тем же названием: я дважды
+  выкинул его из игры, пока не поправил.
+
+Снимок делается через `PrintWindow` с флагом `PW_RENDERFULLCONTENT`:
+`SetForegroundWindow` Windows исполняет не всегда, и снимок экрана тогда
+захватывает чужое окно поверх.
 
 Подробности в репозитории:
-`docs/superpowers/notes/2026-09-08-startovyj-ekran.md`.
+`docs/superpowers/specs/2026-09-08-startovyj-ekran-dlinnye-teksty-design.md`.
 
 Связано: [[igra-vladelca-v-polymc]], [[startovyj-ekran-sostoyanie]]

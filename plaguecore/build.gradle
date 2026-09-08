@@ -18,6 +18,17 @@ neoForge {
         client {
             client()
             gameDirectory = file('run/client')
+
+            // Дев-клиент умеет сам войти в мир: `./gradlew runClient
+            // -PquickPlay="New World"`. Нужно для проверки экранов, которые
+            // показываются только в игре, — стартового прежде всего:
+            // синтетические нажатия до Minecraft не доходят ни в одном
+            // лаунчере, а аргумент запуска доходит.
+            // docs/pamyat/proverka-gui-cherez-dev-klient.md
+            if (project.hasProperty('quickPlay')) {
+                programArgument '--quickPlaySingleplayer'
+                programArgument project.property('quickPlay').toString()
+            }
         }
         server {
             server()
