@@ -6,11 +6,11 @@ Minecraft 1.21.1 · NeoForge 21.1.249 · Create 6.0.10
 фиксация точных версий: по нему собирается идентичный набор у всех
 игроков и на сервере.
 
-**Список сверен с папкой `mods/` 2026-09-06 (вечер).** Он собран из
-самой папки, а не правился вручную: всё, что ниже, реально лежит
-в `mods/`, и наоборот. Игровой профиль владельца
-(`ModrinthApp/profiles/LMPCCHUMA/mods`) в тот же момент совпадал
-с папкой файл в файл.
+**Список пересобран из игрового профиля владельца
+(`ModrinthApp/profiles/LMPCCHUMA/mods`) 2026-09-09.** Профиль теперь
+и есть источник правды: список собран из него скриптом, а не правился
+вручную. Прежний список (сверка с `mods/` от 2026-09-06) ничего лишнего
+не содержал — ни один джарник из него не пропал.
 
 **2026-09-08:** добавлены пять клиентских джарников ради стартового
 экрана — `welcomescreen` и его обязательная цепочка зависимостей
@@ -19,8 +19,16 @@ Minecraft 1.21.1 · NeoForge 21.1.249 · Create 6.0.10
 `launcher/pack-config/config/fancymenu/customization/welcome_screen.txt`.
 Заметка `docs/superpowers/notes/2026-09-08-startovyj-ekran.md`.
 
-Всего: 108 сторонних модов + 4 наших. Один джарник отключён
-(`.disabled`), он в списке не значится.
+**2026-09-09:** владелец добавил в профиль одиннадцать модов, которых
+в списке не было: `Galosphere`, `aquamirae`, `blueprint`, `caravans`,
+`clientsort`, `fragmentum`, `letsdo-vinery`, `ragdoll_reactions`,
+`sable_player_ragdoll`, `spawnanimations`, `upgrade_aquatic`. Зачем взят
+каждый, в заметках не записано — если решение важное, его стоит
+описать отдельно.
+
+Всего: 121 сторонний мод + 4 наших. Один джарник отключён
+(`.disabled`), он в списке не значится; ещё в папке лежит
+`ColdSweat-2.4.2.jar.bak` — это резервная копия, а не мод.
 
 ## Сторонние моды
 
@@ -28,16 +36,20 @@ Minecraft 1.21.1 · NeoForge 21.1.249 · Create 6.0.10
 AdvancementPlaques-1.21.1-neoforge-1.6.8.jar
 AmbientSounds_NEOFORGE_v6.3.8_mc1.21.1.jar
 appleskin-neoforge-mc1.21-3.0.9.jar
+aquamirae-neoforge-1.21.1-7.2.4.jar
 architectury-13.0.11-neoforge.jar
 atmospherics-2.6.5-mc-1.21.1.jar
 Axiom-6.0.5-for-MC1.21.1.jar
 baguettelib-1.21.1-NeoForge-2.0.6.jar
 better-advanced-tooltips-2101.1.0-build.5.jar
 bettercombat-neoforge-2.4.0+1.21.1.jar
+blueprint-1.21.1-8.2.0.jar
 c2me-neoforge-mc1.21.1-0.4.0-alpha.0.120.jar
+caravans-neoforge-1.21.1-3.0.0.jar
 carryon-neoforge-1.21.1-2.2.6.13.jar
 Chunky-NeoForge-1.4.23.jar
 clickthrough-plus-neoforge-3.5.0+1.21.1.jar
+clientsort-neoforge-3.89.0+1.21.1.jar
 cloth-config-15.0.140-neoforge.jar
 ColdSweat-2.4.2.jar
 connector-2.0.0-beta.17+1.21.1-full.jar
@@ -66,10 +78,12 @@ fancymenu_neoforge_3.9.12_MC_1.21.1.jar
 FarmersDelight-1.21.1-1.3.4.jar
 ferritecore-7.0.3-neoforge.jar
 forgified-fabric-api-0.116.15+2.3.5+1.21.1.jar
+fragmentum-neoforge-1.21.1-2.4.4.jar
 ftb-library-neoforge-2101.1.35.jar
 ftb-quests-neoforge-2101.1.34.jar
 ftb-teams-neoforge-2101.1.11.jar
 fzzy_config-0.7.6+1.21+neoforge.jar
+Galosphere-1.21.1-1.5.5-NeoForge.jar
 geckolib-neoforge-1.21.1-4.9.2.jar
 handcrafted-neoforge-1.21.1-4.0.3.jar
 Iceberg-1.21.1-neoforge-1.3.2.jar
@@ -87,6 +101,7 @@ kubejs-neoforge-2101.7.2-build.374.jar
 kubejsadditions-neoforge-1.21.1-6.0.0.jar
 lambdynamiclights-4.8.11+1.21.1.jar
 LegendaryTooltips-1.21.1-neoforge-1.5.5.jar
+letsdo-vinery-neoforge-1.5.3.jar
 lithium-neoforge-0.15.4+mc1.21.1.jar
 lithostitched-1.8.0+beta4-neoforge-21.1.jar
 mapwright-neoforge-1.21.1-1.0.6.jar
@@ -106,10 +121,12 @@ Prism-1.21.1-neoforge-1.0.11.jar
 ProbeJS-8.0.3.jar
 punchy-2.7d-neoforge-1.21.1.jar
 PuzzlesLib-v21.1.56-mc1.21.1-NeoForge.jar
+ragdoll_reactions-1.21.1-0.7.0.jar
 reeses-sodium-options-neoforge-2.2.3+mc1.21.1.jar
 resourcefullib-neoforge-1.21-3.0.12.jar
 rhino-2101.2.8-build.91.jar
 sable-neoforge-1.21.1-2.0.5.jar
+sable_player_ragdoll-1.21.1-0.7.5.jar
 Searchables-neoforge-1.21.1-1.0.2.jar
 sit-1.21.1-1.4.jar
 skinlayers3d-neoforge-1.11.2-mc1.21.1.jar
@@ -121,12 +138,14 @@ sophisticatedcore-1.21.1-1.4.90.2299.jar
 sound-physics-remastered-neoforge-1.21.1-1.5.1.jar
 sounds-2.4.22+lts+1.21.1-neoforge.jar
 spark-1.10.124-neoforge.jar
+spawnanimations-v1.11.5-mc1.17-26.2.9-mod.jar
 SubtleEffects-neoforge-1.21.1-1.14.3.jar
 supplementaries-1.21.1-3.9.6-neoforge.jar
 t_and_t-fabric-neoforge-1.13.11.jar
 tectonic-3.0.26-neoforge-21.1.jar
 ThirstWasTaken-1.21.1-2.1.5-nojade.jar   # пропатчен, см. заметку 2026-09-05-jade-otkachen-radi-zhazhdy
 TravelersTitles-1.21.1-NeoForge-5.1.3.jar
+upgrade_aquatic-1.21.1-7.0.1.jar
 veil-neoforge-1.21.1-4.4.1.jar   # поверх Veil 4.3.2 из sable, см. заметку 2026-09-06-krashi-create-i-veil
 visuality-forge-3.0.0.jar
 voicechat-neoforge-1.21.1-2.6.22.jar
