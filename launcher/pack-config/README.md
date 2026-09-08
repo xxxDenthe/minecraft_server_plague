@@ -77,15 +77,22 @@ NeoForge-споки), при выходе перезаписывают файл 
 ## Как это попадает в пак
 
 Раздатчик пака (`launcher/tools/publish-pack.js`) собирает пак из
-папки `pack-build/`. Перед прогоном скопировать сюда содержимое:
+папки `pack-build/`. Саму `pack-build/` перед выкладкой пересобрать
+из игрового профиля владельца — это единственное место, где состав пака
+есть целиком:
 
 ```
-cp -r launcher/pack-config/* pack-build/
+python launcher/tools/build-pack-from-profile.py
 node launcher/tools/publish-pack.js --repo xxxDenthe/minecraft_server_plague \
-     --tag pack --token <ghp_...> --managed mods,CustomSkinLoader
+     --tag pack --token <ghp_...> \
+     --managed mods,config,defaultconfigs,kubejs,resourcepacks,shaderpacks,CustomSkinLoader
 ```
 
-`--managed mods,CustomSkinLoader` — чтобы `CustomSkinLoader/` попала в
-манифест (иначе раздаётся только `mods/`). `publish-pack.js` сам поднимет
-`packVersion`, и лаунчер у игроков дольёт новый файл при следующем
-запуске.
+**`--managed` перечисляет всё, что едет игрокам** — не только то, что
+лаунчер потом чистит от лишнего. Ключ целиком заменяет список по
+умолчанию, поэтому дописать к нему одну `CustomSkinLoader` нельзя:
+перечислять надо все папки сразу, иначе конфиги, скрипты и ресурспаки
+молча не поедут.
+
+`publish-pack.js` сам поднимет `packVersion`, и лаунчер у игроков
+дольёт новый файл при следующем запуске.
