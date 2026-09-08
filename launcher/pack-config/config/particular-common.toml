@@ -2,5 +2,11 @@
 # светлячков SubtleEffects (см. config/subtle_effects/environment.toml).
 # Чтобы не спавнить их дважды, светлячки Particular просто выключены;
 # плотностью светлячков рулит один мод — SubtleEffects.
-[enabledEffects]
-    fireflies = false
+#
+# Секция именно [general.enabledEffects]: до 2026-09-08 здесь стояло
+# просто [enabledEffects], мод такую секцию не читает, и светлячки всё
+# это время оставались включёнными. Проверено по полному конфигу,
+# который мод пишет сам.
+[general]
+	[general.enabledEffects]
+		fireflies = false

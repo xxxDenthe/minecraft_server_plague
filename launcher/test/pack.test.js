@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { contentIdOf, planUpload } from '../tools/pack.js';
+import { zip } from '../src/main/archive.js';
 
 const file = (path, body) => ({ path, sha256: body.repeat(64).slice(0, 64) });
 
@@ -86,5 +87,13 @@ describe('решение о перезаливке', () => {
 
     expect(plan.reuse).toEqual([]);
     expect(plan.build.map((d) => d.dir)).toEqual(['kubejs']);
+  });
+});
+
+describe('сборка архива', () => {
+  it('имя не из латиницы отвергается с перечислением файлов', async () => {
+    await expect(
+      zip({ sourceDir: '.', entries: ['mods/ok.jar', 'config/jei/world/local/Новый мир/x.json'], archive: 'x.zip' })
+    ).rejects.toThrow(/Новый мир/);
   });
 });

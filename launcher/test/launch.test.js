@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { selectArguments, substitute, buildClasspath, buildCommand } from '../src/main/launch.js';
+import { selectArguments, substitute, buildClasspath, buildCommand, seedOptions, OPTIONS_SEED } from '../src/main/launch.js';
 import { offlineUuid } from '../src/main/offline.js';
 
 let temp;
@@ -155,5 +155,36 @@ describe('команда запуска', () => {
 
   it('без ника команда не собирается', () => {
     expect(() => command({ nickname: '' })).toThrow(/ник/);
+  });
+});
+
+describe('настройки первого запуска', () => {
+  it('образец из пака становится options.txt', async () => {
+    const inst = path.join(temp, 'instance');
+    fs.mkdirSync(path.join(inst, 'config'), { recursive: true });
+    fs.writeFileSync(path.join(inst, OPTIONS_SEED), 'resourcePacks:["vanilla"]\n', 'utf8');
+
+    await seedOptions(inst);
+
+    expect(fs.readFileSync(path.join(inst, 'options.txt'), 'utf8')).toBe('resourcePacks:["vanilla"]\n');
+  });
+
+  it('без образца остаётся хотя бы графика «Ультра»', async () => {
+    const inst = path.join(temp, 'instance');
+    fs.mkdirSync(inst, { recursive: true });
+
+    await seedOptions(inst);
+
+    expect(fs.readFileSync(path.join(inst, 'options.txt'), 'utf8')).toBe('graphicsMode:2\n');
+  });
+
+  it('чужой options.txt не перезаписывается — там клавиши игрока', async () => {
+    const inst = path.join(temp, 'instance');
+    fs.mkdirSync(path.join(inst, 'config'), { recursive: true });
+    fs.writeFileSync(path.join(inst, OPTIONS_SEED), 'resourcePacks:["vanilla"]\n', 'utf8');
+    fs.writeFileSync(path.join(inst, 'options.txt'), 'key_key.attack:key.mouse.right\n', 'utf8');
+
+    expect(await seedOptions(inst)).toBeNull();
+    expect(fs.readFileSync(path.join(inst, 'options.txt'), 'utf8')).toBe('key_key.attack:key.mouse.right\n');
   });
 });

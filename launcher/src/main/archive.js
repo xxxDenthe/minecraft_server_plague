@@ -54,6 +54,22 @@ export async function zip({ sourceDir, entries, archive }) {
   }
   if (entries.length === 0) throw new Error('нечего архивировать: список файлов пуст');
 
+  // bsdtar читает список -T в кодировке консоли Windows, а не в UTF-8,
+  // и на имени с кириллицей молча теряет строку, падая потом с пятью
+  // одинаковыми «Couldn't visit directory» без единого имени файла.
+  // Ловим это здесь: полчаса на разбор такого сообщения дороже, чем
+  // проверка в две строки.
+  // ponytail: имена вне ASCII в пак не кладём; понадобятся — список
+  // придётся отдавать tar'у в кодировке консоли, а не в UTF-8.
+  const nonAscii = entries.filter((name) => /[^\x20-\x7E]/.test(name));
+  if (nonAscii.length > 0) {
+    throw new Error(
+      `в паке ${nonAscii.length} файлов с именами не из латиницы — tar их не заберёт:\n` +
+        nonAscii.map((n) => `  ${n}`).join('\n') +
+        '\n  Переименуйте их или уберите из pack-build.'
+    );
+  }
+
   await fs.mkdir(path.dirname(archive), { recursive: true });
   await fs.rm(archive, { force: true });
 

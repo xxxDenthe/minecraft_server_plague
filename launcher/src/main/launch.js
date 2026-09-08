@@ -135,6 +135,33 @@ export function buildCommand({
   return { args, classpath, values };
 }
 
+// Настройки первого запуска. Ресурспаки лежат в паке, а какие из них
+// включены и в каком порядке — только в options.txt, а он у нас
+// в PROTECTED и не раздаётся. Без этого игрок получал бы девять
+// архивов в папке и ни одного включённого.
+//
+// Образец лежит в самом паке, а не здесь: порядок паков меняется вместе
+// с паком, и пересобирать установщик ради него не нужно.
+export const OPTIONS_SEED = 'config/lmpc-default-options.txt';
+
+// Только при первом запуске: дальше options.txt принадлежит игроку,
+// и переписывать его — значит стереть чужие клавиши посреди сессии.
+export async function seedOptions(instanceDir) {
+  const optionsTxt = path.join(instanceDir, 'options.txt');
+  if (fs.existsSync(optionsTxt)) return null;
+
+  // Образца в паке нет — ставим хотя бы графику «Ультра» (Fabulous):
+  // lmpc_shade убирает небесный купол, и в «Детально» (Fancy) на его
+  // месте чёрная дыра.
+  const seed = path.join(instanceDir, OPTIONS_SEED);
+  const text = fs.existsSync(seed)
+    ? await fsp.readFile(seed, 'utf8')
+    : 'graphicsMode:2\n';
+
+  await fsp.writeFile(optionsTxt, text, 'utf8');
+  return text;
+}
+
 export async function launchGame({
   javaExe = paths.javaExe(),
   vanillaJson,
@@ -161,14 +188,7 @@ export async function launchGame({
   await fsp.mkdir(paths.instance(), { recursive: true });
   await fsp.mkdir(path.join(paths.root(), 'natives'), { recursive: true });
 
-  // Пак рассчитан на графику «Ультра» (Fabulous): lmpc_shade убирает
-  // небесный купол, и в «Детально» (Fancy) на его месте чёрная дыра.
-  // Ставим только при первом запуске; настройки игрока дальше не трогаем
-  // (options.txt в PROTECTED — синхронизация его не перезаписывает).
-  const optionsTxt = path.join(paths.instance(), 'options.txt');
-  if (!fs.existsSync(optionsTxt)) {
-    await fsp.writeFile(optionsTxt, 'graphicsMode:2\n', 'utf8');
-  }
+  await seedOptions(paths.instance());
 
   // Лог пишется на диск целиком: разбор чужого краша не должен
   // превращаться в переписку «пришли скриншот».

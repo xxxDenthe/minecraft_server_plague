@@ -47,6 +47,14 @@
   `/openguiscreen welcomescreen_welcome`, а показывается заново после
   удаления `welcomescreen_cache.json` из папки игры.
 
+- **`config/lmpc-default-options.txt`** — `options.txt` для первого
+  запуска: порядок включённых ресурспаков, язык, графика «Ультра».
+  Раздаётся как обычный файл пака, а лаунчер копирует его в
+  `options.txt`, только если того ещё нет (`seedOptions` в
+  `src/main/launch.js`). Сам `options.txt` в `PROTECTED` и не
+  раздаётся — иначе игроку стирало бы клавиши при каждом обновлении.
+  Fragmentum Layer в списке нет намеренно: мод сам прибивает свой пак
+  наверх, и в `options.txt` он не пишется.
 - **`config/particular-common.toml`** — конфиг мода Particular, только
   `[enabledEffects] fireflies = false`. У Particular тоже есть свои
   светлячки, отдельные от SubtleEffects — оставили их выключенными,
