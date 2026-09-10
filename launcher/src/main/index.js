@@ -3,12 +3,14 @@
 // Это стережёт test/purity.test.js.
 
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import * as paths from './paths.js';
 import { readConfig, writeConfig } from './config.js';
-import { play, watchForUpdates, gameLogFile } from './install.js';
+import { play, watchForUpdates, gameLogFile, packSource } from './install.js';
+import { checkLauncherUpdate, downloadInstaller } from './selfupdate.js';
 import { fetchSkinPng } from './skin.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -55,6 +57,39 @@ function createWindow() {
   window.removeMenu();
 
   window.loadFile(path.join(here, '..', 'renderer', 'index.html'));
+}
+
+// Лаунчер обновляется молча: спрашивать «поставить сейчас?» значит
+// получить половину игроков на старой версии, которая однажды
+// перестанет понимать формат манифеста.
+//
+// Любая осечка — не ошибка запуска. Упавший GitHub, битое описание,
+// несошедшийся хеш: пишем строку в лог и работаем как есть. Лаунчер,
+// который не стартует из-за чужого сбоя, хуже старого лаунчера.
+async function updateSelf() {
+  try {
+    const source = packSource();
+    const update = await checkLauncherUpdate({
+      source,
+      currentVersion: app.getVersion(),
+    });
+    if (!update) return false;
+
+    send('log', `есть новая версия лаунчера: ${update.version}`);
+    const installer = await downloadInstaller(update, {
+      token: source.token,
+      onProgress: (event) => send('progress', event),
+    });
+
+    // /S — тихая установка NSIS. Установщик дожидается закрытия
+    // лаунчера и запускает новую версию сам, поэтому сразу выходим.
+    spawn(installer, ['/S'], { detached: true, stdio: 'ignore' }).unref();
+    app.quit();
+    return true;
+  } catch (err) {
+    send('log', `обновление лаунчера не состоялось: ${err.message}`);
+    return false;
+  }
 }
 
 ipcMain.handle('config:read', () => readConfig());
@@ -118,6 +153,10 @@ ipcMain.handle('game:play', async (_event, { nickname, maxRamMb, minRamMb } = {}
 app.whenReady().then(() => {
   paths.ensureDirs();
   createWindow();
+
+  // После создания окна, а не до: игрок должен видеть, что происходит,
+  // а не гадать над пустым экраном.
+  window.webContents.once('did-finish-load', () => { updateSelf(); });
 
   // На macOS принято переоткрывать окно по клику на иконку. Первая версия
   // собирается только под Windows, но обработчик стоит копейки.

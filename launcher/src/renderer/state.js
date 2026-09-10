@@ -16,6 +16,9 @@ export const State = Object.freeze({
 export function stateForStage(stage) {
   switch (stage) {
     case 'manifest': return State.CHECKING;
+    // Своё обновление лаунчер ставит молча, но окно не должно
+    // выглядеть застывшим, пока качается установщик.
+    case 'launcher': return State.LOADING;
     case 'pack': return State.UPDATING;
     case 'launch': return State.LAUNCHING;
     case 'java':
