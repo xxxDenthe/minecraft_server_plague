@@ -11,7 +11,9 @@
     "dist": "electron-builder --win",
     "publish": "node tools/publish-pack.js",
     "configure": "node tools/configure.js",
-    "check-access": "node tools/check-access.js"
+    "check-access": "node tools/check-access.js",
+    "news:draft": "node tools/make-news-draft.js",
+    "news:publish": "node tools/publish-news.js"
   },
   "devDependencies": {
     "electron": "^44.1.1",
