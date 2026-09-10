@@ -4,6 +4,7 @@
 
 export const STAGES = Object.freeze({
   MANIFEST: 'manifest',
+  LAUNCHER: 'launcher',
   JAVA: 'java',
   MINECRAFT: 'minecraft',
   ASSETS: 'assets',
