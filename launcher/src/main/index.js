@@ -11,6 +11,7 @@ import * as paths from './paths.js';
 import { readConfig, writeConfig } from './config.js';
 import { play, watchForUpdates, gameLogFile, packSource } from './install.js';
 import { checkLauncherUpdate, downloadInstaller } from './selfupdate.js';
+import { loadNews, noteLocal } from './news.js';
 import { fetchSkinPng } from './skin.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -104,6 +105,8 @@ ipcMain.handle('discord:open', () => shell.openExternal(DISCORD_URL));
 
 ipcMain.handle('skin:fetch', (_event, nickname) => fetchSkinPng(nickname));
 
+ipcMain.handle('news:load', () => loadNews({ source: packSource() }));
+
 // Внешние ссылки со стороны нашего же окна (регистрация ely.by, видеогайд).
 // Проверка на https — чтобы опечатка в ссылке не открыла file:// или
 // неизвестную схему; удалённого контента, который мог бы это подсунуть,
@@ -114,6 +117,10 @@ ipcMain.handle('link:open', (_event, url) => {
 
 ipcMain.handle('game:play', async (_event, { nickname, maxRamMb, minRamMb } = {}) => {
   if (running) return { started: false, reason: 'игра уже запущена' };
+
+  // Версию пака запоминаем до запуска: prepare() записывает новую
+  // в конфиг ещё внутри play(), и сравнивать после уже не с чем.
+  const knownVersion = readConfig().packVersion ?? 0;
 
   try {
     const session = await play({
@@ -127,6 +134,19 @@ ipcMain.handle('game:play', async (_event, { nickname, maxRamMb, minRamMb } = {}
     });
 
     running = session.process;
+
+    // Игрок должен видеть, что трёхминутное скачивание было не зря,
+    // даже если новость про содержимое написать забыли.
+    const packVersion = session.prepared?.manifest?.packVersion ?? 0;
+    if (packVersion > knownVersion) {
+      noteLocal({
+        id: `local-pack-${packVersion}`,
+        date: new Date().toISOString().slice(0, 10),
+        kind: 'info',
+        title: 'Модпак обновлён',
+        body: 'Лаунчер догрузил новые файлы пака. Ничего делать не нужно.',
+      });
+    }
 
     // Пока игра идёт, лаунчер следит за манифестом. Файлы не трогаются:
     // подменять джарник под работающей игрой нельзя.

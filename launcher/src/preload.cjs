@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('launcher', {
   openDiscord: () => ipcRenderer.invoke('discord:open'),
   fetchSkin: (nickname) => ipcRenderer.invoke('skin:fetch', nickname),
   openLink: (url) => ipcRenderer.invoke('link:open', url),
+  loadNews: () => ipcRenderer.invoke('news:load'),
 
   onProgress: on('progress'),
   onLog: on('log'),
