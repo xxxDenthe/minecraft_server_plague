@@ -11,7 +11,10 @@ import dev.denthe.plaguecore.PlagueCore;
 import dev.denthe.plaguecore.VoiceKnobs;
 import dev.denthe.plaguecore.core.PlagueGrid;
 import dev.denthe.plaguecore.core.SpreadEngine;
+import dev.denthe.plaguecore.core.PhaseTable;
 import dev.denthe.plaguecore.core.StartGenerator;
+import dev.denthe.plaguecore.mc.border.BorderOmens;
+import dev.denthe.plaguecore.mc.border.BorderTide;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -70,6 +73,9 @@ public final class PlagueCommands {
                     .executes(c -> словоПереключить(c, false)))));
 
         корень.then(Commands.literal("night").executes(PlagueCommands::ночь));
+
+        корень.then(Commands.literal("tide").executes(PlagueCommands::прилив));
+        корень.then(Commands.literal("omen").executes(PlagueCommands::примета));
 
         корень.then(Commands.literal("fastforward")
             .then(Commands.argument("nights", IntegerArgumentType.integer(1, 500))
@@ -489,6 +495,48 @@ public final class PlagueCommands {
             "Память об отрисовке сброшена у чанков: " + n
             + ". В очереди сейчас: " + Materializer.длинаОчереди()), true);
         return n;
+    }
+
+    /**
+     * Прилив на себя немедленно, без заката и без ожидания ночи.
+     * Ждать заката ради проверки — тот же плохой способ, что и ждать
+     * тридцати процентов у выводка.
+     */
+    private static int прилив(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        ServerLevel уровень = мир(ctx.getSource());
+        ServerPlayer игрок = ctx.getSource().getPlayer();
+        if (игрок == null) {
+            ctx.getSource().sendFailure(Component.literal("Команду выполняет игрок: волна идёт на него"));
+            return 0;
+        }
+
+        PlagueState состояние = PlagueState.get(уровень);
+        int фаза = PhaseTable.phaseForNight(состояние.night());
+        if (BorderTide.волна(уровень, игрок, состояние, фаза)) {
+            ctx.getSource().sendSuccess(() -> Component.literal("Волна вышла, фаза " + фаза), true);
+            return 1;
+        }
+        ctx.getSource().sendFailure(Component.literal(
+            "Волна не вышла. Причины: Гнили нет в радиусе "
+            + PlagueConstants.BORDER_TIDE_SEARCH_CHUNKS + " чанков, она ближе "
+            + PlagueConstants.BORDER_TIDE_MIN_DISTANCE + " блоков, ты в креативе "
+            + "или вокруг очага нет места"));
+        return 0;
+    }
+
+    /** Примета сейчас: звук и, если чанк грязный, пепел. */
+    private static int примета(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        ServerLevel уровень = мир(ctx.getSource());
+        ServerPlayer игрок = ctx.getSource().getPlayer();
+        if (игрок == null) {
+            ctx.getSource().sendFailure(Component.literal("Команду выполняет игрок: примета звучит ему"));
+            return 0;
+        }
+
+        int чанк = PlagueApi.getChunkLevelAt(уровень, игрок.blockPosition());
+        BorderOmens.примета(уровень, игрок, чанк);
+        ctx.getSource().sendSuccess(() -> Component.literal("Примета проиграна, уровень чанка " + чанк), false);
+        return 1;
     }
 
     private static int ночь(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {

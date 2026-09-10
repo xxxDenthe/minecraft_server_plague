@@ -103,6 +103,23 @@ public final class PlagueConfig {
     private static final ModConfigSpec.DoubleValue ПОЛ;
     private static final ModConfigSpec.DoubleValue МЕШКИ;
 
+    // ── Пограничье ────────────────────────────────────────────────────
+    private static final ModConfigSpec.IntValue ПРИМЕТА_КАЖДЫЕ;
+    private static final ModConfigSpec.DoubleValue[] ШАНС_ПРИМЕТЫ =
+        new ModConfigSpec.DoubleValue[PlagueConstants.BORDER_OMEN_CHANCE.length];
+    private static final ModConfigSpec.DoubleValue ПЕПЕЛ;
+    private static final ModConfigSpec.IntValue ПРИМЕТА_БЛИЖЕ;
+    private static final ModConfigSpec.IntValue ПРИМЕТА_ДАЛЬШЕ;
+    private static final ModConfigSpec.IntValue[] БРОСКОВ_ЛУТА =
+        new ModConfigSpec.IntValue[PlagueConstants.BORDER_LOOT_ROLLS.length];
+    private static final ModConfigSpec.IntValue ПОИСК_ГНИЛИ;
+    private static final ModConfigSpec.IntValue[] ЗОМБИ_В_ВОЛНЕ =
+        new ModConfigSpec.IntValue[PhaseTable.PHASE_COUNT];
+    private static final ModConfigSpec.IntValue[] СКЕЛЕТОВ_В_ВОЛНЕ =
+        new ModConfigSpec.IntValue[PhaseTable.PHASE_COUNT];
+    private static final ModConfigSpec.IntValue ВОЛНА_НЕ_БЛИЖЕ;
+    private static final ModConfigSpec.IntValue ПРЕДУПРЕЖДЕНИЕ;
+
     // ── игрок ─────────────────────────────────────────────────────────
     private static final ModConfigSpec.IntValue ТИК_ИГРОКА;
     private static final ModConfigSpec.IntValue[] ПОРОГ_СТАДИИ =
@@ -316,6 +333,60 @@ public final class PlagueConfig {
         НЕ_БЛИЖЕ_К_ИГРОКУ = СТРОИТЕЛЬ
             .comment("Ближе этого к игроку кучка не появляется — не лезем в лицо.")
             .defineInRange("minPlayerDistance", PlagueConstants.SPAWN_MIN_PLAYER_DISTANCE, 0, 64);
+
+        СТРОИТЕЛЬ.pop().comment(
+            "Пограничье — чанки уровня 1..3, между городом и Гнилью.",
+            "Приметы: звуки и пепел вокруг игрока, чем глубже, тем чаще.",
+            "Лут: в сундуки Пограничья доливается по уровню чанка.",
+            "Прилив: на закате из ближайшей Гнили выходит волна на игрока."
+        ).push("border");
+
+        ПРИМЕТА_КАЖДЫЕ = СТРОИТЕЛЬ
+            .comment("Раз во сколько тиков игрок бросает кубик на примету. 100 — раз в 5 секунд.")
+            .defineInRange("omenTicks", PlagueConstants.BORDER_OMEN_TICKS, 20, 1200);
+        for (int у = 0; у < ШАНС_ПРИМЕТЫ.length; у++) {
+            ШАНС_ПРИМЕТЫ[у] = СТРОИТЕЛЬ
+                .comment("Шанс приметы за бросок на уровне заражения " + у + ".")
+                .defineInRange("omenChanceLevel" + у,
+                    окр(PlagueConstants.BORDER_OMEN_CHANCE[у]), 0.0, 1.0);
+        }
+        ПЕПЕЛ = СТРОИТЕЛЬ
+            .comment("Доля примет на уровне 3 и выше, к которым добавляется горсть пепла.")
+            .defineInRange("omenAsh", окр(PlagueConstants.BORDER_OMEN_ASH), 0.0, 1.0);
+        ПРИМЕТА_БЛИЖЕ = СТРОИТЕЛЬ
+            .comment("Ближе этого звук приметы не родится — иначе он звучит из головы.")
+            .defineInRange("omenMinDistance", PlagueConstants.BORDER_OMEN_MIN_DISTANCE, 1, 64);
+        ПРИМЕТА_ДАЛЬШЕ = СТРОИТЕЛЬ
+            .comment("Дальняя граница звука приметы.")
+            .defineInRange("omenMaxDistance", PlagueConstants.BORDER_OMEN_MAX_DISTANCE, 2, 96);
+
+        for (int у = 0; у < БРОСКОВ_ЛУТА.length; у++) {
+            БРОСКОВ_ЛУТА[у] = СТРОИТЕЛЬ
+                .comment("Сколько бросков доливается в сундук на уровне " + у + ".")
+                .defineInRange("lootRollsLevel" + у, PlagueConstants.BORDER_LOOT_ROLLS[у], 0, 8);
+        }
+
+        ПОИСК_ГНИЛИ = СТРОИТЕЛЬ
+            .comment("Радиус поиска Гнили вокруг игрока на закате, в чанках.",
+                     "Гнили в радиусе нет — волны нет вовсе: ночевать далеко от заразы",
+                     "должно оставаться законным способом прожить ночь.")
+            .defineInRange("tideSearchChunks", PlagueConstants.BORDER_TIDE_SEARCH_CHUNKS, 0, 48);
+        for (int ф = 0; ф < PhaseTable.PHASE_COUNT; ф++) {
+            ЗОМБИ_В_ВОЛНЕ[ф] = СТРОИТЕЛЬ
+                .comment("Мутировавших зомби в ночной волне на фазе " + ф + ".")
+                .defineInRange("tideZombiesPhase" + ф,
+                    PlagueConstants.BORDER_TIDE_ZOMBIES[ф], 0, 24);
+            СКЕЛЕТОВ_В_ВОЛНЕ[ф] = СТРОИТЕЛЬ
+                .comment("Скелетов в ночной волне на фазе " + ф + ".")
+                .defineInRange("tideSkeletonsPhase" + ф,
+                    PlagueConstants.BORDER_TIDE_SKELETONS[ф], 0, 24);
+        }
+        ВОЛНА_НЕ_БЛИЖЕ = СТРОИТЕЛЬ
+            .comment("Ближе этого к игроку волна не рождается.")
+            .defineInRange("tideMinDistance", PlagueConstants.BORDER_TIDE_MIN_DISTANCE, 0, 96);
+        ПРЕДУПРЕЖДЕНИЕ = СТРОИТЕЛЬ
+            .comment("Время суток, когда уходит предупреждение о приливе. Закат — 13000.")
+            .defineInRange("tideWarnTime", PlagueConstants.BORDER_TIDE_WARN_TIME, 0, 13000);
 
         СТРОИТЕЛЬ.pop().comment(
             "Чума в самом игроке: как копится, чем бьёт, чем лечится.",
@@ -737,6 +808,35 @@ public final class PlagueConfig {
         PlagueConstants.SPAWN_MAX_GROUPS_PER_NIGHT = КУЧЕК_ЗА_НОЧЬ.get();
         PlagueConstants.SPAWN_RADIUS = РАДИУС_ВЫВОДКА.get();
         PlagueConstants.SPAWN_MIN_PLAYER_DISTANCE = НЕ_БЛИЖЕ_К_ИГРОКУ.get();
+
+        PlagueConstants.BORDER_OMEN_TICKS = ПРИМЕТА_КАЖДЫЕ.get();
+        float[] шансПриметы = new float[ШАНС_ПРИМЕТЫ.length];
+        for (int у = 0; у < шансПриметы.length; у++) {
+            шансПриметы[у] = ШАНС_ПРИМЕТЫ[у].get().floatValue();
+        }
+        PlagueConstants.BORDER_OMEN_CHANCE = шансПриметы;
+        PlagueConstants.BORDER_OMEN_ASH = ПЕПЕЛ.get().floatValue();
+        PlagueConstants.BORDER_OMEN_MIN_DISTANCE = ПРИМЕТА_БЛИЖЕ.get();
+        // Дальняя граница не может оказаться ближней: иначе выбор точки
+        // звука ушёл бы в отрицательный разброс и падал бы на каждом броске.
+        PlagueConstants.BORDER_OMEN_MAX_DISTANCE =
+            Math.max(PlagueConstants.BORDER_OMEN_MIN_DISTANCE + 1, ПРИМЕТА_ДАЛЬШЕ.get());
+
+        int[] бросковЛута = new int[БРОСКОВ_ЛУТА.length];
+        for (int у = 0; у < бросковЛута.length; у++) бросковЛута[у] = БРОСКОВ_ЛУТА[у].get();
+        PlagueConstants.BORDER_LOOT_ROLLS = бросковЛута;
+
+        PlagueConstants.BORDER_TIDE_SEARCH_CHUNKS = ПОИСК_ГНИЛИ.get();
+        int[] зомбиВолны = new int[PhaseTable.PHASE_COUNT];
+        int[] скелетовВолны = new int[PhaseTable.PHASE_COUNT];
+        for (int ф = 0; ф < PhaseTable.PHASE_COUNT; ф++) {
+            зомбиВолны[ф] = ЗОМБИ_В_ВОЛНЕ[ф].get();
+            скелетовВолны[ф] = СКЕЛЕТОВ_В_ВОЛНЕ[ф].get();
+        }
+        PlagueConstants.BORDER_TIDE_ZOMBIES = зомбиВолны;
+        PlagueConstants.BORDER_TIDE_SKELETONS = скелетовВолны;
+        PlagueConstants.BORDER_TIDE_MIN_DISTANCE = ВОЛНА_НЕ_БЛИЖЕ.get();
+        PlagueConstants.BORDER_TIDE_WARN_TIME = ПРЕДУПРЕЖДЕНИЕ.get();
 
         PlagueConstants.ANIMAL_CHECK_TICKS = ПРОВЕРКА_ЖИВОТНЫХ.get();
         PlagueConstants.ANIMAL_INFECT_CHANCE = ШАНС_ЗАРАЖЕНИЯ.get().floatValue();

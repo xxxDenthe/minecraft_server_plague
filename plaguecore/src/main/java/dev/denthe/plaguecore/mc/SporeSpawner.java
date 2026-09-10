@@ -120,14 +120,29 @@ public final class SporeSpawner {
         int было = кучекЗаНочь.getOrDefault(игрок.getUUID(), 0);
         if (было >= PlagueConstants.SPAWN_MAX_GROUPS_PER_NIGHT) return false;
 
-        int вышло = насыпать(уровень, мешок, ГСЧ, игрок,
-                             PlagueEntities.MUTATED_ZOMBIE.get(), PlagueConstants.SPAWN_ZOMBIES)
-                  + насыпать(уровень, мешок, ГСЧ, игрок,
-                             EntityType.SKELETON, PlagueConstants.SPAWN_SKELETONS);
+        int вышло = выпустить(уровень, мешок, ГСЧ, игрок,
+                              PlagueConstants.SPAWN_ZOMBIES, PlagueConstants.SPAWN_SKELETONS);
         if (вышло == 0) return false;
 
         кучекЗаНочь.put(игрок.getUUID(), было + 1);
         return true;
+    }
+
+    /**
+     * Выпустить рядом с точкой заданный состав и сразу натравить на цель.
+     * Возвращает, сколько мобов действительно встало на землю.
+     *
+     * Наружу вынесено ради ночного прилива Пограничья
+     * ({@code mc.border.BorderTide}): состав волны, её потолок и повод
+     * у прилива свои, а способ поставить моба на землю и заставить его
+     * идти — ровно тот же, что у выводка, и второй копии не заслуживает.
+     */
+    public static int выпустить(ServerLevel уровень, BlockPos центр, RandomSource ГСЧ,
+                                Player цель, int зомби, int скелетов) {
+        return насыпать(уровень, центр, ГСЧ, цель,
+                        PlagueEntities.MUTATED_ZOMBIE.get(), зомби)
+             + насыпать(уровень, центр, ГСЧ, цель,
+                        EntityType.SKELETON, скелетов);
     }
 
     /**

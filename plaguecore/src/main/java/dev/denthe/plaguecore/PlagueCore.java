@@ -17,6 +17,7 @@ public class PlagueCore {
         dev.denthe.plaguecore.mc.PlagueSounds.register(modEventBus);
         dev.denthe.plaguecore.mc.PlagueCreativeTab.register(modEventBus);
         dev.denthe.plaguecore.mc.PlayerPlagueData.register(modEventBus);
+        dev.denthe.plaguecore.mc.border.BorderLoot.register(modEventBus);
         PlagueConfig.зарегистрировать(modEventBus, container);
         LOG.info("Plague Core загружается");
     }
