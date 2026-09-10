@@ -477,6 +477,8 @@ body:not(.ready) .shell { opacity: 0; }
   height: 22px; pointer-events: none;
   background: linear-gradient(to bottom, rgba(18, 21, 26, 0), rgba(18, 21, 26, 0.9));
 }
+/* На заглушке скроллить нечего, и затухание там читается как грязь. */
+.news:has(.news-empty)::after { display: none; }
 .news-empty { margin: 0; color: var(--stone-2); font-size: 13px; line-height: 1.6; }
 .news-item { display: flex; flex-direction: column; gap: 4px; cursor: pointer; }
 .news-meta { display: flex; align-items: baseline; gap: 8px; }

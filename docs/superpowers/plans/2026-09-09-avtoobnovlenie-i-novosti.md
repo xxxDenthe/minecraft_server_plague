@@ -47,7 +47,7 @@
   `isNewer(remoteVersion, localVersion) -> boolean`,
   `buildLauncherRelease({ version, file, size, sha256, notes }) -> object`.
 
-- [ ] **Шаг 1: Написать падающий тест**
+- [x] **Шаг 1: Написать падающий тест**
 
 ```js
 // launcher/test/selfupdate.test.js
@@ -106,12 +106,12 @@ describe('сборка описания для выкладки', () => {
 });
 ```
 
-- [ ] **Шаг 2: Убедиться, что тест падает**
+- [x] **Шаг 2: Убедиться, что тест падает**
 
 Запустить: `npm test -- selfupdate`
 Ожидание: FAIL, модуля нет.
 
-- [ ] **Шаг 3: Написать модуль**
+- [x] **Шаг 3: Написать модуль**
 
 ```js
 // launcher/src/main/selfupdate.js
@@ -177,12 +177,12 @@ export function buildLauncherRelease({ version, file, size, sha256, notes = '' }
 }
 ```
 
-- [ ] **Шаг 4: Тесты зелёные**
+- [x] **Шаг 4: Тесты зелёные**
 
 Запустить: `npm test -- selfupdate`
 Ожидание: PASS.
 
-- [ ] **Шаг 5: Коммит**
+- [x] **Шаг 5: Коммит**
 
 ```bash
 git add launcher/src/main/selfupdate.js launcher/test/selfupdate.test.js
@@ -205,7 +205,7 @@ git commit -m "Лаунчер: разбор описания своего рел
 - Даёт: `checkLauncherUpdate({ source, currentVersion, fetchImpl }) -> null | { version, file, size, sha256, notes, url }`,
   `downloadInstaller(update, { onProgress, fetchImpl, token }) -> путь к .exe`.
 
-- [ ] **Шаг 1: Дописать падающие тесты**
+- [x] **Шаг 1: Дописать падающие тесты**
 
 ```js
 // добавить в launcher/test/selfupdate.test.js
@@ -252,12 +252,12 @@ describe('проверка обновления', () => {
 });
 ```
 
-- [ ] **Шаг 2: Убедиться, что тесты падают**
+- [x] **Шаг 2: Убедиться, что тесты падают**
 
 Запустить: `npm test -- selfupdate`
 Ожидание: FAIL, `checkLauncherUpdate` не экспортируется.
 
-- [ ] **Шаг 3: Дописать модуль и стадию прогресса**
+- [x] **Шаг 3: Дописать модуль и стадию прогресса**
 
 В `progress.js` в `STAGES` добавить строку `LAUNCHER: 'launcher',`
 (после `MANIFEST`).
@@ -323,12 +323,12 @@ export async function downloadInstaller(update, { token = '', onProgress = null,
 }
 ```
 
-- [ ] **Шаг 4: Тесты зелёные**
+- [x] **Шаг 4: Тесты зелёные**
 
 Запустить: `npm test`
 Ожидание: PASS, включая `purity` (новый модуль electron не импортирует).
 
-- [ ] **Шаг 5: Коммит**
+- [x] **Шаг 5: Коммит**
 
 ```bash
 git add launcher/src/main/selfupdate.js launcher/src/main/progress.js launcher/test/selfupdate.test.js
@@ -348,12 +348,12 @@ git commit -m "Лаунчер: проверка и скачивание свое
   `packSource()` из `install.js`.
 - Даёт: ничего наружу; поведение при старте окна.
 
-- [ ] **Шаг 1: Провести стадию в интерфейс**
+- [x] **Шаг 1: Провести стадию в интерфейс**
 
 В `src/renderer/state.js`, в `stateForStage`, добавить строку
 `case 'launcher': return State.LOADING;` рядом с `manifest`.
 
-- [ ] **Шаг 2: Написать установку в `index.js`**
+- [x] **Шаг 2: Написать установку в `index.js`**
 
 Импорты сверху файла:
 
@@ -407,19 +407,19 @@ async function updateSelf() {
   window.webContents.once('did-finish-load', () => { updateSelf(); });
 ```
 
-- [ ] **Шаг 3: Проверить, что ничего не сломалось**
+- [x] **Шаг 3: Проверить, что ничего не сломалось**
 
 Запустить: `npm test`
 Ожидание: PASS (в `index.js` тестов нет, но `purity` следит за
 остальными файлами).
 
-- [ ] **Шаг 4: Проверить руками**
+- [x] **Шаг 4: Проверить руками**
 
 Запустить: `npm start`
 Ожидание: окно открывается, в логе строка про обновление либо ничего;
 игра запускается как раньше.
 
-- [ ] **Шаг 5: Коммит**
+- [x] **Шаг 5: Коммит**
 
 ```bash
 git add launcher/src/main/index.js launcher/src/renderer/state.js
@@ -438,7 +438,7 @@ git commit -m "Лаунчер: тихое обновление себя при �
   `sha256OfFile` из `download.js`, `apiHeaders`, `releaseByTag`.
 - Даёт: ассет `launcher-release.json` в релизе рядом с `.exe`.
 
-- [ ] **Шаг 1: Вынести заливку ассета в функцию**
+- [x] **Шаг 1: Вынести заливку ассета в функцию**
 
 В `publish-launcher.js` заменить тело заливки на общую функцию — она
 понадобится дважды (для `.exe` и для описания):
@@ -466,7 +466,7 @@ async function uploadAsset({ release, owner, repo, token, name, body, contentTyp
 }
 ```
 
-- [ ] **Шаг 2: Собрать и залить описание**
+- [x] **Шаг 2: Собрать и залить описание**
 
 После заливки `.exe` в `main()`:
 
@@ -499,13 +499,13 @@ import { sha256OfFile } from '../src/main/download.js';
 import { buildLauncherRelease, RELEASE_ASSET } from '../src/main/selfupdate.js';
 ```
 
-- [ ] **Шаг 3: Проверить разбор аргументов**
+- [x] **Шаг 3: Проверить разбор аргументов**
 
 Запустить: `node tools/publish-launcher.js --repo a/b --token x`
 Ожидание: падает на отсутствующем файле `dist/...exe`, а не на
 синтаксисе.
 
-- [ ] **Шаг 4: Коммит**
+- [x] **Шаг 4: Коммит**
 
 ```bash
 git add launcher/tools/publish-launcher.js
@@ -530,7 +530,7 @@ git commit -m "Выкладка лаунчера: описание релиза 
   `noteLocal(item) -> items` (дописать местную запись в кэш),
   `NEWS_ASSET`, `LIMITS`.
 
-- [ ] **Шаг 1: Написать падающий тест**
+- [x] **Шаг 1: Написать падающий тест**
 
 ```js
 // launcher/test/news.test.js
@@ -577,12 +577,12 @@ describe('разбор новостей', () => {
 });
 ```
 
-- [ ] **Шаг 2: Убедиться, что тест падает**
+- [x] **Шаг 2: Убедиться, что тест падает**
 
 Запустить: `npm test -- news`
 Ожидание: FAIL, модуля нет.
 
-- [ ] **Шаг 3: Написать модуль**
+- [x] **Шаг 3: Написать модуль**
 
 ```js
 // launcher/src/main/news.js
@@ -711,12 +711,12 @@ export function noteLocal({ id, date, kind, title, body }) {
 }
 ```
 
-- [ ] **Шаг 4: Тесты зелёные**
+- [x] **Шаг 4: Тесты зелёные**
 
 Запустить: `npm test -- news`
 Ожидание: PASS.
 
-- [ ] **Шаг 5: Коммит**
+- [x] **Шаг 5: Коммит**
 
 ```bash
 git add launcher/src/main/news.js launcher/test/news.test.js
@@ -738,7 +738,7 @@ git commit -m "Лаунчер: чтение и проверка новостей
 - Даёт: `window.launcher.loadNews() -> Promise<items>`;
   `createNews()` без аргументов, как и раньше.
 
-- [ ] **Шаг 1: Провести новости через мост**
+- [x] **Шаг 1: Провести новости через мост**
 
 В `index.js`:
 
@@ -754,7 +754,7 @@ ipcMain.handle('news:load', () => loadNews({ source: packSource() }));
   loadNews: () => ipcRenderer.invoke('news:load'),
 ```
 
-- [ ] **Шаг 2: Автозапись об обновлении пака**
+- [x] **Шаг 2: Автозапись об обновлении пака**
 
 В `index.js`, в обработчике `game:play`, после успешного `play(...)`
 — пак к этому моменту уже сверен:
@@ -774,7 +774,7 @@ ipcMain.handle('news:load', () => loadNews({ source: packSource() }));
     }
 ```
 
-- [ ] **Шаг 3: Переписать компонент новостей**
+- [x] **Шаг 3: Переписать компонент новостей**
 
 `src/renderer/news.js` целиком:
 
@@ -826,7 +826,7 @@ export function createNews({ source = () => window.launcher.loadNews() } = {}) {
 }
 ```
 
-- [ ] **Шаг 4: Облик**
+- [x] **Шаг 4: Облик**
 
 В `style.css`, рядом с существующими правилами `.news*`:
 
@@ -853,14 +853,14 @@ export function createNews({ source = () => window.launcher.loadNews() } = {}) {
 Если переменной `--ember` в файле нет — взять существующий тёплый
 акцент из `:root` и не заводить новых цветов.
 
-- [ ] **Шаг 5: Проверить руками и глазами**
+- [x] **Шаг 5: Проверить руками и глазами**
 
 Запустить: `npm start`
 Ожидание: панель показывает заглушку без сети; с подложенным
 `%APPDATA%/LMPC/news.json` — записи, метка, клик раскрывает текст.
 Снять окно и посмотреть, что вёрстка не разъехалась.
 
-- [ ] **Шаг 6: Коммит**
+- [x] **Шаг 6: Коммит**
 
 ```bash
 git add launcher/src/main/index.js launcher/src/preload.cjs launcher/src/renderer/news.js launcher/src/renderer/style.css
@@ -882,7 +882,7 @@ git commit -m "Лаунчер: новости в окне, плашка «Важ
 - Использует: `parseNews` из `news.js`, `releaseByTag`, `apiHeaders`.
 - Даёт: команды `npm run news:draft`, `npm run news:publish -- --repo … --token …`.
 
-- [ ] **Шаг 1: Завести ленту с первой записью**
+- [x] **Шаг 1: Завести ленту с первой записью**
 
 `launcher/news/news.json` — файл ведётся руками, это исходник:
 
@@ -901,7 +901,7 @@ git commit -m "Лаунчер: новости в окне, плашка «Важ
 }
 ```
 
-- [ ] **Шаг 2: Написать сборщик черновика**
+- [x] **Шаг 2: Написать сборщик черновика**
 
 `launcher/tools/make-news-draft.js` — дописывает в ленту записи-черновики
 по коммитам с прошлой выкладки. Текст в них технический: он подсказка
@@ -961,7 +961,7 @@ await fsp.writeFile(file, `${JSON.stringify(news, null, 2)}\n`, 'utf8');
 console.log(`заготовок добавлено: ${added}. Перепишите их в ${path.relative(repoRoot, file)} и снимите draft.`);
 ```
 
-- [ ] **Шаг 3: Написать выкладку**
+- [x] **Шаг 3: Написать выкладку**
 
 `launcher/tools/publish-news.js`:
 
@@ -1051,7 +1051,7 @@ main().catch((err) => {
 });
 ```
 
-- [ ] **Шаг 4: Команды в `package.json`**
+- [x] **Шаг 4: Команды в `package.json`**
 
 В `scripts`:
 
@@ -1060,7 +1060,7 @@ main().catch((err) => {
     "news:publish": "node tools/publish-news.js",
 ```
 
-- [ ] **Шаг 5: Проверить черновик и отказ выкладки**
+- [x] **Шаг 5: Проверить черновик и отказ выкладки**
 
 Запустить: `npm run news:draft`
 Ожидание: в `news/news.json` появились записи с `draft: true`.
@@ -1070,14 +1070,14 @@ main().catch((err) => {
 
 Убрать черновики из файла руками, оставить одну человеческую запись.
 
-- [ ] **Шаг 6: Дописать порядок выкладки в README**
+- [x] **Шаг 6: Дописать порядок выкладки в README**
 
 В `launcher/pack-config/README.md` — раздел о том, что выкладка теперь
 состоит из трёх независимых команд: пак (`publish-pack.js`), лаунчер
 с описанием релиза (`publish-launcher.js`), новости
 (`publish-news.js`). Новость можно выложить одну, ничего не пересобирая.
 
-- [ ] **Шаг 7: Коммит**
+- [x] **Шаг 7: Коммит**
 
 ```bash
 git add launcher/news launcher/tools/make-news-draft.js launcher/tools/publish-news.js launcher/package.json launcher/pack-config/README.md
@@ -1092,12 +1092,12 @@ git commit -m "Новости: черновик из коммитов и вык�
 - Изменить: при необходимости `launcher/src/renderer/style.css`
 - Создать: `docs/superpowers/notes/2026-09-09-avtoobnovlenie-i-novosti.md`
 
-- [ ] **Шаг 1: Полный прогон тестов**
+- [x] **Шаг 1: Полный прогон тестов**
 
 Запустить: `npm test`
 Ожидание: все зелёные, включая старые 171.
 
-- [ ] **Шаг 2: Снять окно и посмотреть**
+- [x] **Шаг 2: Снять окно и посмотреть**
 
 Положить в `%APPDATA%/LMPC/news.json` ленту из четырёх записей: одна
 закреплённая, одна длинная (на раскрытие), две обычные. Запустить
@@ -1105,13 +1105,13 @@ git commit -m "Новости: черновик из коммитов и вык�
 колонки, не спорит ли метка «Важно» с общим тоном экрана, читается ли
 дата. Править, пока не станет опрятно.
 
-- [ ] **Шаг 3: Заметка в репозиторий**
+- [x] **Шаг 3: Заметка в репозиторий**
 
 Записать в `docs/superpowers/notes/`: что сделано, что осталось живой
 проверке (полный круг обновления на второй машине), где лежит лента
 новостей и как её выкладывать.
 
-- [ ] **Шаг 4: Коммит**
+- [x] **Шаг 4: Коммит**
 
 ```bash
 git add launcher/src/renderer/style.css docs/superpowers/notes/2026-09-09-avtoobnovlenie-i-novosti.md
