@@ -32,9 +32,11 @@ PROFILES = Path.home() / "AppData/Roaming/ModrinthApp/profiles"
 DIRS = ["mods", "config", "kubejs", "resourcepacks", "defaultconfigs",
         "datapacks", "shaderpacks", "moonlight-global-datapacks"]
 # Пути от корня инстанса, которые не раздаём целиком.
-SKIP_DIRS = ["config/jei/world", "config/obscuria/cache"]
+SKIP_DIRS = ["config/jei/world", "config/obscuria/cache", "config/axiom"]
 SKIP_EXT = (".bak", ".disabled", ".log", ".tmp", ".old")
 SKIP_NAMES = {"MODLIST.md", "desktop.ini", "Thumbs.db"}
+# Инструмент строителя: стоит у владельца и на сервере, игрокам не едет.
+SKIP_MODS = ("axiom-",)
 
 
 def wanted(rel: str, name: str) -> bool:
@@ -42,8 +44,11 @@ def wanted(rel: str, name: str) -> bool:
         return False
     if any(rel == d or rel.startswith(d + "/") for d in SKIP_DIRS):
         return False
-    if rel.startswith("mods/") and not name.endswith(".jar"):
-        return False
+    if rel.startswith("mods/"):
+        if not name.endswith(".jar"):
+            return False
+        if name.lower().startswith(SKIP_MODS):
+            return False
     return True
 
 
