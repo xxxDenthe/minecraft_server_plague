@@ -489,10 +489,4 @@ public final class PlagueConstants {
      */
     public static int BORDER_TIDE_MIN_DISTANCE = 24;
 
-    /**
-     * Время суток, когда уходит предупреждение о приливе. Закат — 13000;
-     * за шестьсот тиков (полминуты) можно добежать до укрытия, но не
-     * хватит, чтобы пересечь Пограничье целиком.
-     */
-    public static int BORDER_TIDE_WARN_TIME = 12400;
 }

@@ -498,29 +498,30 @@ public final class PlagueCommands {
     }
 
     /**
-     * Прилив на себя немедленно, без заката и без ожидания ночи.
-     * Ждать заката ради проверки — тот же плохой способ, что и ждать
-     * тридцати процентов у выводка.
+     * Прилив на всех игроков сразу — единственный способ его получить.
+     * Сам по себе на закате он больше не выходит: решением владельца
+     * 2026-09-11 волна отдана админу целиком.
+     *
+     * Волна идёт каждому, у кого рядом есть Гниль, а не тому, кто ввёл
+     * команду: админ обычно в творческом режиме, и волна на него всё
+     * равно не вышла бы.
      */
     private static int прилив(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
         ServerLevel уровень = мир(ctx.getSource());
-        ServerPlayer игрок = ctx.getSource().getPlayer();
-        if (игрок == null) {
-            ctx.getSource().sendFailure(Component.literal("Команду выполняет игрок: волна идёт на него"));
-            return 0;
-        }
-
         PlagueState состояние = PlagueState.get(уровень);
         int фаза = PhaseTable.phaseForNight(состояние.night());
-        if (BorderTide.волна(уровень, игрок, состояние, фаза)) {
-            ctx.getSource().sendSuccess(() -> Component.literal("Волна вышла, фаза " + фаза), true);
-            return 1;
+
+        int волн = BorderTide.наЗакате(уровень, состояние);
+        if (волн > 0) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                "Волн вышло: " + волн + ", фаза " + фаза), true);
+            return волн;
         }
         ctx.getSource().sendFailure(Component.literal(
-            "Волна не вышла. Причины: Гнили нет в радиусе "
+            "Ни одной волны. Причины: ни у кого нет Гнили в радиусе "
             + PlagueConstants.BORDER_TIDE_SEARCH_CHUNKS + " чанков, она ближе "
-            + PlagueConstants.BORDER_TIDE_MIN_DISTANCE + " блоков, ты в креативе "
-            + "или вокруг очага нет места"));
+            + PlagueConstants.BORDER_TIDE_MIN_DISTANCE + " блоков, все в креативе "
+            + "или вокруг очагов нет места"));
         return 0;
     }
 

@@ -5,7 +5,6 @@ import dev.denthe.plaguecore.PlagueCore;
 import dev.denthe.plaguecore.core.PhaseParams;
 import dev.denthe.plaguecore.core.PhaseTable;
 import dev.denthe.plaguecore.core.SpreadEngine;
-import dev.denthe.plaguecore.mc.border.BorderTide;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -63,18 +62,15 @@ public final class NightHook {
         long сутки = время / СУТКИ;
         long вСутках = время % СУТКИ;
 
-        // Предупреждение о приливе уходит до заката, поэтому стоит перед
-        // проверкой ночи, а не внутри неё.
-        if (вСутках >= PlagueConstants.BORDER_TIDE_WARN_TIME && вСутках < ЗАКАТ) {
-            BorderTide.предупредить(overworld, state, сутки);
-        }
+        // Прилив автоматически не выходит: решением владельца 2026-09-11
+        // волну запускает только админ командой `/plague tide`, поэтому
+        // здесь нет ни закатного вызова, ни предупреждения перед ним.
 
         if (вСутках >= ЗАКАТ && state.lastProcessedDay() != сутки) {
             state.setLastProcessedDay(сутки);
             state.advanceNight();
             SpreadEngine.NightResult r = runNight(overworld, state, false);
             int вОчередь = Materializer.поставитьЗагруженные(overworld, state);
-            BorderTide.наЗакате(overworld, state);
             PlagueCore.LOG.info("Ночь {} (фаза {}): заражено {}, выросло {}, зажило шрамов {}, в очередь на перерисовку {}",
                 state.night(), r.phase(), r.newlyInfected(), r.grown(), r.scarsHealed(), вОчередь);
         }

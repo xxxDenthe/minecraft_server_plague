@@ -118,7 +118,6 @@ public final class PlagueConfig {
     private static final ModConfigSpec.IntValue[] СКЕЛЕТОВ_В_ВОЛНЕ =
         new ModConfigSpec.IntValue[PhaseTable.PHASE_COUNT];
     private static final ModConfigSpec.IntValue ВОЛНА_НЕ_БЛИЖЕ;
-    private static final ModConfigSpec.IntValue ПРЕДУПРЕЖДЕНИЕ;
 
     // ── игрок ─────────────────────────────────────────────────────────
     private static final ModConfigSpec.IntValue ТИК_ИГРОКА;
@@ -384,10 +383,6 @@ public final class PlagueConfig {
         ВОЛНА_НЕ_БЛИЖЕ = СТРОИТЕЛЬ
             .comment("Ближе этого к игроку волна не рождается.")
             .defineInRange("tideMinDistance", PlagueConstants.BORDER_TIDE_MIN_DISTANCE, 0, 96);
-        ПРЕДУПРЕЖДЕНИЕ = СТРОИТЕЛЬ
-            .comment("Время суток, когда уходит предупреждение о приливе. Закат — 13000.")
-            .defineInRange("tideWarnTime", PlagueConstants.BORDER_TIDE_WARN_TIME, 0, 13000);
-
         СТРОИТЕЛЬ.pop().comment(
             "Чума в самом игроке: как копится, чем бьёт, чем лечится.",
             "Заражённость — число от 0 до 100. Стадия выводится из него."
@@ -836,7 +831,6 @@ public final class PlagueConfig {
         PlagueConstants.BORDER_TIDE_ZOMBIES = зомбиВолны;
         PlagueConstants.BORDER_TIDE_SKELETONS = скелетовВолны;
         PlagueConstants.BORDER_TIDE_MIN_DISTANCE = ВОЛНА_НЕ_БЛИЖЕ.get();
-        PlagueConstants.BORDER_TIDE_WARN_TIME = ПРЕДУПРЕЖДЕНИЕ.get();
 
         PlagueConstants.ANIMAL_CHECK_TICKS = ПРОВЕРКА_ЖИВОТНЫХ.get();
         PlagueConstants.ANIMAL_INFECT_CHANCE = ШАНС_ЗАРАЖЕНИЯ.get().floatValue();

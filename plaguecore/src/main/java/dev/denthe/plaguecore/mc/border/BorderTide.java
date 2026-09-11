@@ -8,18 +8,22 @@ import dev.denthe.plaguecore.core.PlagueGrid;
 import dev.denthe.plaguecore.mc.PlagueState;
 import dev.denthe.plaguecore.mc.SporeSpawner;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
- * Ночной прилив: на закате из ближайшей Гнили выходит волна и идёт
- * на игрока.
+ * Прилив: из ближайшей Гнили выходит волна и идёт на игрока.
  *
  * Смысл — дать Пограничью ритм суток. Днём это зона, по которой ходят
  * за лутом; ночью она перестаёт быть проходной, и решение «где ночевать»
  * становится решением.
+ *
+ * <p><b>Сам по себе прилив не выходит.</b> Решением владельца
+ * 2026-09-11 закатный автозапуск снят вместе с предупреждением перед
+ * ним: волну пускает админ командой {@code /plague tide}, и она идёт
+ * сразу всем, у кого рядом Гниль. Ритм суток теперь задаёт админ,
+ * а не часы мира.
  *
  * <p><b>Гниль ищется от игрока, а не от города.</b> Нет Гнили в радиусе
  * {@code BORDER_TIDE_SEARCH_CHUNKS} — нет и волны. Ночевать далеко от
@@ -40,11 +44,8 @@ public final class BorderTide {
     /** Уровень, начиная с которого чанк считается Гнилью, а не Пограничьем. */
     private static final int ГНИЛЬ = 4;
 
-    /** Сутки, в которые уже уходило предупреждение. */
-    private static long суткиПредупреждения = Long.MIN_VALUE;
-
     /**
-     * Закат: выпустить волну каждому, у кого рядом есть Гниль.
+     * Выпустить волну каждому, у кого рядом есть Гниль.
      * Возвращает число вышедших волн — нужно для журнала и команд.
      */
     public static int наЗакате(ServerLevel мир, PlagueState состояние) {
@@ -102,23 +103,4 @@ public final class BorderTide {
         return new BlockPos(x, мир.getHeight(Heightmap.Types.WORLD_SURFACE, x, z), z);
     }
 
-    /**
-     * Предупреждение за полминуты до заката — тем, кому волна сегодня
-     * действительно грозит.
-     *
-     * Прилив не должен быть подлым: игрок обязан успеть выбрать, уходить
-     * или встречать. Строка идёт в actionbar, а не в чат, потому что это
-     * состояние мира на ближайшую минуту, а не сообщение, которое стоит
-     * листать потом.
-     */
-    public static void предупредить(ServerLevel мир, PlagueState состояние, long сутки) {
-        if (сутки == суткиПредупреждения) return;
-        суткиПредупреждения = сутки;
-
-        for (ServerPlayer игрок : мир.players()) {
-            if (игрок.isCreative() || игрок.isSpectator()) continue;
-            if (откудаИдёт(мир, игрок, состояние) == null) continue;
-            игрок.displayClientMessage(Component.translatable("message.plaguecore.tide_warning"), true);
-        }
-    }
 }
