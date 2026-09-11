@@ -1,6 +1,6 @@
 {
   "name": "lmpc-launcher",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Лаунчер приватного сервера LMPC",
   "main": "src/main/index.js",
