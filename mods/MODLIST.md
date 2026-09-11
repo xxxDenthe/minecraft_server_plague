@@ -36,7 +36,18 @@ Minecraft 1.21.1 · NeoForge 21.1.249 · Create 6.0.10
 в паке уже были; `emotecraft` свои (`playeranimator`, `bendy-lib`)
 вшивает внутрь. Оба мода нужны и на сервере, и у клиента.
 
-Всего: 123 сторонних мода + 4 наших. Один джарник отключён
+**2026-09-12, вторым заходом:** к таверне добавлены три мода по выбору
+владельца — `minopp` (карточная игра за столом на компанию), `starcatcher`
+(рыбалка с множеством рыб и секретов) и `dap-ur-homies` (дать пять,
+подбросить и поймать товарища). Зависимости у всех трёх уже стояли
+в паке: `yacl` у Mino++, а `forgified-fabric-api`, `connector`
+и `player-animation-lib` у DAP. **`DAP ur Homies` — фабричный мод**,
+он грузится только через Sinytra Connector и потому самый хрупкий
+в наборе: если пак начнёт падать, снимать надо в первую очередь его.
+Джарник переименован без пробелов и скобок — исходное имя
+`DAP ur HOMIE (Bully ur Homie).jar` ломало скрипты раздачи.
+
+Всего: 126 сторонних модов + 4 наших. Один джарник отключён
 (`.disabled`), он в списке не значится; ещё в папке лежит
 `ColdSweat-2.4.2.jar.bak` — это резервная копия, а не мод.
 
@@ -78,6 +89,7 @@ CreativeCore_NEOFORGE_v2.13.44_mc1.21.1.jar
 cristellib-neoforge-1.21.1-3.1.7.jar
 curios-neoforge-9.5.1+1.21.1.jar
 CustomSkinLoader_Universal-15.0.1.jar
+DAP_ur_HOMIE_Bully_ur_Homie.jar   # фабричный джарник, грузится через Sinytra Connector
 dungeons-and-taverns-v4.4.4.jar
 emotecraft-for-MC1.21.1-2.4.12-neoforge.jar
 entity_model_features-3.3.3-1.21-neoforge.jar
@@ -118,6 +130,7 @@ lithium-neoforge-0.15.4+mc1.21.1.jar
 lithostitched-1.8.0+beta4-neoforge-21.1.jar
 mapwright-neoforge-1.21.1-1.0.6.jar
 melody_neoforge_1.0.10_MC_1.21.jar
+minopp-1.4.0+1.21.1+neoforge.jar
 modernfix-neoforge-5.27.24+mc1.21.1.jar
 moonlight-1.21.1-3.6.0-neoforge.jar
 MouseTweaks-neoforge-mc1.21-2.26.1.jar
@@ -150,6 +163,7 @@ sophisticatedcore-1.21.1-1.4.90.2299.jar
 sound-physics-remastered-neoforge-1.21.1-1.5.1.jar
 sounds-2.4.22+lts+1.21.1-neoforge.jar
 spark-1.10.124-neoforge.jar
+starcatcher-3.1.4.1-NEOFORGE-1.21.1.jar
 spawnanimations-v1.11.5-mc1.17-26.2.9-mod.jar
 SubtleEffects-neoforge-1.21.1-1.14.3.jar
 supplementaries-1.21.1-3.9.6-neoforge.jar
