@@ -144,11 +144,41 @@ export function buildCommand({
 // с паком, и пересобирать установщик ради него не нужно.
 export const OPTIONS_SEED = 'config/lmpc-default-options.txt';
 
-// Только при первом запуске: дальше options.txt принадлежит игроку,
-// и переписывать его — значит стереть чужие клавиши посреди сессии.
+const PACKS_KEY = 'resourcePacks:';
+
+const packsLine = (text) =>
+  text.split('\n').find((line) => line.startsWith(PACKS_KEY)) ?? null;
+
+// Порядок задаёт пак, но записи, которых в образце нет, остаются:
+// часть паков добавляют сами моды (generated/…, mod/…), и вычёркивать
+// их из чужого списка лаунчеру не за чем.
+export function mergePacks(seedLine, playerLine) {
+  const parse = (line) => JSON.parse(line.slice(PACKS_KEY.length));
+  const seed = parse(seedLine);
+  const extra = parse(playerLine).filter((pack) => !seed.includes(pack));
+  return PACKS_KEY + JSON.stringify([...seed, ...extra]);
+}
+
+// Чужой options.txt правится ровно в одной строке — списке включённых
+// ресурспаков. Всё остальное (клавиши, громкость, графика) принадлежит
+// игроку. Без этого девять архивов лежат в resourcepacks/ невключёнными
+// у всех, кто запускался до появления образца, а новый пак в обновлении
+// не включается никогда.
+function withSeedPacks(player, seedLine) {
+  const mine = packsLine(player);
+  if (!mine) return `${player}${player.endsWith('\n') ? '' : '\n'}${seedLine}\n`;
+
+  try {
+    const merged = mergePacks(seedLine, mine);
+    return player.replace(mine, () => merged); // функция: в именах паков бывает $
+  } catch {
+    return player.replace(mine, () => seedLine); // список игрока не читается — ставим наш
+  }
+}
+
+// При первом запуске образец кладётся целиком, дальше — только паки.
 export async function seedOptions(instanceDir) {
   const optionsTxt = path.join(instanceDir, 'options.txt');
-  if (fs.existsSync(optionsTxt)) return null;
 
   // Образца в паке нет — ставим хотя бы графику «Ультра» (Fabulous):
   // lmpc_shade убирает небесный купол, и в «Детально» (Fancy) на его
@@ -158,8 +188,20 @@ export async function seedOptions(instanceDir) {
     ? await fsp.readFile(seed, 'utf8')
     : 'graphicsMode:2\n';
 
-  await fsp.writeFile(optionsTxt, text, 'utf8');
-  return text;
+  if (!fs.existsSync(optionsTxt)) {
+    await fsp.writeFile(optionsTxt, text, 'utf8');
+    return text;
+  }
+
+  const seedLine = packsLine(text);
+  if (!seedLine) return null;
+
+  const player = await fsp.readFile(optionsTxt, 'utf8');
+  const fixed = withSeedPacks(player, seedLine);
+  if (fixed === player) return null;
+
+  await fsp.writeFile(optionsTxt, fixed, 'utf8');
+  return fixed;
 }
 
 export async function launchGame({

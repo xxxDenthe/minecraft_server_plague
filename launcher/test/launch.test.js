@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { selectArguments, substitute, buildClasspath, buildCommand, seedOptions, OPTIONS_SEED } from '../src/main/launch.js';
+import { selectArguments, substitute, buildClasspath, buildCommand, seedOptions, mergePacks, OPTIONS_SEED } from '../src/main/launch.js';
 import { offlineUuid } from '../src/main/offline.js';
 
 let temp;
@@ -178,13 +178,40 @@ describe('настройки первого запуска', () => {
     expect(fs.readFileSync(path.join(inst, 'options.txt'), 'utf8')).toBe('graphicsMode:2\n');
   });
 
-  it('чужой options.txt не перезаписывается — там клавиши игрока', async () => {
+  it('чужой options.txt сохраняется, но паки включаются по образцу', async () => {
+    const inst = path.join(temp, 'instance');
+    fs.mkdirSync(path.join(inst, 'config'), { recursive: true });
+    fs.writeFileSync(
+      path.join(inst, OPTIONS_SEED),
+      'resourcePacks:["vanilla","file/Icons.zip"]\n',
+      'utf8',
+    );
+    fs.writeFileSync(
+      path.join(inst, 'options.txt'),
+      'key_key.attack:key.mouse.right\nresourcePacks:["vanilla","generated/fragmentum_layer"]\n',
+      'utf8',
+    );
+
+    await seedOptions(inst);
+
+    const out = fs.readFileSync(path.join(inst, 'options.txt'), 'utf8');
+    expect(out).toContain('key_key.attack:key.mouse.right');
+    expect(out).toContain(
+      'resourcePacks:["vanilla","file/Icons.zip","generated/fragmentum_layer"]',
+    );
+  });
+
+  it('второй запуск ничего не трогает', async () => {
     const inst = path.join(temp, 'instance');
     fs.mkdirSync(path.join(inst, 'config'), { recursive: true });
     fs.writeFileSync(path.join(inst, OPTIONS_SEED), 'resourcePacks:["vanilla"]\n', 'utf8');
-    fs.writeFileSync(path.join(inst, 'options.txt'), 'key_key.attack:key.mouse.right\n', 'utf8');
+    fs.writeFileSync(path.join(inst, 'options.txt'), 'resourcePacks:["vanilla"]\n', 'utf8');
 
     expect(await seedOptions(inst)).toBeNull();
-    expect(fs.readFileSync(path.join(inst, 'options.txt'), 'utf8')).toBe('key_key.attack:key.mouse.right\n');
   });
+
+  it('сломанный список игрока заменяется нашим', () => {
+    expect(() => mergePacks('resourcePacks:["vanilla"]', 'resourcePacks:[вот это')).toThrow();
+  });
+
 });
