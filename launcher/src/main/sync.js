@@ -35,9 +35,13 @@ export const PROTECTED = Object.freeze([
 
 const toPosix = (p) => p.split(path.sep).join('/');
 
-function isProtected(relative) {
-  const parts = relative.split('/');
-  return parts.some((part) => PROTECTED.includes(part));
+// Защищены только корневые файлы и папки игры, а не любое совпадение
+// имени в глубине. Иначе `config/fancymenu/options.txt` — конфиг мода,
+// который обязан ехать вместе с паком, — попадал под защиту, заведённую
+// ради `options.txt` самого Minecraft, и не раздавался никому.
+export function isProtected(relative) {
+  const [первый] = relative.split('/');
+  return PROTECTED.includes(первый);
 }
 
 async function listFiles(dir, base = dir) {

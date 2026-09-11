@@ -229,15 +229,29 @@ describe('применение плана', () => {
     expect(fs.readFileSync(path.join(dir, 'config', 'create', 'common.toml'), 'utf8')).toBe('общий');
   });
 
-  it('пользовательские файлы переживают установку, даже внутри управляемой папки', async () => {
-    for (const name of PROTECTED) await put(`mods/${name}/след.dat`, 'личное');
+  it('пользовательские файлы и папки в корне игры переживают установку', async () => {
+    // STATE_FILE пропускаем: это файл самого лаунчера, и папкой он быть не может.
+    const личные = PROTECTED.filter((name) => name !== STATE_FILE);
+    for (const name of личные) await put(`${name}/след.dat`, 'личное');
 
     const plan = await planSync(manifest([served('mods')]), dir);
     await applySync(plan, { instanceDir: dir });
 
-    for (const name of PROTECTED) {
-      expect(fs.existsSync(path.join(dir, 'mods', name, 'след.dat'))).toBe(true);
+    for (const name of личные) {
+      expect(fs.existsSync(path.join(dir, name, 'след.dat'))).toBe(true);
     }
+  });
+
+  // Защита смотрит только на корень. Одноимённый файл в глубине
+  // управляемой папки — это конфиг мода (`config/fancymenu/options.txt`),
+  // он обязан ехать с паком: раньше он молча не раздавался никому.
+  it('одноимённый конфиг мода внутри управляемой папки чистится как обычный файл', async () => {
+    await put('config/fancymenu/options.txt', 'чужое');
+
+    const plan = await planSync(manifest([served('config')]), dir);
+    await applySync(plan, { instanceDir: dir });
+
+    expect(fs.existsSync(path.join(dir, 'config', 'fancymenu', 'options.txt'))).toBe(false);
   });
 
   it('папка, выпавшая из пака, вычищается, а инстанс остаётся', async () => {

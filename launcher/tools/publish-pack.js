@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
 import { parseManifest } from '../src/main/manifest.js';
-import { PROTECTED } from '../src/main/sync.js';
+import { isProtected } from '../src/main/sync.js';
 import { zip } from '../src/main/archive.js';
 import { apiHeaders, assetUrl, releaseByTag, checkToken } from '../src/main/github.js';
 import { contentIdOf, planUpload } from './pack.js';
@@ -217,7 +217,7 @@ async function main() {
     for (const relative of await walk(path.join(packDir, dir), packDir)) {
       // Пользовательские файлы в пак не попадают: иначе лаунчер будет
       // затирать игроку настройки при каждом запуске.
-      if (relative.split('/').some((part) => PROTECTED.includes(part))) continue;
+      if (isProtected(relative)) continue;
 
       const full = path.join(packDir, relative);
       files.push({ path: relative, sha256: await sha256(full), size: (await fsp.stat(full)).size });

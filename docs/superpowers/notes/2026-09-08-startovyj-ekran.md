@@ -111,3 +111,35 @@
   cp -r launcher/pack-config/* pack-build/
   node launcher/tools/publish-pack.js --repo xxxDenthe/minecraft_server_plague --tag pack --token <ghp_...> --managed mods,CustomSkinLoader
   ```
+
+
+## Панель редактора FancyMenu убрана из главного меню (2026-09-11)
+
+Владелец увидел в главном меню Minecraft техническую панель FancyMenu
+(кнопки настройки меню) и распорядился её убрать: игроку она не нужна,
+а выглядит как недоделка. Гасится она ключом
+`show_customization_overlay` в `config/fancymenu/options.txt`, который
+теперь лежит в `launcher/pack-config/` вместе с `legacy_checklist.txt`
+(флаг «старые GUI уже перенесены», иначе мод показывает второе окно).
+`show_welcome_screen` там же выключен.
+
+### Почему этот конфиг не раздавался вообще
+
+Находка, которая важнее самой панели. Защита пользовательских файлов
+(`PROTECTED` в `launcher/src/main/sync.js`) сравнивала имя **на любой
+глубине пути**: `parts.some((part) => PROTECTED.includes(part))`.
+Список задуман для корневых файлов игры — `options.txt`, `servers.dat`,
+`saves`, `logs`, — но под правило попадал и `config/fancymenu/options.txt`,
+конфиг мода, который обязан ехать с паком. Он молча не раздавался
+никому: ни `publish-pack.js` его не паковал, ни лаунчер не ставил.
+
+Проверка сведена к корню (`PROTECTED.includes(первый сегмент)`),
+`publish-pack.js` переведён на ту же функцию `isProtected` вместо
+своей копии условия. Тест `sync.test.js`, закреплявший старое
+поведение, переписан: корневые файлы по-прежнему переживают установку,
+а одноимённый конфиг мода в глубине управляемой папки ведёт себя как
+обычный файл пака. 201 тест зелёный.
+
+Прочих потерь этот дефект не нанёс: кроме `config/fancymenu/options.txt`
+ни одного файла с защищённым именем в глубине пака нет — проверено
+обходом `pack-build`.
