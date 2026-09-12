@@ -173,7 +173,7 @@ key_key.jei.closeRecipeGui:key.keyboard.escape
 key_key.jei.copy.recipe.id:key.keyboard.unknown
 key_key.push_to_talk:key.keyboard.unknown
 key_key.whisper:key.keyboard.unknown
-key_key.mute_microphone:key.keyboard.m
+key_key.mute_microphone:key.keyboard.unknown
 key_key.disable_voice_chat:key.keyboard.n
 key_key.hide_icons:key.keyboard.h
 key_key.voice_chat:key.keyboard.v
@@ -272,8 +272,8 @@ key_key.jade.show_recipes:key.keyboard.keypad.3
 key_key.jade.show_uses:key.keyboard.keypad.4
 key_key.jade.narrate:key.keyboard.keypad.5
 key_key.jade.show_details:key.keyboard.left.shift
-key_key.sable_player_ragdoll.ragdoll:key.keyboard.right.bracket
-key_key.mapwright.map:key.keyboard.keypad.subtract
+key_key.sable_player_ragdoll.ragdoll:key.keyboard.j
+key_key.mapwright.map:key.keyboard.m
 key_key.mapwright.undo:key.keyboard.z:CONTROL
 key_key.mapwright.redo:key.keyboard.y:CONTROL
 key_key.mapwright.hand:key.keyboard.h

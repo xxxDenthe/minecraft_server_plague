@@ -288,7 +288,7 @@ public final class ClassesConfig {
         .comment("Вероятность, что заражённая трава в Гнили обронит бутон чумы.",
                  "Это дикий сбор из спека — источник бутона до первой грядки.",
                  "Правится прямо в игре: /lmpcclasses tune farmerBloomWildChance <число>")
-        .defineInRange("farmerBloomWildChance", 0.25, 0.0, 1.0);
+        .defineInRange("farmerBloomWildChance", 0.10, 0.0, 1.0);
 
     private static final ModConfigSpec.IntValue ФЕРМЕР_ДИКИЙ_УРОВЕНЬ = СТРОИТЕЛЬ
         .comment("С какого уровня заражения чанка трава начинает ронять бутон (1..5).",

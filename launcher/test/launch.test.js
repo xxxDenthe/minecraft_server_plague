@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { selectArguments, substitute, buildClasspath, buildCommand, seedOptions, mergePacks, OPTIONS_SEED } from '../src/main/launch.js';
+import { selectArguments, substitute, buildClasspath, buildCommand, seedOptions, mergePacks, migrateKeys, OPTIONS_SEED } from '../src/main/launch.js';
 import { offlineUuid } from '../src/main/offline.js';
 
 let temp;
@@ -155,6 +155,43 @@ describe('команда запуска', () => {
 
   it('без ника команда не собирается', () => {
     expect(() => command({ nickname: '' })).toThrow(/ник/);
+  });
+});
+
+describe('разовая перевязка клавиш', () => {
+  const options = (inst) => fs.readFileSync(path.join(inst, 'options.txt'), 'utf8');
+
+  it('старые клавиши переписываются, чужие не трогаются', async () => {
+    const inst = path.join(temp, 'instance');
+    fs.mkdirSync(inst, { recursive: true });
+    fs.writeFileSync(
+      path.join(inst, 'options.txt'),
+      'key_key.attack:key.mouse.left\n'
+        + 'key_key.mute_microphone:key.keyboard.m\n'
+        + 'key_key.mapwright.map:key.keyboard.keypad.subtract\n',
+      'utf8',
+    );
+
+    await migrateKeys(inst);
+
+    const out = options(inst);
+    expect(out).toContain('key_key.attack:key.mouse.left');
+    expect(out).toContain('key_key.mapwright.map:key.keyboard.m');
+    expect(out).toContain('key_key.mute_microphone:key.keyboard.unknown');
+    expect(out).toContain('key_key.sable_player_ragdoll.ragdoll:key.keyboard.j'); // строки не было — дописана
+    expect(out.endsWith('\n')).toBe(true);
+  });
+
+  it('второй раз игроку клавиши не возвращаются', async () => {
+    const inst = path.join(temp, 'instance');
+    fs.mkdirSync(inst, { recursive: true });
+    fs.writeFileSync(path.join(inst, 'options.txt'), 'key_key.mapwright.map:key.keyboard.keypad.subtract\n', 'utf8');
+
+    await migrateKeys(inst);
+    fs.writeFileSync(path.join(inst, 'options.txt'), 'key_key.mapwright.map:key.keyboard.f6\n', 'utf8');
+
+    expect(await migrateKeys(inst)).toBeNull();
+    expect(options(inst)).toContain('key_key.mapwright.map:key.keyboard.f6');
   });
 });
 

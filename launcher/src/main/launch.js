@@ -204,6 +204,62 @@ export async function seedOptions(instanceDir) {
   return fixed;
 }
 
+// Разовая перевязка клавиш. Образец кладётся целиком только при первой
+// установке, поэтому у тех, кто уже играл, клавиши остаются те, с какими
+// они ставились: карта висела на Num −, которого нет на ноутбуках,
+// а рэгдолл — на ]. Первый тестовый запуск с игроками об это и споткнулся.
+//
+// Каждая запись применяется ровно один раз: номер последней применённой
+// лежит в .lmpc-keys рядом с options.txt. Поэтому игрок волен перевязать
+// эти же клавиши по-своему — второй раз мы их не тронем.
+export const KEY_MIGRATIONS = [
+  {
+    'key.mapwright.map': 'key.keyboard.m',
+    'key.mute_microphone': 'key.keyboard.unknown',
+    'key.sable_player_ragdoll.ragdoll': 'key.keyboard.j',
+  },
+];
+
+const KEY_STAMP = '.lmpc-keys';
+
+// Строки key_… переписываются на месте, чтобы не менять порядок файла;
+// которых в options.txt нет вовсе — дописываются в конец.
+export function applyKeyMigration(text, binds) {
+  const left = new Map(Object.entries(binds).map(([name, key]) => [`key_${name}`, key]));
+
+  const lines = text.split('\n').map((line) => {
+    const name = line.slice(0, line.indexOf(':'));
+    if (!left.has(name)) return line;
+    const key = left.get(name);
+    left.delete(name);
+    return `${name}:${key}`;
+  });
+
+  const tail = lines.at(-1) === '' ? lines.pop() : null; // хвостовой перевод строки
+  for (const [name, key] of left) lines.push(`${name}:${key}`);
+  if (tail !== null) lines.push(tail);
+
+  return lines.join('\n');
+}
+
+export async function migrateKeys(instanceDir) {
+  const optionsTxt = path.join(instanceDir, 'options.txt');
+  if (!fs.existsSync(optionsTxt)) return null;
+
+  const stamp = path.join(instanceDir, KEY_STAMP);
+  const done = fs.existsSync(stamp) ? Number(await fsp.readFile(stamp, 'utf8')) || 0 : 0;
+  if (done >= KEY_MIGRATIONS.length) return null;
+
+  const before = await fsp.readFile(optionsTxt, 'utf8');
+  const after = KEY_MIGRATIONS.slice(done).reduce(applyKeyMigration, before);
+
+  await fsp.writeFile(stamp, String(KEY_MIGRATIONS.length), 'utf8');
+  if (after === before) return null;
+
+  await fsp.writeFile(optionsTxt, after, 'utf8');
+  return after;
+}
+
 export async function launchGame({
   javaExe = paths.javaExe(),
   vanillaJson,
@@ -231,6 +287,7 @@ export async function launchGame({
   await fsp.mkdir(path.join(paths.root(), 'natives'), { recursive: true });
 
   await seedOptions(paths.instance());
+  await migrateKeys(paths.instance());
 
   // Лог пишется на диск целиком: разбор чужого краша не должен
   // превращаться в переписку «пришли скриншот».

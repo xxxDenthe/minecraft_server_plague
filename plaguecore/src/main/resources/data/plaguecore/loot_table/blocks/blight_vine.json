@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "conditions": [ { "condition": "minecraft:match_tool", "predicate": { "items": "minecraft:shears" } } ],
+      "entries": [ { "type": "minecraft:item", "name": "plaguecore:blight_vine" } ]
+    }
+  ]
+}

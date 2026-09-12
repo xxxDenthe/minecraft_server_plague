@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "plaguecore:blighted_tall_grass",
+          "properties": { "half": "lower" } },
+        { "condition": "minecraft:location_check", "offsetY": 1,
+          "predicate": { "block": { "blocks": "plaguecore:blighted_tall_grass",
+                                    "state": { "half": "upper" } } } },
+        { "condition": "minecraft:match_tool", "predicate": { "items": "minecraft:shears" } }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "plaguecore:blighted_tall_grass" } ]
+    },
+    {
+      "rolls": 1,
+      "conditions": [
+        { "condition": "minecraft:block_state_property", "block": "plaguecore:blighted_tall_grass",
+          "properties": { "half": "upper" } },
+        { "condition": "minecraft:location_check", "offsetY": -1,
+          "predicate": { "block": { "blocks": "plaguecore:blighted_tall_grass",
+                                    "state": { "half": "lower" } } } },
+        { "condition": "minecraft:match_tool", "predicate": { "items": "minecraft:shears" } }
+      ],
+      "entries": [ { "type": "minecraft:item", "name": "plaguecore:blighted_tall_grass" } ]
+    }
+  ]
+}
