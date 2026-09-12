@@ -269,6 +269,15 @@ public final class PlagueBlocks {
         ПРЕДМЕТЫ.registerItem("plague_mask",
             свойства -> new net.minecraft.world.item.Item(свойства.durability(256)));
 
+    /**
+     * Запись архива: носитель тайнописи, начинка — подписанная книга
+     * в NBT. Три вида (бумаги управы, церковная тетрадь, журнал дренажа)
+     * различаются CustomModelData, поэтому предмет один.
+     */
+    public static final DeferredItem<net.minecraft.world.item.Item> ARCHIVE_RECORD =
+        ПРЕДМЕТЫ.registerItem("archive_record",
+            свойства -> new ArchiveRecordItem(свойства.stacksTo(1)));
+
     public static void register(IEventBus modEventBus) {
         БЛОКИ.register(modEventBus);
         ПРЕДМЕТЫ.register(modEventBus);

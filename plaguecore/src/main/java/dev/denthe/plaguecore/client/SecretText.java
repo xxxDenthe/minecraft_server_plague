@@ -37,12 +37,16 @@ import java.util.Optional;
 public final class SecretText {
     private SecretText() {}
 
-    /** Рунический шрифт: русские буквы на ванильной картинке рун стола зачарований. */
+    /** Письмо архивов: русские буквы знаками собственного алфавита. */
     public static final ResourceLocation ШРИФТ =
         ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "sleepless");
 
-    /** Цвет уже раскрытого слова. Редкий фиолетовый акцент палитры чумы. */
-    private static final ChatFormatting ЦВЕТ_РАСКРЫТОГО = ChatFormatting.DARK_PURPLE;
+    /**
+     * Цвет уже раскрытого слова. Красные чернила: в настоящих архивных
+     * рукописях так выделяли важное — рубрикация. Фиолетовый, стоявший
+     * здесь раньше, читался как подсветка интерфейса, а не как чернила.
+     */
+    private static final ChatFormatting ЦВЕТ_РАСКРЫТОГО = ChatFormatting.DARK_RED;
 
     private record Запись(boolean раскрыт, String подсказка) {}
 

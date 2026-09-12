@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "plaguecore:item/archive_record_papers"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 2
+      },
+      "model": "plaguecore:item/archive_record_chapel"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3
+      },
+      "model": "plaguecore:item/archive_record_ledger"
+    }
+  ]
+}

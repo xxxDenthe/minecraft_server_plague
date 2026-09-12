@@ -29,6 +29,14 @@ neoForge {
                 programArgument '--quickPlaySingleplayer'
                 programArgument project.property('quickPlay').toString()
             }
+
+            // Проба записи: клиент сам берёт записи и открывает одну.
+            // Экран чтения иначе не посмотреть — нажатия до Minecraft
+            // не доходят. Число — ячейка инвентаря, см.
+            // client/ArchiveRecordProbe.java.
+            if (project.hasProperty('probaZapis')) {
+                jvmArgument "-Dplaguecore.proba.zapis=${project.property('probaZapis')}"
+            }
         }
         server {
             server()
