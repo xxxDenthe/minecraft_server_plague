@@ -38,7 +38,10 @@ const DEFAULTS = {
   tag: 'pack',
   minecraft: '1.21.1',
   neoforge: '21.1.249',
-  managed: 'mods,config,defaultconfigs,kubejs,resourcepacks,shaderpacks',
+  // CustomSkinLoader тоже едет игрокам: в списке по умолчанию её
+  // когда-то не было, и запуск без --managed молча выкинул её из
+  // релиза (пак 10). Умолчание обязано совпадать с составом пака.
+  managed: 'mods,config,defaultconfigs,kubejs,resourcepacks,shaderpacks,CustomSkinLoader',
   'max-ram': '6144',
 };
 

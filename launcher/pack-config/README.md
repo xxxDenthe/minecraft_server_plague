@@ -84,15 +84,18 @@ NeoForge-споки), при выходе перезаписывают файл 
 ```
 python launcher/tools/build-pack-from-profile.py
 node launcher/tools/publish-pack.js --repo xxxDenthe/minecraft_server_plague \
-     --tag pack --token <ghp_...> \
-     --managed mods,config,defaultconfigs,kubejs,resourcepacks,shaderpacks,CustomSkinLoader
+     --tag pack --token <ghp_...>
 ```
 
+Ключи можно не повторять руками: `repo`, `tag` и `token` лежат
+в `launcher/publish.json`, и тогда хватает голого
+`node launcher/tools/publish-pack.js`.
+
 **`--managed` перечисляет всё, что едет игрокам** — не только то, что
-лаунчер потом чистит от лишнего. Ключ целиком заменяет список по
-умолчанию, поэтому дописать к нему одну `CustomSkinLoader` нельзя:
-перечислять надо все папки сразу, иначе конфиги, скрипты и ресурспаки
-молча не поедут.
+лаунчер потом чистит от лишнего. Список по умолчанию уже полный
+(вместе с `CustomSkinLoader`), трогать ключ не надо. Если всё-таки
+передаёте его, он целиком заменяет умолчание: перечислять придётся
+все папки сразу, иначе конфиги, скрипты и ресурспаки молча не поедут.
 
 `publish-pack.js` сам поднимет `packVersion`, и лаунчер у игроков
 дольёт новый файл при следующем запуске.
