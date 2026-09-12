@@ -10,8 +10,10 @@
 // publish-pack.js этот ассет не трогает: он управляет только папками
 // mods/ и CustomSkinLoader/. Повторный запуск заменяет ассет.
 
+import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { apiHeaders, releaseByTag, checkToken } from '../src/main/github.js';
 import { sha256OfFile } from '../src/main/download.js';
@@ -19,12 +21,31 @@ import { buildLauncherRelease, RELEASE_ASSET } from '../src/main/selfupdate.js';
 
 const API = 'https://api.github.com';
 
+const SETTINGS_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'publish.json');
+
 const pkg = JSON.parse(
   await fsp.readFile(new URL('../package.json', import.meta.url), 'utf8')
 );
 
+// Настройки берутся оттуда же, откуда их берёт publish-pack.js:
+// репозиторий и токен у выкладки пака и лаунчера одни и те же, и
+// вводить их руками значит рано или поздно ошибиться в токене.
+function fromFile() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+    return raw && typeof raw === 'object' ? { repo: raw.repo, tag: raw.tag, token: raw.token } : {};
+  } catch {
+    return {};
+  }
+}
+
 function parseArgs(argv) {
-  const args = { tag: 'pack', file: `dist/LMPC-Launcher-${pkg.version}.exe` };
+  const fromSettings = fromFile();
+  const args = {
+    tag: 'pack',
+    file: `dist/LMPC-Launcher-${pkg.version}.exe`,
+    ...Object.fromEntries(Object.entries(fromSettings).filter(([, v]) => v)),
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const key = argv[i].replace(/^--/, '');
     const value = argv[i + 1];
