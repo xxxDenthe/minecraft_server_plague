@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 import * as paths from './paths.js';
 import { readConfig, writeConfig } from './config.js';
 import { play, watchForUpdates, gameLogFile, packSource } from './install.js';
-import { checkLauncherUpdate, downloadInstaller } from './selfupdate.js';
+import { checkLauncherUpdate, downloadInstaller, restartCommand } from './selfupdate.js';
+import { progressEvent, STAGES } from './progress.js';
 import { loadNews, noteLocal } from './news.js';
 import { fetchSkinPng } from './skin.js';
 
@@ -82,9 +83,25 @@ async function updateSelf() {
       onProgress: (event) => send('progress', event),
     });
 
-    // /S — тихая установка NSIS. Установщик дожидается закрытия
-    // лаунчера и запускает новую версию сам, поэтому сразу выходим.
-    spawn(installer, ['/S'], { detached: true, stdio: 'ignore' }).unref();
+    // Окно, пропавшее без единого слова, читается как краш — ровно так
+    // его и прочитали 2026-09-12. Полоса прогресса уже сказала «Обновляю
+    // лаунчер»; последнее, что игрок должен увидеть, — что окно вернётся.
+    send('progress', progressEvent({
+      stage: STAGES.LAUNCHER,
+      bytesDone: 1,
+      bytesTotal: 1,
+      message: 'Лаунчер обновлён — закрываюсь и вернусь сам',
+    }));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // /S — тихая установка NSIS. Приложение после неё она не поднимает,
+    // поэтому новую версию запускает за нас cmd — см. restartCommand.
+    const { command, args } = restartCommand(installer);
+    spawn(command, args, {
+      detached: true,
+      stdio: 'ignore',
+      windowsVerbatimArguments: true,
+    }).unref();
     app.quit();
     return true;
   } catch (err) {

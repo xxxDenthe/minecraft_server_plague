@@ -10,6 +10,7 @@ import {
   buildLauncherRelease,
   checkLauncherUpdate,
   RELEASE_ASSET,
+  restartCommand,
 } from '../src/main/selfupdate.js';
 
 const descriptor = {
@@ -137,5 +138,26 @@ describe('проверка обновления', () => {
     await expect(
       checkLauncherUpdate({ source, currentVersion: '0.1.0', fetchImpl })
     ).rejects.toThrow(/LMPC-Launcher-0\.2\.0\.exe/);
+  });
+});
+
+// Кавычки вокруг путей с пробелами («D:\LMPC LAUNCHER\...») — то, что
+// ломается молча: cmd без них видит два аргумента и ничего не запускает.
+describe('перезапуск после установки', () => {
+  const cmd = restartCommand('C:\cache\LMPC-Launcher-0.3.0.exe', 'D:\LMPC LAUNCHER\LMPC Launcher.exe');
+  const line = cmd.args.at(-1);
+
+  it('ставит тихо', () => {
+    expect(line).toContain('"C:\cache\LMPC-Launcher-0.3.0.exe" /S');
+  });
+
+  it('поднимает лаунчер после установщика, взяв путь в кавычки', () => {
+    expect(line).toContain('start "" "D:\LMPC LAUNCHER\LMPC Launcher.exe"');
+    expect(line.indexOf('/S')).toBeLessThan(line.indexOf('start'));
+  });
+
+  it('поднимает даже если установка сорвалась', () => {
+    expect(line).not.toContain('&&');
+    expect(line).toContain(' & ');
   });
 });

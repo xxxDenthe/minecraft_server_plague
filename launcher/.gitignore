@@ -7,3 +7,4 @@ pack.json
 *.log
 publish.json
 pack-archives/
+dist-build/
