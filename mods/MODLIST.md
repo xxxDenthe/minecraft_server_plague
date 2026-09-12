@@ -89,7 +89,6 @@ CreativeCore_NEOFORGE_v2.13.44_mc1.21.1.jar
 cristellib-neoforge-1.21.1-3.1.7.jar
 curios-neoforge-9.5.1+1.21.1.jar
 CustomSkinLoader_Universal-15.0.1.jar
-DAP_ur_HOMIE_Bully_ur_Homie.jar   # фабричный джарник, грузится через Sinytra Connector
 dungeons-and-taverns-v4.4.4.jar
 emotecraft-for-MC1.21.1-2.4.12-neoforge.jar
 entity_model_features-3.3.3-1.21-neoforge.jar
