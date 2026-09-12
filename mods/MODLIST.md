@@ -35,6 +35,10 @@ Minecraft 1.21.1 · NeoForge 21.1.249 · Create 6.0.10
 с 09-09. Зависимости новых модов — `resourcefullib` и `sophisticatedcore` —
 в паке уже были; `emotecraft` свои (`playeranimator`, `bendy-lib`)
 вшивает внутрь. Оба мода нужны и на сервере, и у клиента.
+Джарник `emotecraft` у нас патченый (`-emfpatch`): из него вырезан
+миксин в Entity Model Features, который крашил клиент на входе
+в мир — подробности в заметке `docs/superpowers/notes/2026-09-12-taverna-mody.md`.
+Сток лежит в `mods_disabled/` — откат это возврат файла оттуда.
 
 **2026-09-12, вторым заходом:** к таверне добавлены три мода по выбору
 владельца — `minopp` (карточная игра за столом на компанию), `starcatcher`
@@ -90,7 +94,7 @@ cristellib-neoforge-1.21.1-3.1.7.jar
 curios-neoforge-9.5.1+1.21.1.jar
 CustomSkinLoader_Universal-15.0.1.jar
 dungeons-and-taverns-v4.4.4.jar
-emotecraft-for-MC1.21.1-2.4.12-neoforge.jar
+emotecraft-for-MC1.21.1-2.4.12-neoforge-emfpatch.jar
 entity_model_features-3.3.3-1.21-neoforge.jar
 entity_texture_features-7.2.1-1.21-neoforge.jar
 etched-5.1.0.jar
