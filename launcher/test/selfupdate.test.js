@@ -10,7 +10,7 @@ import {
   buildLauncherRelease,
   checkLauncherUpdate,
   RELEASE_ASSET,
-  restartCommand,
+  restartScript,
 } from '../src/main/selfupdate.js';
 
 const descriptor = {
@@ -142,22 +142,32 @@ describe('проверка обновления', () => {
 });
 
 // Кавычки вокруг путей с пробелами («D:\LMPC LAUNCHER\...») — то, что
-// ломается молча: cmd без них видит два аргумента и ничего не запускает.
-describe('перезапуск после установки', () => {
-  const cmd = restartCommand('C:\cache\LMPC-Launcher-0.3.0.exe', 'D:\LMPC LAUNCHER\LMPC Launcher.exe');
-  const line = cmd.args.at(-1);
+// ломается молча: без них cmd видит два аргумента и не запускает ничего.
+describe('скрипт перезапуска после установки', () => {
+  const script = restartScript('C:\cache\LMPC-Launcher-0.3.0.exe', 'D:\LMPC LAUNCHER\LMPC Launcher.exe');
+  const lines = script.split('\r\n');
 
   it('ставит тихо', () => {
-    expect(line).toContain('"C:\cache\LMPC-Launcher-0.3.0.exe" /S');
+    expect(lines).toContain('"C:\cache\LMPC-Launcher-0.3.0.exe" /S');
   });
 
   it('поднимает лаунчер после установщика, взяв путь в кавычки', () => {
-    expect(line).toContain('start "" "D:\LMPC LAUNCHER\LMPC Launcher.exe"');
-    expect(line.indexOf('/S')).toBeLessThan(line.indexOf('start'));
+    expect(lines).toContain('start "" "D:\LMPC LAUNCHER\LMPC Launcher.exe"');
+    const install = lines.findIndex((l) => l.endsWith('/S'));
+    expect(install).toBeLessThan(lines.findIndex((l) => l.startsWith('start')));
+  });
+
+  // Установщик NSIS при /S молча ничего не ставит, если лаунчер ещё жив.
+  it('ждёт выхода лаунчера перед установщиком', () => {
+    expect(lines[1]).toMatch(/^ping -n \d+ 127\.0\.0\.1 >nul$/);
+  });
+
+  // cmd читает скрипт построчно, и переносы ему нужны свои.
+  it('строки разделены CRLF', () => {
+    expect(script).not.toMatch(/[^\r]\n/);
   });
 
   it('поднимает даже если установка сорвалась', () => {
-    expect(line).not.toContain('&&');
-    expect(line).toContain(' & ');
+    expect(script).not.toContain('&&');
   });
 });

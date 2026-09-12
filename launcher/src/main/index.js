@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import * as paths from './paths.js';
 import { readConfig, writeConfig } from './config.js';
 import { play, watchForUpdates, gameLogFile, packSource } from './install.js';
-import { checkLauncherUpdate, downloadInstaller, restartCommand } from './selfupdate.js';
+import { checkLauncherUpdate, downloadInstaller, writeRestartScript } from './selfupdate.js';
 import { progressEvent, STAGES } from './progress.js';
 import { loadNews, noteLocal } from './news.js';
 import { fetchSkinPng } from './skin.js';
@@ -95,12 +95,12 @@ async function updateSelf() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // /S — тихая установка NSIS. Приложение после неё она не поднимает,
-    // поэтому новую версию запускает за нас cmd — см. restartCommand.
-    const { command, args } = restartCommand(installer);
-    spawn(command, args, {
+    // и ставить ничего не станет, пока мы живы, — всё это разруливает
+    // скрипт, см. writeRestartScript.
+    const script = await writeRestartScript(installer);
+    spawn(process.env.COMSPEC ?? 'cmd.exe', ['/c', script], {
       detached: true,
       stdio: 'ignore',
-      windowsVerbatimArguments: true,
     }).unref();
     app.quit();
     return true;
