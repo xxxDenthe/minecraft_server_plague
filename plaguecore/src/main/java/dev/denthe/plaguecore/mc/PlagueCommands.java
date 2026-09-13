@@ -56,12 +56,18 @@ public final class PlagueCommands {
         корень.then(Commands.literal("center")
             .executes(PlagueCommands::показатьЦентр)
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
-                .executes(PlagueCommands::переместитьЦентр)
+                .executes(c -> переместитьЦентр(c, null))
+                // Третье число — сторона квадрата чумы в чанках. Без него
+                // размер остаётся прежним, меняется только место.
+                .then(Commands.argument("chunks", IntegerArgumentType.integer(
+                        3, PlagueConstants.MAX_GRID_SIZE_CHUNKS))
+                    .executes(c -> переместитьЦентр(c,
+                        IntegerArgumentType.getInteger(c, "chunks"))))
                 // force остался словом-пустышкой: раньше он был обязателен,
                 // потому что перенос стирал сетку. Теперь не стирает, но
                 // руки помнят — пусть команда не падает с ошибкой.
                 .then(Commands.literal("force")
-                    .executes(PlagueCommands::переместитьЦентр))));
+                    .executes(c -> переместитьЦентр(c, null)))));
 
         // Тайнопись: предохранитель мастера игры. Если команда завязла
         // и слово не угадывается — открыть руками, сессия важнее загадки.
@@ -328,20 +334,30 @@ public final class PlagueCommands {
      * накопленное заражение никуда не девается, а за бывшим краем
      * появляется чистая земля, куда чуме расти дальше.
      *
+     * Третьим числом задаётся сторона квадрата в чанках. Это второй
+     * способ пустить чуму дальше и обычно нужный: квадрат раздувается
+     * вокруг той же точки, старое заражение остаётся внутри, а по краю
+     * появляется кольцо чистой земли. Без третьего числа размер
+     * остаётся прежним, меняется только место.
+     *
      * Границу мира команда больше не трогает: решение владельца от
      * 2026-09-13. Если границу надо подвинуть — ванильный
      * {@code /worldborder center} и {@code /worldborder set}.
      */
     private static int переместитьЦентр(
-            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx,
+            Integer размерВЧанках) {
         ServerLevel level = мир(ctx.getSource());
         PlagueState st = PlagueState.get(level);
 
         var pos = ColumnPosArgument.getColumnPos(ctx, "pos");
         int цx = pos.x() >> 4;
         int цz = pos.z() >> 4;
+        int размер = размерВЧанках != null ? размерВЧанках : st.grid().size();
         int былоЗаражено = st.grid().countInfected();
-        int переехало = st.переместитьЦентр(цx, цz);
+
+        long t0 = System.nanoTime();
+        int переехало = st.переместитьЦентр(цx, цz, размер);
 
         // В очередях лежат индексы старой сетки, а после переезда под тем
         // же индексом лежит другой чанк. Не сбросить — и первый же тик
@@ -359,18 +375,23 @@ public final class PlagueCommands {
         level.setDefaultSpawnPos(спавн, 0f);
 
         int размечено = TerrainInitializer.initialize(level, st);
+        long мс = (System.nanoTime() - t0) / 1_000_000;
 
         PlagueGrid g = st.grid();
         final int потеряно = былоЗаражено - переехало;
         ctx.getSource().sendSuccess(() -> Component.literal(String.format(
             "Центр чумы: чанк %d, %d (блок %d, %d, спавн на высоте %d).%n"
-            + "Сетка %d×%d, чанки %d,%d..%d,%d. Заражение переехало: %d чанков"
-            + (потеряно > 0 ? ", осталось за краем: " + потеряно : "") + ".%n"
-            + "Местность размечена (%d чанков). Границу мира команда не трогает.",
+            + "Квадрат %d×%d чанков — блоки %d..%d по X, %d..%d по Z.%n"
+            + "Заражение переехало: %d чанков"
+            + (потеряно > 0 ? ", осталось за краем: " + потеряно : "")
+            + ". Местность размечена (%d чанков, %d мс).%n"
+            + "Размер меняется третьим числом: /plague center <x> <z> <чанков>. "
+            + "Границу мира команда не трогает.",
             цx, цz, (int) блокX, (int) блокZ, спавн.getY(),
-            g.size(), g.size(), g.originX(), g.originZ(),
-            g.originX() + g.size() - 1, g.originZ() + g.size() - 1,
-            переехало, размечено)), true);
+            g.size(), g.size(),
+            g.originX() * 16, (g.originX() + g.size()) * 16 - 1,
+            g.originZ() * 16, (g.originZ() + g.size()) * 16 - 1,
+            переехало, размечено, мс)), true);
 
         // Открытый экран /plague gui иначе показывал бы старый квадрат.
         ServerPlayer игрок = ctx.getSource().getPlayer();

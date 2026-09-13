@@ -176,4 +176,27 @@ class PlagueGridTest {
         // старая сетка не тронута
         assertEquals(4, g.getLevel(0, 0));
     }
+
+    /**
+     * Раздуть квадрат вокруг того же центра — второй способ пустить чуму
+     * дальше края. Всё заражение остаётся внутри, а по краю появляется
+     * кольцо чистой земли, куда эпидемии расти.
+     */
+    @Test
+    void увеличениеКвадратаСохраняетЗаражениеИДаётЧистыйКрай() {
+        PlagueGrid g = new PlagueGrid(5, -2, -2); // чанки -2..2
+        for (int cx = -2; cx <= 2; cx++) {
+            for (int cz = -2; cz <= 2; cz++) g.setLevel(cx, cz, 4);
+        }
+        assertEquals(25, g.countInfected(), "маленький квадрат заражён целиком");
+
+        PlagueGrid n = g.resizedTo(11, -5, -5); // тот же центр 0,0
+
+        assertEquals(11, n.size());
+        assertEquals(25, n.countInfected(), "старое заражение всё внутри");
+        assertEquals(4, n.getLevel(2, 2), "край старого квадрата на месте");
+        assertEquals(0, n.getLevel(3, 3), "за бывшим краем — чистая земля");
+        assertEquals(1.0f, n.getTerrain(5, 5), 0.011f);
+        assertTrue(n.contains(5, 5) && !n.contains(6, 6));
+    }
 }

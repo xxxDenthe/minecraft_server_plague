@@ -68,6 +68,15 @@ public final class PlagueGrid {
     /**
      * Та же сетка, сдвинутая на новый угол.
      *
+     * @see #resizedTo(int, int, int)
+     */
+    public PlagueGrid movedTo(int newOriginX, int newOriginZ) {
+        return resizedTo(size, newOriginX, newOriginZ);
+    }
+
+    /**
+     * Сетка другого размера на новом углу, с прежним содержимым.
+     *
      * Всё, что попало в пересечение старого и нового квадрата, переезжает
      * как есть — по абсолютным координатам чанка, поэтому уровни, шрамы,
      * сопротивление и отрисованные уровни остаются привязаны к тем же
@@ -75,12 +84,13 @@ public final class PlagueGrid {
      * чистыми с множителем местности 1.0; настоящий множитель им
      * проставит TerrainInitializer.
      *
-     * Это и есть способ пустить чуму дальше края: центр переносится
-     * в сторону нетронутой земли, накопленное заражение никуда не
-     * девается, а у эпидемии снова появляется куда расти.
+     * Это и есть способ пустить чуму дальше края. Квадрат можно сдвинуть
+     * на нетронутую землю, а можно раздуть вокруг того же центра: старое
+     * заражение никуда не девается, а по краю появляется чистая земля,
+     * куда эпидемии расти.
      */
-    public PlagueGrid movedTo(int newOriginX, int newOriginZ) {
-        PlagueGrid n = new PlagueGrid(size, newOriginX, newOriginZ);
+    public PlagueGrid resizedTo(int newSize, int newOriginX, int newOriginZ) {
+        PlagueGrid n = new PlagueGrid(newSize, newOriginX, newOriginZ);
         for (int i = 0; i < n.cellCount(); i++) {
             int старый = index(n.chunkXOf(i), n.chunkZOf(i));
             if (старый < 0) continue;
