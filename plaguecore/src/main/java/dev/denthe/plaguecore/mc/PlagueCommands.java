@@ -24,7 +24,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.border.WorldBorder;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -57,9 +56,12 @@ public final class PlagueCommands {
         корень.then(Commands.literal("center")
             .executes(PlagueCommands::показатьЦентр)
             .then(Commands.argument("pos", ColumnPosArgument.columnPos())
-                .executes(ctx -> переместитьЦентр(ctx, false))
+                .executes(PlagueCommands::переместитьЦентр)
+                // force остался словом-пустышкой: раньше он был обязателен,
+                // потому что перенос стирал сетку. Теперь не стирает, но
+                // руки помнят — пусть команда не падает с ошибкой.
                 .then(Commands.literal("force")
-                    .executes(ctx -> переместитьЦентр(ctx, true)))));
+                    .executes(PlagueCommands::переместитьЦентр))));
 
         // Тайнопись: предохранитель мастера игры. Если команда завязла
         // и слово не угадывается — открыть руками, сессия важнее загадки.
@@ -313,41 +315,43 @@ public final class PlagueCommands {
     }
 
     /**
-     * Перенести центр мира: сетка чумы, граница мира и точка возрождения
-     * встают вокруг указанной точки.
+     * Перенести центр мира: сетка чумы и точка возрождения встают вокруг
+     * указанной точки.
      *
-     * Три вещи ставятся одной командой намеренно. Разъехавшись хоть на
-     * чанк, они дают заражение за границей и спавн в углу карты — а
-     * заметно это станет только в игре, на живых людях.
+     * Сетка не стирается, а переезжает. Заражение, шрамы, сопротивление
+     * и отрисованные уровни привязаны к абсолютным координатам чанка,
+     * поэтому всё, что попало в пересечение старого и нового квадрата,
+     * остаётся на своих местах мира.
      *
-     * Сетка при переносе обнуляется, поэтому команда требует слова
-     * {@code force}, если чума уже посеяна.
+     * Ради этого команда и нужна посреди сессии: когда эпидемия доела
+     * свой квадрат до края, центр сдвигается в сторону нетронутой земли,
+     * накопленное заражение никуда не девается, а за бывшим краем
+     * появляется чистая земля, куда чуме расти дальше.
+     *
+     * Границу мира команда больше не трогает: решение владельца от
+     * 2026-09-13. Если границу надо подвинуть — ванильный
+     * {@code /worldborder center} и {@code /worldborder set}.
      */
     private static int переместитьЦентр(
-            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, boolean силой) {
+            com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
         ServerLevel level = мир(ctx.getSource());
         PlagueState st = PlagueState.get(level);
-
-        if (!силой && st.grid().countInfected() > 0) {
-            ctx.getSource().sendFailure(Component.literal(String.format(
-                "Чума уже посеяна: %d заражённых чанков. Перенос центра сотрёт их "
-                + "вместе с очагами и разметкой местности. Если точно надо — "
-                + "допишите force в конец команды.", st.grid().countInfected())));
-            return 0;
-        }
 
         var pos = ColumnPosArgument.getColumnPos(ctx, "pos");
         int цx = pos.x() >> 4;
         int цz = pos.z() >> 4;
-        st.переместитьЦентр(цx, цz);
+        int былоЗаражено = st.grid().countInfected();
+        int переехало = st.переместитьЦентр(цx, цz);
 
-        // Середина центрального чанка: так сетка и граница мира соосны.
+        // В очередях лежат индексы старой сетки, а после переезда под тем
+        // же индексом лежит другой чанк. Не сбросить — и первый же тик
+        // дорисует не то место.
+        Materializer.сброситьОчередь();
+        CaveMaterializer.сброситьОчередь();
+
+        // Середина центрального чанка: так сетка и точка возрождения соосны.
         double блокX = цx * 16 + 8;
         double блокZ = цz * 16 + 8;
-
-        WorldBorder граница = level.getWorldBorder();
-        граница.setCenter(блокX, блокZ);
-        граница.setSize(PlagueConstants.WORLD_SIZE_BLOCKS);
 
         BlockPos спавн = new BlockPos((int) блокX,
             level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int) блокX, (int) блокZ),
@@ -356,12 +360,21 @@ public final class PlagueCommands {
 
         int размечено = TerrainInitializer.initialize(level, st);
 
+        PlagueGrid g = st.grid();
+        final int потеряно = былоЗаражено - переехало;
         ctx.getSource().sendSuccess(() -> Component.literal(String.format(
-            "Центр мира: чанк %d, %d (блок %d, %d, спавн на высоте %d).%n"
-            + "Граница мира %d блоков, местность размечена (%d чанков), сетка чумы пуста.%n"
-            + "Дальше: /plague generate 0.05",
+            "Центр чумы: чанк %d, %d (блок %d, %d, спавн на высоте %d).%n"
+            + "Сетка %d×%d, чанки %d,%d..%d,%d. Заражение переехало: %d чанков"
+            + (потеряно > 0 ? ", осталось за краем: " + потеряно : "") + ".%n"
+            + "Местность размечена (%d чанков). Границу мира команда не трогает.",
             цx, цz, (int) блокX, (int) блокZ, спавн.getY(),
-            PlagueConstants.WORLD_SIZE_BLOCKS, размечено)), true);
+            g.size(), g.size(), g.originX(), g.originZ(),
+            g.originX() + g.size() - 1, g.originZ() + g.size() - 1,
+            переехало, размечено)), true);
+
+        // Открытый экран /plague gui иначе показывал бы старый квадрат.
+        ServerPlayer игрок = ctx.getSource().getPlayer();
+        if (игрок != null) PlagueNetwork.отправитьСнимок(игрок);
         return 1;
     }
 

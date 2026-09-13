@@ -3,6 +3,7 @@ package dev.denthe.plaguecore.mc;
 import dev.denthe.plaguecore.PlagueConstants;
 import dev.denthe.plaguecore.core.PlagueGrid;
 import dev.denthe.plaguecore.core.PlagueGridCodec;
+import dev.denthe.plaguecore.core.StartGenerator;
 import dev.denthe.plaguecore.core.PhaseTable;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -159,18 +160,31 @@ public class PlagueState extends SavedData {
     /**
      * Перенести сетку на новый центр мира.
      *
-     * Сетка строится заново и пустой: старые уровни считались под другой
-     * рельеф, а множители местности в новом месте другие — переносить их
-     * значило бы врать движку распространения всю сессию. Очаги стираются,
-     * местность помечается неразмеченной; после переноса нужен
-     * {@code TerrainInitializer} и {@code /plague generate}.
+     * Сетка того же размера переезжает на новое место, а всё, что попало
+     * в пересечение со старой, едет вместе с ней: уровни, шрамы,
+     * сопротивление и отрисованные уровни привязаны к абсолютным
+     * координатам чанка, поэтому под ними тот же самый рельеф.
+     *
+     * Ради этого команда и существует. Когда эпидемия доела свой квадрат
+     * до края, центр сдвигается в сторону нетронутой земли: накопленное
+     * заражение остаётся, за краем появляется чистая земля, и чуме снова
+     * есть куда расти. Что выехало за новый квадрат — забывается.
+     *
+     * Очаги, оказавшиеся вне нового квадрата, выбрасываются: сажать
+     * заражение туда, где сетки нет, всё равно некуда. Местность
+     * помечается неразмеченной — новым чанкам нужен
+     * {@code TerrainInitializer}.
+     *
+     * @return сколько заражённых чанков переехало
      */
-    public void переместитьЦентр(int центрЧанкX, int центрЧанкZ) {
-        int size = PlagueConstants.GRID_SIZE_CHUNKS;
-        this.grid = new PlagueGrid(size, центрЧанкX - size / 2, центрЧанкZ - size / 2);
-        this.epicenters.clear();
+    public int переместитьЦентр(int центрЧанкX, int центрЧанкZ) {
+        int size = grid.size();
+        this.grid = grid.movedTo(центрЧанкX - size / 2, центрЧанкZ - size / 2);
+        this.epicenters.removeIf(p -> !grid.contains(
+            StartGenerator.unpackX(p), StartGenerator.unpackZ(p)));
         this.terrainInitialized = false;
         setDirty();
+        return grid.countInfected();
     }
 
     public long lastProcessedDay() { return lastProcessedDay; }

@@ -32,8 +32,8 @@ public class PlagueMapScreen extends Screen {
     private static final int ТЕКСТ = 0xFFE0E0E0;
     private static final int ТУСКЛЫЙ = 0xFF909090;
 
-    /** Отступ карты сверху: под заголовок и две строки состояния. */
-    private static final int картаСверху = 42;
+    /** Отступ карты сверху: под заголовок и три строки состояния. */
+    private static final int картаСверху = 52;
 
     private PlagueNetwork.Snapshot данные;
 
@@ -125,9 +125,22 @@ public class PlagueMapScreen extends Screen {
         String строка2 = String.format("Заражено %.1f%%  (%d из %d чанков)  ·  очагов %d  ·  местность: %s",
             доля, заражено, всего, данные.epicenterCount(), данные.terrainReady() ? "да" : "нет");
 
+        // Третья строка — где сейчас стоит квадрат. Без неё /plague center
+        // выглядел бы так, будто ничего не сделал: карта всегда рисуется
+        // от своего угла, и по одной картинке переезд не виден.
+        int центрX = данные.originX() + данные.size() / 2;
+        int центрZ = данные.originZ() + данные.size() / 2;
+        String строка3 = String.format(
+            "Центр: чанк %d, %d (блок %d, %d)  ·  сетка %d×%d, чанки %d,%d..%d,%d",
+            центрX, центрZ, центрX * 16 + 8, центрZ * 16 + 8,
+            данные.size(), данные.size(),
+            данные.originX(), данные.originZ(),
+            данные.originX() + данные.size() - 1, данные.originZ() + данные.size() - 1);
+
         g.drawCenteredString(font, "Ядро чумы", width / 2, 10, ТЕКСТ);
         g.drawCenteredString(font, строка1, width / 2, 22, данные.paused() ? 0xFFFFC050 : ТЕКСТ);
         g.drawCenteredString(font, строка2, width / 2, 32, ТУСКЛЫЙ);
+        g.drawCenteredString(font, строка3, width / 2, 42, ТУСКЛЫЙ);
         g.drawCenteredString(font, "Shift+ЛКМ по карте — посадить очаг, ПКМ — убрать",
             width / 2, картаY + картаПиксели + 4, ТУСКЛЫЙ);
     }
@@ -150,12 +163,12 @@ public class PlagueMapScreen extends Screen {
         }
 
         // Оси через центральный чанк сетки — тот, что объявлен центром мира
-        // командой /plague center. Он же точка возрождения и середина
-        // границы мира, поэтому на карте всегда ровно посередине.
-        int центрX = картаX + (сторона / 2) * клетка;
-        int центрZ = картаY + (сторона / 2) * клетка;
-        g.fill(центрX, картаY, центрX + 1, картаY + картаПиксели, ОСЬ);
-        g.fill(картаX, центрZ, картаX + картаПиксели, центрZ + 1, ОСЬ);
+        // командой /plague center. Он же точка возрождения, и на карте он
+        // всегда ровно посередине; куда он уехал, написано в шапке.
+        int осьX = картаX + (сторона / 2) * клетка;
+        int осьZ = картаY + (сторона / 2) * клетка;
+        g.fill(осьX, картаY, осьX + 1, картаY + картаПиксели, ОСЬ);
+        g.fill(картаX, осьZ, картаX + картаПиксели, осьZ + 1, ОСЬ);
     }
 
     private void нарисоватьЛегенду(GuiGraphics g) {

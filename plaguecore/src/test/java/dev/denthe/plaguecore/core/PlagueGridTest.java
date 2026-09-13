@@ -135,4 +135,45 @@ class PlagueGridTest {
                 + (размер * 16) + " < " + PlagueConstants.WORLD_SIZE_BLOCKS);
         }
     }
+
+    /**
+     * Перенос центра (/plague center) не стирает эпидемию: всё, что попало
+     * в пересечение старого и нового квадрата, остаётся на тех же
+     * абсолютных координатах чанка. Ради этого перенос и делается посреди
+     * сессии — чуме нужна чистая земля за бывшим краем, а не рестарт.
+     */
+    @Test
+    void переносЦентраСохраняетПересечение() {
+        PlagueGrid g = new PlagueGrid(9, 0, 0); // чанки 0..8
+        g.setLevel(4, 4, 3);
+        g.setLevel(8, 8, 2);
+        g.setLevel(0, 0, 4);     // выедет за новый квадрат
+        g.setScar(4, 4, 5);
+        g.setResistance(4, 4, 0.5f);
+        g.setTerrain(4, 4, 1.4f);
+        g.setAppliedSurface(4, 4, 2);
+        g.setAppliedUnderground(4, 4, 1);
+
+        PlagueGrid n = g.movedTo(4, 4); // чанки 4..12
+
+        assertEquals(9, n.size());
+        assertEquals(4, n.originX());
+        assertEquals(3, n.getLevel(4, 4), "заражение переезжает по координатам чанка");
+        assertEquals(2, n.getLevel(8, 8));
+        assertEquals(5, n.getScar(4, 4));
+        assertEquals(0.5f, n.getResistance(4, 4), 0.011f);
+        assertEquals(1.4f, n.getTerrain(4, 4), 0.011f);
+        assertEquals(2, n.getAppliedSurface(4, 4));
+        assertEquals(1, n.getAppliedUnderground(4, 4));
+
+        assertFalse(n.contains(0, 0), "старый угол остался за краем");
+        assertEquals(2, n.countInfected(), "за краем осталось ровно то, что не влезло");
+
+        // новые чанки — чистые, с нейтральным множителем местности
+        assertEquals(0, n.getLevel(12, 12));
+        assertEquals(1.0f, n.getTerrain(12, 12), 0.011f);
+
+        // старая сетка не тронута
+        assertEquals(4, g.getLevel(0, 0));
+    }
 }

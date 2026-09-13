@@ -18,6 +18,13 @@ public final class PhaseTable {
 
     public static final int PHASE_COUNT = 5;
 
+    /**
+     * Площадь, под которую посчитаны бюджеты ниже: сетка 95×95 = 9 025
+     * чанков. Сетка другого размера масштабирует бюджет по отношению
+     * площадей — {@link SpreadEngine}.
+     */
+    public static final int BASELINE_CELLS = 95 * 95;
+
     /** Последняя ночь каждой фазы. Фаза 4 бессрочная. */
     private static final int[] PHASE_END_NIGHT = { 5, 12, 20, 30, Integer.MAX_VALUE };
 

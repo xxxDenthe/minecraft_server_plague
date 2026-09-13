@@ -66,7 +66,11 @@ public final class SpreadEngine {
         int[] источники = собратьИсточники(снимок, cells);
         перемешать(источники, rng);
 
-        int бюджет = Math.round(params.budget() * budgetMultiplier);
+        // Бюджет в таблице фаз посчитан под сетку 95×95. Сетка другого
+        // размера получает его пропорционально площади, иначе кривая
+        // «10% на старте, ~80% к ночи 30» уехала бы молча.
+        int бюджет = Math.round(params.budget() * budgetMultiplier
+            * cells / (float) PhaseTable.BASELINE_CELLS);
         int заражено = 0;
 
         for (int idx : источники) {

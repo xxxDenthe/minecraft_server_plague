@@ -42,12 +42,22 @@ class SpreadEngineTest {
         }
     }
 
+    /**
+     * Бюджет фазы, приведённый к площади сетки — ровно так же, как это
+     * делает {@link SpreadEngine}. Числа в таблице фаз посчитаны под
+     * сетку 95×95, а здешняя фикстура меньше.
+     */
+    private static int бюджет(PlagueGrid g, int phase, float множитель) {
+        return Math.round(PhaseTable.paramsFor(phase).budget() * множитель
+            * g.cellCount() / (float) PhaseTable.BASELINE_CELLS);
+    }
+
     @Test
     void бюджетНочиНеПревышается() {
         PlagueGrid g = пустая();
         засеятьРазреженно(g);
         SpreadEngine.NightResult r = SpreadEngine.runNight(g, 1, false, rng(42));
-        assertEquals(PhaseTable.paramsFor(0).budget(), r.newlyInfected(),
+        assertEquals(бюджет(g, 0, 1f), r.newlyInfected(),
             "фаза 0 разрешает ровно бюджет фазы новых чанков за ночь");
     }
 
@@ -61,9 +71,9 @@ class SpreadEngineTest {
         SpreadEngine.NightResult без = SpreadEngine.runNight(обычная, 1, false, rng(7));
         SpreadEngine.NightResult со = SpreadEngine.runNight(сонная, 1, true, rng(7));
 
-        int бюджет = PhaseTable.paramsFor(0).budget();
-        assertEquals(бюджет, без.newlyInfected(), "без сна — бюджет фазы 0");
-        assertEquals(бюджет * 2, со.newlyInfected(), "сон удваивает бюджет");
+        assertEquals(бюджет(обычная, 0, 1f), без.newlyInfected(), "без сна — бюджет фазы 0");
+        assertEquals(бюджет(сонная, 0, PlagueConstants.SLEEP_BUDGET_MULTIPLIER),
+            со.newlyInfected(), "сон удваивает бюджет");
     }
 
     /**

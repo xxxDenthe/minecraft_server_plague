@@ -65,6 +65,35 @@ public final class PlagueGrid {
         this.appliedUnderground = appliedUnderground;
     }
 
+    /**
+     * Та же сетка, сдвинутая на новый угол.
+     *
+     * Всё, что попало в пересечение старого и нового квадрата, переезжает
+     * как есть — по абсолютным координатам чанка, поэтому уровни, шрамы,
+     * сопротивление и отрисованные уровни остаются привязаны к тем же
+     * местам мира. Чанки, которых в старой сетке не было, рождаются
+     * чистыми с множителем местности 1.0; настоящий множитель им
+     * проставит TerrainInitializer.
+     *
+     * Это и есть способ пустить чуму дальше края: центр переносится
+     * в сторону нетронутой земли, накопленное заражение никуда не
+     * девается, а у эпидемии снова появляется куда расти.
+     */
+    public PlagueGrid movedTo(int newOriginX, int newOriginZ) {
+        PlagueGrid n = new PlagueGrid(size, newOriginX, newOriginZ);
+        for (int i = 0; i < n.cellCount(); i++) {
+            int старый = index(n.chunkXOf(i), n.chunkZOf(i));
+            if (старый < 0) continue;
+            n.level[i] = level[старый];
+            n.resistance[i] = resistance[старый];
+            n.scar[i] = scar[старый];
+            n.terrain[i] = terrain[старый];
+            n.appliedSurface[i] = appliedSurface[старый];
+            n.appliedUnderground[i] = appliedUnderground[старый];
+        }
+        return n;
+    }
+
     public int size() { return size; }
     public int originX() { return originX; }
     public int originZ() { return originZ; }
