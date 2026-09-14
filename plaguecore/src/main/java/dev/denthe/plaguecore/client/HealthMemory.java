@@ -9,9 +9,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,9 +30,16 @@ public final class HealthMemory {
     /** Сколько записей помним. Больше — вкладка перестаёт читаться. */
     private static final int ДЛИНА = 12;
 
-    private record Запись(String время, String ключ) {}
-
-    private static final Deque<Запись> кольцо = new ArrayDeque<>();
+    /**
+     * Готовые строки, старое к новому. Круг правок 1: {@code записи()}
+     * звалась из кадрового пути ({@code render → правая → MEMORY}) и
+     * на каждый вызов собирала новый список и новые {@code Component} —
+     * тот же дефект, что уже чинили в задачах 8 и 9 (раздел 14 спеки).
+     * Теперь {@code Component} строится один раз, в {@code записать()},
+     * а {@code записи()} отдаёт готовый неизменяемый вид без аллокаций.
+     */
+    private static final List<Component> кольцо = new ArrayList<>(ДЛИНА);
+    private static final List<Component> вид = Collections.unmodifiableList(кольцо);
 
     /** Записать событие. Ключ — из языкового файла, текста тут нет. */
     public static void записать(String ключ) {
@@ -45,18 +51,13 @@ public final class HealthMemory {
         int минута = (int) ((сутки % 1000L) * 60L / 1000L);
         String время = String.format("%02d:%02d", час, минута);
 
-        if (кольцо.size() >= ДЛИНА) кольцо.removeFirst();
-        кольцо.addLast(new Запись(время, ключ));
+        if (кольцо.size() >= ДЛИНА) кольцо.remove(0);
+        кольцо.add(Component.literal(время + "  ").append(Component.translatable(ключ)));
     }
 
-    /** Готовые строки журнала, снизу — самое свежее. */
+    /** Готовые строки журнала, снизу — самое свежее. Ничего не создаёт. */
     public static List<Component> записи() {
-        List<Component> список = new ArrayList<>(кольцо.size());
-        for (Запись з : кольцо) {
-            список.add(Component.literal(з.время() + "  ")
-                .append(Component.translatable(з.ключ())));
-        }
-        return список;
+        return вид;
     }
 
     public static void забыть() {
