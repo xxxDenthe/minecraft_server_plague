@@ -65,10 +65,14 @@ public final class PlagueClientAccess {
         PossessionClient.принятьКуклу(пакет);
     }
 
-    /** Впечатление о соседе. Открывает чужой осмотр. */
+    /**
+     * Впечатление о соседе. Открывает чужой осмотр — но только поверх
+     * пустоты: если у игрока уже открыт какой-то экран (инвентарь, чат,
+     * свой же осмотр), пакет его не сносит.
+     */
     public static void принятьВпечатление(PlagueNetwork.Impression пакет) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) return;
+        if (mc.level == null || mc.screen != null) return;
         if (mc.level.getEntity(пакет.сущность()) instanceof Player кто) {
             HealthScreen.открытьЧужой(кто, пакет.впечатление());
         }

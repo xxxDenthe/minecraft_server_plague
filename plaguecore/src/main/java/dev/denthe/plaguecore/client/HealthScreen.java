@@ -55,6 +55,30 @@ public class HealthScreen extends Screen {
 
     public enum Вкладка { STATE, BODY, FEEL, MEMORY }
 
+    /**
+     * Подписи вкладок. Готовые ключи заведены в языковых файлах и
+     * покрыты {@code LangCoverageTest} с самого начала — до этой правки
+     * нигде не читались. Константы, а не аллокация на кадр.
+     */
+    private static final Component ПОДПИСЬ_STATE = Component.translatable("plaguecore.health.tab.state");
+    private static final Component ПОДПИСЬ_BODY = Component.translatable("plaguecore.health.tab.body");
+    private static final Component ПОДПИСЬ_FEEL = Component.translatable("plaguecore.health.tab.feel");
+    private static final Component ПОДПИСЬ_MEMORY = Component.translatable("plaguecore.health.tab.memory");
+
+    private static Component подпись(Вкладка в) {
+        return switch (в) {
+            case STATE -> ПОДПИСЬ_STATE;
+            case BODY -> ПОДПИСЬ_BODY;
+            case FEEL -> ПОДПИСЬ_FEEL;
+            case MEMORY -> ПОДПИСЬ_MEMORY;
+        };
+    }
+
+    /** Готовые тексты правой панели, не зависящие от входов — не пересобираются на кадре. */
+    private static final Component ПОДСКАЗКА_ВЫБОР = Component.translatable("plaguecore.health.hint.pick");
+    private static final Component ОЩУЩЕНИЙ_НЕТ = Component.translatable("plaguecore.health.feel.none");
+    private static final Component ПАМЯТЬ_ПУСТА = Component.translatable("plaguecore.health.memory.none");
+
     protected Вкладка вкладка = Вкладка.STATE;
 
     protected int левый, верхний;
@@ -125,6 +149,20 @@ public class HealthScreen extends Screen {
         for (Wellbeing.Часть часть : ЧАСТИ) {
             геометрия.put(часть, построить(часть));
         }
+
+        подписьВысота = Math.max(1, Math.round(font.lineHeight * ПОДПИСЬ_МАСШТАБ));
+        Вкладка[] вкладки = вкладки();
+        вкладкаЛевый = new int[вкладки.length];
+        вкладкаШирина = new int[вкладки.length];
+        int x = левый + ШИРИНА - 8;
+        for (int i = вкладки.length - 1; i >= 0; i--) {
+            int подписьШирина = Math.round(font.width(подпись(вкладки[i])) * ПОДПИСЬ_МАСШТАБ);
+            int ширина = Math.max(ЯЧЕЙКА, подписьШирина);
+            x -= ширина;
+            вкладкаЛевый[i] = x;
+            вкладкаШирина[i] = ширина;
+            x -= ЗАЗОР_ВКЛАДОК;
+        }
     }
 
     /** Окно модели внутри панели. */
@@ -173,6 +211,25 @@ public class HealthScreen extends Screen {
      * на кадр не меняются — пересчитывать её в {@code render} незачем.
      */
     private Map<Wellbeing.Часть, int[][]> геометрия;
+
+    /**
+     * Колонки вкладок: у каждой своя ширина, под её собственную подпись,
+     * а не общий фиксированный шаг. Так шире вкладке достаётся больше
+     * места, а не приходится обрезать слово или наезжать на соседей.
+     * Считано один раз в {@link #init()} по живому шрифту, индексы —
+     * как в {@link #вкладки()}.
+     */
+    private int[] вкладкаЛевый;
+    private int[] вкладкаШирина;
+
+    /** Масштаб текста подписи под значком: полный размер шрифта сюда не влезает. */
+    private static final float ПОДПИСЬ_МАСШТАБ = 0.6f;
+
+    /** Отступ подписи от нижнего края значка и зазор между колонками вкладок. */
+    private static final int ПОДПИСЬ_ОТСТУП = 2, ЗАЗОР_ВКЛАДОК = 3;
+
+    /** Высота строки подписи в пикселях экрана, посчитана в {@link #init()} по шрифту. */
+    private int подписьВысота;
 
     /** Выбранная часть тела. {@code null} — ещё ничего не выбрано. */
     protected Wellbeing.Часть выбрана;
@@ -279,33 +336,51 @@ public class HealthScreen extends Screen {
     protected int правыйX() { return левый + МОДЕЛЬ_X + МОДЕЛЬ_Ш + 12; }
     protected int праваяШирина() { return левый + ШИРИНА - 10 - правыйX(); }
 
-    /** Первая вкладка стоит левее правого края на столько ячеек, сколько их доступно. */
-    private int вкладкаX(int номер) {
-        return левый + ШИРИНА - 8 - (вкладки().length - номер) * (ЯЧЕЙКА + 2);
-    }
-
     private int вкладкаY() { return верхний + 6; }
+
+    /** Нижняя граница ряда вкладок вместе с подписью — отсюда начинается правая панель. */
+    private int вкладкиНиз() { return вкладкаY() + ЯЧЕЙКА + ПОДПИСЬ_ОТСТУП + подписьВысота; }
 
     private void нарисоватьВкладки(GuiGraphics графика, int мышьX, int мышьY) {
         Вкладка[] вкладки = вкладки();
+        int y = вкладкаY();
+        int низ = вкладкиНиз();
         for (int i = 0; i < вкладки.length; i++) {
-            int x = вкладкаX(i), y = вкладкаY();
+            int колонкаX = вкладкаЛевый[i], колонкаШирина = вкладкаШирина[i];
+            int x = колонкаX + (колонкаШирина - ЯЧЕЙКА) / 2;
             boolean своя = вкладка == вкладки[i];
-            boolean под = мышьX >= x && мышьX < x + ЯЧЕЙКА
-                       && мышьY >= y && мышьY < y + ЯЧЕЙКА;
+            boolean под = мышьX >= колонкаX && мышьX < колонкаX + колонкаШирина
+                       && мышьY >= y - 1 && мышьY < низ + 1;
 
-            графика.fill(x - 1, y - 1, x + ЯЧЕЙКА + 1, y + ЯЧЕЙКА + 1,
+            графика.fill(колонкаX - 1, y - 1, колонкаX + колонкаШирина + 1, низ + 1,
                 своя ? 0xFF2A322A : (под ? 0xFF1E241E : 0xFF161C16));
             графика.blit(ЗНАЧКИ, x, y, ЯЧЕЙКА, ЯЧЕЙКА,
                 i * ЯЧЕЙКА, 0, ЯЧЕЙКА, ЯЧЕЙКА, ЛИСТ_Ш, ЛИСТ_В);
+            подписьВкладки(графика, подпись(вкладки[i]),
+                колонкаX + колонкаШирина / 2, y + ЯЧЕЙКА + ПОДПИСЬ_ОТСТУП,
+                своя ? ТЕКСТ : ТУСКЛЫЙ);
         }
+    }
+
+    /** Подпись вкладки уменьшенным шрифтом, центрированная под значком. Не аллокация — только матрица позы. */
+    private void подписьВкладки(GuiGraphics графика, Component текст, int центрX, int y, int цвет) {
+        int ширина = Math.round(font.width(текст) * ПОДПИСЬ_МАСШТАБ);
+        float x = центрX - ширина / 2f;
+        графика.pose().pushPose();
+        графика.pose().translate(x, y, 0f);
+        графика.pose().scale(ПОДПИСЬ_МАСШТАБ, ПОДПИСЬ_МАСШТАБ, 1f);
+        графика.drawString(font, текст, 0, 0, цвет, false);
+        графика.pose().popPose();
     }
 
     private Вкладка вкладкаПод(int мышьX, int мышьY) {
         Вкладка[] вкладки = вкладки();
+        int y = вкладкаY();
+        int низ = вкладкиНиз();
         for (int i = 0; i < вкладки.length; i++) {
-            int x = вкладкаX(i), y = вкладкаY();
-            if (мышьX >= x && мышьX < x + ЯЧЕЙКА && мышьY >= y && мышьY < y + ЯЧЕЙКА) {
+            int колонкаX = вкладкаЛевый[i], колонкаШирина = вкладкаШирина[i];
+            if (мышьX >= колонкаX && мышьX < колонкаX + колонкаШирина
+                    && мышьY >= y && мышьY < низ) {
                 return вкладки[i];
             }
         }
@@ -323,7 +398,9 @@ public class HealthScreen extends Screen {
     }
 
     protected void правая(GuiGraphics графика) {
-        int y = верхний + 24;
+        // Начало ниже ряда вкладок с подписями — иначе первая строка
+        // текста наедет на подписи под значками.
+        int y = вкладкиНиз() + 4;
         switch (вкладка) {
             case STATE -> {
                 Component строка = чужой ? чужоеОбщееКэш : HealthSense.общее();
@@ -341,8 +418,7 @@ public class HealthScreen extends Screen {
             }
             case BODY -> {
                 if (выбрана == null) {
-                    протянуть(графика,
-                        Component.translatable("plaguecore.health.hint.pick"), y, ТУСКЛЫЙ);
+                    протянуть(графика, ПОДСКАЗКА_ВЫБОР, y, ТУСКЛЫЙ);
                 } else {
                     Component строка = чужой ? чужаяЧастьКэш.get(выбрана) : HealthSense.часть(выбрана);
                     y = протянуть(графика, строка, y, ТЕКСТ);
@@ -354,8 +430,7 @@ public class HealthScreen extends Screen {
             case FEEL -> {
                 List<Component> что = HealthSense.ощущения();
                 if (что.isEmpty()) {
-                    протянуть(графика,
-                        Component.translatable("plaguecore.health.feel.none"), y, ТУСКЛЫЙ);
+                    протянуть(графика, ОЩУЩЕНИЙ_НЕТ, y, ТУСКЛЫЙ);
                 } else {
                     for (Component строка : что) y = протянуть(графика, строка, y, ТЕКСТ) + 2;
                 }
@@ -363,8 +438,7 @@ public class HealthScreen extends Screen {
             case MEMORY -> {
                 List<Component> что = HealthMemory.записи();
                 if (что.isEmpty()) {
-                    протянуть(графика,
-                        Component.translatable("plaguecore.health.memory.none"), y, ТУСКЛЫЙ);
+                    протянуть(графика, ПАМЯТЬ_ПУСТА, y, ТУСКЛЫЙ);
                 } else {
                     for (int i = что.size() - 1; i >= 0; i--) {
                         y = протянуть(графика, что.get(i), y, ТУСКЛЫЙ) + 1;
@@ -422,6 +496,11 @@ public class HealthScreen extends Screen {
      * в десять тиков и отстанет от живых сердец на полсекунды. Строка
      * своя, но собирается заново только когда здоровье или максимум
      * меняются, а не каждый кадр.
+     *
+     * При осмотре соседа число не печатается вовсе: максимум несёт
+     * в себе временный штраф стадии, и точное «14 / 20» читалось бы
+     * как стадия числом — против §9 спека и главного правила мода.
+     * Сердца всё равно рисуются: их видно и на себе, штраф не выдают.
      */
     private int сердца(GuiGraphics графика, int y) {
         LivingEntity кто = цель();
@@ -431,7 +510,7 @@ public class HealthScreen extends Screen {
         int максимум = Mth.ceil(кто.getMaxHealth());
         int всего = Math.max(1, Mth.ceil(максимум / 2f));
 
-        if (здоровье != здоровьеКэш || максимум != максимумКэш) {
+        if (!чужой && (здоровье != здоровьеКэш || максимум != максимумКэш)) {
             здоровьеКэш = здоровье;
             максимумКэш = максимум;
             числоHPКэш = Component.translatable("plaguecore.health.hp", здоровье, максимум);
@@ -449,8 +528,10 @@ public class HealthScreen extends Screen {
         }
         int рядов = (всего + вРяду - 1) / вРяду;
         int числоY = y + (рядов - 1) * 10;
-        графика.drawString(font, числоHPКэш,
-            x + Math.min(всего, вРяду) * 8 + 6, числоY + 1, ТУСКЛЫЙ, false);
+        if (!чужой) {
+            графика.drawString(font, числоHPКэш,
+                x + Math.min(всего, вРяду) * 8 + 6, числоY + 1, ТУСКЛЫЙ, false);
+        }
         return y + рядов * 10;
     }
 
@@ -506,6 +587,14 @@ public class HealthScreen extends Screen {
 
     @Override
     public void render(GuiGraphics графика, int мышьX, int мышьY, float кадр) {
+        // Сосед вышел из мира, пока экран был открыт: держать его
+        // замороженную модель и сердца — врать про живого человека.
+        // Закрываем, а не рисуем труп чужих данных.
+        if (чужой && (ктоЧужой == null || ктоЧужой.isRemoved())) {
+            onClose();
+            return;
+        }
+
         // Фон рисует сам Screen.render: он начинается с renderBackground,
         // а тот размывает мир за экраном. Звать renderBackground отдельно
         // нельзя — размытие ляжет второй раз, уже поверх нашей панели,
