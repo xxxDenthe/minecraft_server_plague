@@ -5,11 +5,15 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import dev.denthe.plaguecore.core.Wellbeing;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,6 +33,28 @@ public class HealthScreen extends Screen {
     protected static final int РАМКА = 0xFF4A4A4A;
     protected static final int ТЕКСТ = 0xFFE0E0E0;
     protected static final int ТУСКЛЫЙ = 0xFF909090;
+
+    private static final ResourceLocation ЗНАЧКИ =
+        ResourceLocation.fromNamespaceAndPath("plaguecore", "textures/gui/health_icons.png");
+
+    /** Лист значков: 64 × 16, ячейки вкладок 12 × 12 с шагом 12. */
+    private static final int ЛИСТ_Ш = 64, ЛИСТ_В = 16, ЯЧЕЙКА = 12;
+
+    /** Капля жажды в листе. */
+    private static final int КАПЛЯ_X = 48, КАПЛЯ_Ш = 7, КАПЛЯ_В = 9;
+
+    private static final ResourceLocation СЕРДЦЕ_ПУСТО =
+        ResourceLocation.withDefaultNamespace("hud/heart/container");
+    private static final ResourceLocation СЕРДЦЕ_ПОЛНОЕ =
+        ResourceLocation.withDefaultNamespace("hud/heart/full");
+    private static final ResourceLocation СЕРДЦЕ_ПОЛОВИНА =
+        ResourceLocation.withDefaultNamespace("hud/heart/half");
+    private static final ResourceLocation ЕДА =
+        ResourceLocation.withDefaultNamespace("hud/food_full");
+
+    public enum Вкладка { STATE, BODY, FEEL, MEMORY }
+
+    protected Вкладка вкладка = Вкладка.STATE;
 
     protected int левый, верхний;
 
@@ -90,6 +116,9 @@ public class HealthScreen extends Screen {
 
     /** Все части тела. Считано один раз, а не на каждый кадр через values(). */
     private static final Wellbeing.Часть[] ЧАСТИ = Wellbeing.Часть.values();
+
+    /** Все вкладки. Считано один раз, а не на каждый кадр через values(). */
+    private static final Вкладка[] ВКЛАДКИ = Вкладка.values();
 
     /**
      * Прямоугольники всех частей тела, посчитанные один раз в {@link #init()}.
@@ -183,6 +212,131 @@ public class HealthScreen extends Screen {
         return null;
     }
 
+    /** Где начинается правая колонка и сколько ей ширины. */
+    protected int правыйX() { return левый + МОДЕЛЬ_X + МОДЕЛЬ_Ш + 12; }
+    protected int праваяШирина() { return левый + ШИРИНА - 10 - правыйX(); }
+
+    /** Первая вкладка стоит левее правого края на четыре ячейки с зазором. */
+    private int вкладкаX(int номер) {
+        return левый + ШИРИНА - 8 - (4 - номер) * (ЯЧЕЙКА + 2);
+    }
+
+    private int вкладкаY() { return верхний + 6; }
+
+    private void нарисоватьВкладки(GuiGraphics графика, int мышьX, int мышьY) {
+        for (int i = 0; i < ВКЛАДКИ.length; i++) {
+            int x = вкладкаX(i), y = вкладкаY();
+            boolean своя = вкладка == ВКЛАДКИ[i];
+            boolean под = мышьX >= x && мышьX < x + ЯЧЕЙКА
+                       && мышьY >= y && мышьY < y + ЯЧЕЙКА;
+
+            графика.fill(x - 1, y - 1, x + ЯЧЕЙКА + 1, y + ЯЧЕЙКА + 1,
+                своя ? 0xFF2A322A : (под ? 0xFF1E241E : 0xFF161C16));
+            графика.blit(ЗНАЧКИ, x, y, ЯЧЕЙКА, ЯЧЕЙКА,
+                i * ЯЧЕЙКА, 0, ЯЧЕЙКА, ЯЧЕЙКА, ЛИСТ_Ш, ЛИСТ_В);
+        }
+    }
+
+    private Вкладка вкладкаПод(int мышьX, int мышьY) {
+        for (int i = 0; i < ВКЛАДКИ.length; i++) {
+            int x = вкладкаX(i), y = вкладкаY();
+            if (мышьX >= x && мышьX < x + ЯЧЕЙКА && мышьY >= y && мышьY < y + ЯЧЕЙКА) {
+                return ВКЛАДКИ[i];
+            }
+        }
+        return null;
+    }
+
+    /** Печатает текст с переносами по ширине колонки. Возвращает новый y. */
+    protected int протянуть(GuiGraphics графика, Component текст, int y, int цвет) {
+        List<FormattedCharSequence> строки = font.split(текст, праваяШирина());
+        for (FormattedCharSequence строка : строки) {
+            графика.drawString(font, строка, правыйX(), y, цвет, false);
+            y += font.lineHeight + 1;
+        }
+        return y;
+    }
+
+    protected void правая(GuiGraphics графика) {
+        int y = верхний + 24;
+        switch (вкладка) {
+            case STATE -> {
+                y = протянуть(графика, HealthSense.общее(), y, ТЕКСТ) + 6;
+                y = сердца(графика, y) + 4;
+                y = строкаСоЗначком(графика, HealthSense.голод(), y, true);
+                if (HealthSense.жажда() != null) {
+                    строкаСоЗначком(графика, HealthSense.жажда(), y, false);
+                }
+            }
+            case BODY -> {
+                if (выбрана == null) {
+                    протянуть(графика,
+                        Component.translatable("plaguecore.health.hint.pick"), y, ТУСКЛЫЙ);
+                } else {
+                    протянуть(графика, HealthSense.часть(выбрана), y, ТЕКСТ);
+                }
+            }
+            case FEEL -> {
+                List<Component> что = HealthSense.ощущения();
+                if (что.isEmpty()) {
+                    протянуть(графика,
+                        Component.translatable("plaguecore.health.feel.none"), y, ТУСКЛЫЙ);
+                } else {
+                    for (Component строка : что) y = протянуть(графика, строка, y, ТЕКСТ) + 2;
+                }
+            }
+            case MEMORY -> протянуть(графика,
+                Component.translatable("plaguecore.health.memory.none"), y, ТУСКЛЫЙ);
+        }
+    }
+
+    /**
+     * Сердца ванильными спрайтами плюс число. Максимум учитывается как
+     * есть: постоянная потеря за смерти и временный штраф стадии оба
+     * уже сидят в getMaxHealth, считать отдельно нечего.
+     */
+    private int сердца(GuiGraphics графика, int y) {
+        LivingEntity кто = цель();
+        if (кто == null) return y;
+
+        int здоровье = Mth.ceil(кто.getHealth());
+        int максимум = Mth.ceil(кто.getMaxHealth());
+        int всего = Math.max(1, Mth.ceil(максимум / 2f));
+
+        int вРяду = 10;
+        int x = правыйX();
+        for (int i = 0; i < всего; i++) {
+            int сx = x + (i % вРяду) * 8;
+            int сy = y + (i / вРяду) * 10;
+            графика.blitSprite(СЕРДЦЕ_ПУСТО, сx, сy, 9, 9);
+            int вЭтом = здоровье - i * 2;
+            if (вЭтом >= 2) графика.blitSprite(СЕРДЦЕ_ПОЛНОЕ, сx, сy, 9, 9);
+            else if (вЭтом == 1) графика.blitSprite(СЕРДЦЕ_ПОЛОВИНА, сx, сy, 9, 9);
+        }
+        int рядов = (всего + вРяду - 1) / вРяду;
+        int числоY = y + (рядов - 1) * 10;
+        графика.drawString(font, здоровье + " / " + максимум,
+            x + Math.min(всего, вРяду) * 8 + 6, числоY + 1, ТУСКЛЫЙ, false);
+        return y + рядов * 10;
+    }
+
+    /** Строка «значок + фраза». Значок голода — ванильный, капля — своя. */
+    private int строкаСоЗначком(GuiGraphics графика, Component текст, int y, boolean еда) {
+        if (еда) {
+            графика.blitSprite(ЕДА, правыйX(), y, 9, 9);
+        } else {
+            графика.blit(ЗНАЧКИ, правыйX() + 1, y, КАПЛЯ_Ш, КАПЛЯ_В,
+                КАПЛЯ_X, 0, КАПЛЯ_Ш, КАПЛЯ_В, ЛИСТ_Ш, ЛИСТ_В);
+        }
+        List<FormattedCharSequence> строки = font.split(текст, праваяШирина() - 14);
+        int сy = y;
+        for (FormattedCharSequence строка : строки) {
+            графика.drawString(font, строка, правыйX() + 14, сy, ТЕКСТ, false);
+            сy += font.lineHeight + 1;
+        }
+        return Math.max(сy, y + 11);
+    }
+
     /** Длина уголка, пикселей. Четыре — читается и не спорит с фигурой. */
     private static final int УГОЛОК = 4;
 
@@ -228,11 +382,24 @@ public class HealthScreen extends Screen {
         if (выбрана != null) уголки(графика, выбрана, ВЫБРАНО);
         if (под != null && под != выбрана) уголки(графика, под, НАВЕДЕНИЕ);
 
+        нарисоватьВкладки(графика, мышьX, мышьY);
+        правая(графика);
+
         super.render(графика, мышьX, мышьY, кадр);
     }
 
     @Override
     public boolean mouseClicked(double мышьX, double мышьY, int кнопка) {
+        Вкладка нажата = вкладкаПод((int) мышьX, (int) мышьY);
+        if (нажата != null) {
+            вкладка = нажата;
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player != null) {
+                mc.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.15f, 1.1f);
+            }
+            return true;
+        }
+
         Wellbeing.Часть под = частьПод((int) мышьX, (int) мышьY);
         if (под != null) {
             выбрана = под;
@@ -242,11 +409,9 @@ public class HealthScreen extends Screen {
         return super.mouseClicked(мышьX, мышьY, кнопка);
     }
 
-    /**
-     * Часть тела выбрана. Здесь только тихий щелчок; вкладку переключает
-     * задача 9, переопределяя этот метод.
-     */
+    /** Часть тела выбрана: переключаемся на вкладку «Тело» и тихо щёлкаем. */
     protected void выбрана(Wellbeing.Часть часть) {
+        вкладка = Вкладка.BODY;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
             mc.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.18f, 1.4f);
