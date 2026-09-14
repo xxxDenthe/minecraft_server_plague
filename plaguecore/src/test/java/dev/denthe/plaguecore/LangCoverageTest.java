@@ -75,6 +75,9 @@ class LangCoverageTest {
         ключи.add("plaguecore.health.memory.better");
         ключи.add("plaguecore.health.memory.brew");
         ключи.add("plaguecore.health.memory.blackout");
+        for (int в = 0; в < 6; в++) {
+            ключи.add("plaguecore.health.intrusion." + в);
+        }
         ключи.add("key.plaguecore.health");
         ключи.add("key.categories.plaguecore");
         return ключи;
