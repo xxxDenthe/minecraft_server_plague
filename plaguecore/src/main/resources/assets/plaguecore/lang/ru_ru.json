@@ -73,6 +73,7 @@
   "plaguecore.health.feel.weakness": "Руки кажутся тяжелее обычного.",
   "plaguecore.health.feel.wither": "Из меня будто уходят силы.",
   "plaguecore.health.hint.pick": "Прислушаться к себе можно, нажав на тело.",
+  "plaguecore.health.hp": "%s / %s",
   "plaguecore.health.hud.0": "Я в порядке",
   "plaguecore.health.hud.1": "Что-то я неважно себя чувствую",
   "plaguecore.health.hud.2": "Мне нехорошо",

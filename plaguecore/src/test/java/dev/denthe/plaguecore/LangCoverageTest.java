@@ -65,6 +65,7 @@ class LangCoverageTest {
         ключи.add("plaguecore.health.tab.feel");
         ключи.add("plaguecore.health.tab.memory");
         ключи.add("plaguecore.health.hint.pick");
+        ключи.add("plaguecore.health.hp");
         ключи.add("plaguecore.health.feel.none");
         ключи.add("plaguecore.health.memory.none");
         ключи.add("key.plaguecore.health");

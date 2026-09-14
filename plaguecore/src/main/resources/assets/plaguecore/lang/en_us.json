@@ -73,6 +73,7 @@
   "plaguecore.health.feel.weakness": "My arms feel heavier than usual.",
   "plaguecore.health.feel.wither": "It's like my strength is draining away.",
   "plaguecore.health.hint.pick": "Click on the body to listen to yourself.",
+  "plaguecore.health.hp": "%s / %s",
   "plaguecore.health.hud.0": "I'm fine",
   "plaguecore.health.hud.1": "I'm feeling a bit off",
   "plaguecore.health.hud.2": "I feel bad",

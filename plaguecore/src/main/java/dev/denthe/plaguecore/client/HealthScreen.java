@@ -290,10 +290,19 @@ public class HealthScreen extends Screen {
         }
     }
 
+    /** Кэш числа «здоровье / максимум» — пересобирается только когда числа меняются. */
+    private int здоровьеКэш = Integer.MIN_VALUE, максимумКэш = Integer.MIN_VALUE;
+    private Component числоHPКэш = Component.empty();
+
     /**
      * Сердца ванильными спрайтами плюс число. Максимум учитывается как
      * есть: постоянная потеря за смерти и временный штраф стадии оба
      * уже сидят в getMaxHealth, считать отдельно нечего.
+     *
+     * Число берётся не из {@link HealthSense} — оно пересчитывается раз
+     * в десять тиков и отстанет от живых сердец на полсекунды. Строка
+     * своя, но собирается заново только когда здоровье или максимум
+     * меняются, а не каждый кадр.
      */
     private int сердца(GuiGraphics графика, int y) {
         LivingEntity кто = цель();
@@ -302,6 +311,12 @@ public class HealthScreen extends Screen {
         int здоровье = Mth.ceil(кто.getHealth());
         int максимум = Mth.ceil(кто.getMaxHealth());
         int всего = Math.max(1, Mth.ceil(максимум / 2f));
+
+        if (здоровье != здоровьеКэш || максимум != максимумКэш) {
+            здоровьеКэш = здоровье;
+            максимумКэш = максимум;
+            числоHPКэш = Component.translatable("plaguecore.health.hp", здоровье, максимум);
+        }
 
         int вРяду = 10;
         int x = правыйX();
@@ -315,7 +330,7 @@ public class HealthScreen extends Screen {
         }
         int рядов = (всего + вРяду - 1) / вРяду;
         int числоY = y + (рядов - 1) * 10;
-        графика.drawString(font, здоровье + " / " + максимум,
+        графика.drawString(font, числоHPКэш,
             x + Math.min(всего, вРяду) * 8 + 6, числоY + 1, ТУСКЛЫЙ, false);
         return y + рядов * 10;
     }
