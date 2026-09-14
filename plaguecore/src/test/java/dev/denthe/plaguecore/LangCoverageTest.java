@@ -56,6 +56,9 @@ class LangCoverageTest {
             ключи.add(Wellbeing.голод(ч));
             ключи.add(Wellbeing.жажда(ч));
         }
+        for (String идентификатор : Wellbeing.идентификаторыОщущений()) {
+            ключи.add(Wellbeing.ощущение(идентификатор));
+        }
         ключи.add("plaguecore.health.title");
         ключи.add("plaguecore.health.tab.state");
         ключи.add("plaguecore.health.tab.body");

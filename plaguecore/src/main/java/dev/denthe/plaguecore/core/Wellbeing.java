@@ -2,6 +2,7 @@ package dev.denthe.plaguecore.core;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Что игрок чувствует и какими словами он об этом думает.
@@ -105,6 +106,11 @@ public final class Wellbeing {
         if (идентификатор == null) return null;
         String хвост = ОЩУЩЕНИЯ.get(идентификатор);
         return хвост == null ? null : КОРЕНЬ + "feel." + хвост;
+    }
+
+    /** Все идентификаторы эффектов, которым есть что сказать телом. */
+    public static Set<String> идентификаторыОщущений() {
+        return ОЩУЩЕНИЯ.keySet();
     }
 
     /**
