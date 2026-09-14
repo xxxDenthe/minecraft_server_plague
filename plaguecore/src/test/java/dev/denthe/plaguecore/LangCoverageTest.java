@@ -50,7 +50,10 @@ class LangCoverageTest {
             for (Wellbeing.Часть часть : Wellbeing.Часть.values()) {
                 ключи.add(Wellbeing.часть(часть, с));
                 ключи.add(Wellbeing.чужаяЧасть(часть, с));
+                ключи.add(Wellbeing.клирикЧасть(часть, с, false));
+                ключи.add(Wellbeing.клирикЧасть(часть, с, true));
             }
+            ключи.add(Wellbeing.клирикОбщее(с));
         }
         for (int ч = 0; ч <= 20; ч++) {
             ключи.add(Wellbeing.голод(ч));

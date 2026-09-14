@@ -101,4 +101,27 @@ class WellbeingTest {
         assertNull(Wellbeing.ощущение(""));
         assertNull(Wellbeing.ощущение(null));
     }
+
+    @Test
+    void уКлирикаСвоиКлючиИОниРазныеДляСебяИЧужого() {
+        for (Wellbeing.Часть часть : Wellbeing.Часть.values()) {
+            for (int с = 0; с < Wellbeing.СТУПЕНЕЙ; с++) {
+                String своё = Wellbeing.клирикЧасть(часть, с, false);
+                String чужое = Wellbeing.клирикЧасть(часть, с, true);
+                assertNotEquals(своё, чужое);
+                assertNotEquals(своё, Wellbeing.часть(часть, с));
+                assertNotEquals(чужое, Wellbeing.чужаяЧасть(часть, с));
+                проверить(своё);
+                проверить(чужое);
+            }
+        }
+    }
+
+    @Test
+    void общееКлирикаОтличаетсяОтОбычногоЧужого() {
+        for (int с = 0; с < Wellbeing.СТУПЕНЕЙ; с++) {
+            assertNotEquals(Wellbeing.чужоеОбщее(с), Wellbeing.клирикОбщее(с));
+            проверить(Wellbeing.клирикОбщее(с));
+        }
+    }
 }
