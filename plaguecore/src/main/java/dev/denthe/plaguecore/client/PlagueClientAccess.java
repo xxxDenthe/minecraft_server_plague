@@ -17,7 +17,9 @@ public final class PlagueClientAccess {
     public static int стадия() { return стадия; }
 
     public static void принятьСтадию(PlagueNetwork.Stage пакет) {
+        int была = стадия;
         стадия = пакет.стадия();
+        HealthMemory.приСмене(была, стадия);
     }
 
     /**

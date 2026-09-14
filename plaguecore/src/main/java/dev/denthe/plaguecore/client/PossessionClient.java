@@ -51,11 +51,15 @@ public final class PossessionClient {
     public static boolean чума() { return чума; }
 
     public static void принять(PlagueNetwork.Drive пакет) {
+        boolean былоВедут = ведут;
         ведут = пакет.ведут();
         чума = пакет.чума();
         флаги = пакет.флаги();
         рыскание = пакет.рыскание();
         тангаж = пакет.тангаж();
+        if (ведут != былоВедут) {
+            HealthMemory.записать("plaguecore.health.memory.blackout");
+        }
     }
 
     public static void принятьКуклу(PlagueNetwork.Puppet пакет) {

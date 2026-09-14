@@ -285,8 +285,18 @@ public class HealthScreen extends Screen {
                     for (Component строка : что) y = протянуть(графика, строка, y, ТЕКСТ) + 2;
                 }
             }
-            case MEMORY -> протянуть(графика,
-                Component.translatable("plaguecore.health.memory.none"), y, ТУСКЛЫЙ);
+            case MEMORY -> {
+                List<Component> что = HealthMemory.записи();
+                if (что.isEmpty()) {
+                    протянуть(графика,
+                        Component.translatable("plaguecore.health.memory.none"), y, ТУСКЛЫЙ);
+                } else {
+                    for (int i = что.size() - 1; i >= 0; i--) {
+                        y = протянуть(графика, что.get(i), y, ТУСКЛЫЙ) + 1;
+                        if (y > верхний + ВЫСОТА - 14) break;
+                    }
+                }
+            }
         }
     }
 
