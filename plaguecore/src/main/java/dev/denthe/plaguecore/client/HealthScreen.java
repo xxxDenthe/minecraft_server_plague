@@ -9,6 +9,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import dev.denthe.plaguecore.core.Wellbeing;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 /**
  * Экран «Состояние здоровья»: человек осматривает сам себя.
  * Спек интерфейса, раздел 7.
@@ -55,6 +58,11 @@ public class HealthScreen extends Screen {
     protected void init() {
         левый = (width - ШИРИНА) / 2;
         верхний = (height - ВЫСОТА) / 2;
+
+        геометрия = new EnumMap<>(Wellbeing.Часть.class);
+        for (Wellbeing.Часть часть : ЧАСТИ) {
+            геометрия.put(часть, построить(часть));
+        }
     }
 
     /** Окно модели внутри панели. */
@@ -79,6 +87,16 @@ public class HealthScreen extends Screen {
     /** Полуширина туловища и всей фигуры с руками, в блоках. */
     protected static final float ПОЛУШИРИНА_ТЕЛА = 0.234f;
     protected static final float ПОЛУШИРИНА_РУК = 0.469f;
+
+    /** Все части тела. Считано один раз, а не на каждый кадр через values(). */
+    private static final Wellbeing.Часть[] ЧАСТИ = Wellbeing.Часть.values();
+
+    /**
+     * Прямоугольники всех частей тела, посчитанные один раз в {@link #init()}.
+     * Геометрия зависит только от {@code левый}/{@code верхний}, которые
+     * на кадр не меняются — пересчитывать её в {@code render} незачем.
+     */
+    private Map<Wellbeing.Часть, int[][]> геометрия;
 
     /** Выбранная часть тела. {@code null} — ещё ничего не выбрано. */
     protected Wellbeing.Часть выбрана;
@@ -117,13 +135,22 @@ public class HealthScreen extends Screen {
     }
 
     /**
-     * Прямоугольники части тела на экране: {x1, y1, x2, y2}.
+     * Прямоугольники части тела на экране: {x1, y1, x2, y2}. Готовое
+     * значение из {@link #геометрия}, посчитанное один раз в {@link #init()}.
      *
      * У рук и ног их по два — это и есть та самая пара, которую надо
-     * подсвечивать целиком. Числа прикидочные, подкручиваются глазом
-     * при первой живой проверке.
+     * подсвечивать целиком.
      */
     protected int[][] прямоугольники(Wellbeing.Часть часть) {
+        return геометрия.get(часть);
+    }
+
+    /**
+     * Строит прямоугольники части тела. Зовётся только из {@link #init()},
+     * не из кадра. Числа прикидочные, подкручиваются глазом при первой
+     * живой проверке.
+     */
+    private int[][] построить(Wellbeing.Часть часть) {
         return switch (часть) {
             case HEAD -> new int[][] {{
                 экранX(ПОЛУШИРИНА_ТЕЛА), экранY(ГОЛОВА_ВЕРХ),
@@ -146,7 +173,7 @@ public class HealthScreen extends Screen {
 
     /** Какая часть тела под курсором. {@code null} — ни одна. */
     protected Wellbeing.Часть частьПод(int мышьX, int мышьY) {
-        for (Wellbeing.Часть часть : Wellbeing.Часть.values()) {
+        for (Wellbeing.Часть часть : ЧАСТИ) {
             for (int[] п : прямоугольники(часть)) {
                 if (мышьX >= п[0] && мышьX < п[2] && мышьY >= п[1] && мышьY < п[3]) {
                     return часть;
