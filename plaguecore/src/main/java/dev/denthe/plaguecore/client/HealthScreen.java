@@ -450,7 +450,11 @@ public class HealthScreen extends Screen {
 
     @Override
     public void render(GuiGraphics графика, int мышьX, int мышьY, float кадр) {
-        renderBackground(графика, мышьX, мышьY, кадр);
+        // Фон рисует сам Screen.render: он начинается с renderBackground,
+        // а тот размывает мир за экраном. Звать renderBackground отдельно
+        // нельзя — размытие ляжет второй раз, уже поверх нашей панели,
+        // и намылит её вместе с текстом.
+        super.render(графика, мышьX, мышьY, кадр);
         панель(графика);
         графика.drawString(font, title, левый + 8, верхний + 8, ТЕКСТ, false);
 
@@ -462,8 +466,6 @@ public class HealthScreen extends Screen {
 
         нарисоватьВкладки(графика, мышьX, мышьY);
         правая(графика);
-
-        super.render(графика, мышьX, мышьY, кадр);
     }
 
     @Override
