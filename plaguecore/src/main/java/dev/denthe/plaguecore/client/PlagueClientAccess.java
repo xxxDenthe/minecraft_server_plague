@@ -2,6 +2,7 @@ package dev.denthe.plaguecore.client;
 
 import dev.denthe.plaguecore.mc.PlagueNetwork;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Единственная точка входа клиента. Обработчик пакета в общем коде
@@ -62,6 +63,15 @@ public final class PlagueClientAccess {
     /** Кем правим мы сами, если сидим за пультом. */
     public static void принятьКуклу(PlagueNetwork.Puppet пакет) {
         PossessionClient.принятьКуклу(пакет);
+    }
+
+    /** Впечатление о соседе. Открывает чужой осмотр. */
+    public static void принятьВпечатление(PlagueNetwork.Impression пакет) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        if (mc.level.getEntity(пакет.сущность()) instanceof Player кто) {
+            HealthScreen.открытьЧужой(кто, пакет.впечатление());
+        }
     }
 
     public static void принятьСнимок(PlagueNetwork.Snapshot snapshot) {

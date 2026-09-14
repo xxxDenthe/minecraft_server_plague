@@ -2,14 +2,17 @@ package dev.denthe.plaguecore.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.denthe.plaguecore.PlagueCore;
+import dev.denthe.plaguecore.mc.PlagueNetwork;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -46,7 +49,11 @@ public final class HealthKeys {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.screen != null) return;
         while (КЛАВИША.consumeClick()) {
-            HealthScreen.открытьСвой();
+            if (mc.crosshairPickEntity instanceof Player кто && кто != mc.player) {
+                PacketDistributor.sendToServer(new PlagueNetwork.Look(кто.getId()));
+            } else {
+                HealthScreen.открытьСвой();
+            }
         }
     }
 }

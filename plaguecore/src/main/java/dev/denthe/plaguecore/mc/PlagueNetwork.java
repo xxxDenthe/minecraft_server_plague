@@ -37,7 +37,7 @@ public final class PlagueNetwork {
     private PlagueNetwork() {}
 
     /** Версия протокола. Меняется, если поменяется формат пакетов. */
-    private static final String VERSION = "5";
+    private static final String VERSION = "6";
 
     // ── номера действий ────────────────────────────────────────────────
     public static final int ACTION_REFRESH = 0;
@@ -315,6 +315,48 @@ public final class PlagueNetwork {
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
+    /**
+     * «Посмотреть на этого человека». Клиент называет только номер
+     * сущности — всё остальное сервер выясняет сам и сам решает,
+     * отвечать ли.
+     */
+    public record Look(int сущность) implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<Look> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "look"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Look> CODEC =
+            StreamCodec.of((buf, l) -> buf.writeVarInt(l.сущность),
+                           buf -> new Look(buf.readVarInt()));
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /**
+     * Впечатление о человеке: грубая ступень 0–4, та же шкала, что
+     * у себя. Ни заражения, ни точных чисел — их не отдаём даже
+     * Клирику, разница в подробности слов, а не в данных.
+     */
+    public record Impression(int сущность, int впечатление) implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<Impression> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "impression"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Impression> CODEC =
+            StreamCodec.of(
+                (buf, i) -> {
+                    buf.writeVarInt(i.сущность);
+                    buf.writeVarInt(i.впечатление);
+                },
+                buf -> new Impression(buf.readVarInt(), buf.readVarInt()));
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
     /** Послать жертве очередное нажатие. */
     public static void отправитьУправление(ServerPlayer жертва, Drive пакет) {
         PacketDistributor.sendToPlayer(жертва, пакет);
@@ -371,6 +413,33 @@ public final class PlagueNetwork {
             (payload, ctx) -> ctx.enqueueWork(() -> {
                 if (ctx.player() instanceof ServerPlayer player) выполнить(player, payload);
             }));
+
+        registrar.playToClient(Impression.TYPE, Impression.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(
+                () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьВпечатление(payload)));
+
+        registrar.playToServer(Look.TYPE, Look.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(() -> {
+                if (ctx.player() instanceof ServerPlayer player) осмотреть(player, payload);
+            }));
+    }
+
+    /** Дальше этого осматривать нельзя: за восемь блоков лица уже не видно. */
+    private static final double ОСМОТР_ДИСТАНЦИЯ = 8.0;
+
+    /**
+     * Осмотр соседа. Всё проверяется здесь: клиент называет только номер,
+     * а мир, расстояние и тип цели выясняет сервер. Иначе подменённый
+     * клиент спрашивал бы про любого игрока на карте.
+     */
+    private static void осмотреть(ServerPlayer кто, Look запрос) {
+        var сущность = кто.level().getEntity(запрос.сущность());
+        if (!(сущность instanceof ServerPlayer цель)) return;
+        if (цель.level() != кто.level()) return;
+        if (кто.distanceTo(цель) > ОСМОТР_ДИСТАНЦИЯ) return;
+
+        int ступень = PlayerPlagueData.данные(цель).стадия;
+        PacketDistributor.sendToPlayer(кто, new Impression(цель.getId(), ступень));
     }
 
     /**

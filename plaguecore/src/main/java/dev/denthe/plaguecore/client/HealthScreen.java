@@ -10,6 +10,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import dev.denthe.plaguecore.core.Wellbeing;
 
 import java.util.EnumMap;
@@ -62,12 +63,47 @@ public class HealthScreen extends Screen {
         super(Component.translatable("plaguecore.health.title"));
     }
 
+    /** Осматриваем соседа, а не себя. */
+    protected boolean чужой;
+
+    /** Кого осматриваем и какое о нём впечатление. */
+    protected Player ктоЧужой;
+    protected int чужаяСтупень;
+
+    /**
+     * Тексты соседа, собранные один раз в конструкторе, а не в render:
+     * ступень чужого не меняется, пока экран открыт, так что пересобирать
+     * компонент и строку ключа каждый кадр незачем — раздел 14 спека.
+     */
+    private Component чужоеОбщееКэш;
+    private Map<Wellbeing.Часть, Component> чужаяЧастьКэш;
+
+    protected HealthScreen(Player кто, int ступень) {
+        this();
+        this.чужой = true;
+        this.ктоЧужой = кто;
+        this.чужаяСтупень = ступень;
+        this.чужоеОбщееКэш = Component.translatable(Wellbeing.чужоеОбщее(ступень));
+        this.чужаяЧастьКэш = new EnumMap<>(Wellbeing.Часть.class);
+        for (Wellbeing.Часть часть : ЧАСТИ) {
+            чужаяЧастьКэш.put(часть, Component.translatable(Wellbeing.чужаяЧасть(часть, ступень)));
+        }
+    }
+
     /** Открыть осмотр самого себя. */
     public static void открытьСвой() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         mc.player.playSound(SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0.35f, 0.8f);
         mc.setScreen(new HealthScreen());
+    }
+
+    /** Открыть осмотр соседа. */
+    public static void открытьЧужой(Player кто, int ступень) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        mc.player.playSound(SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0.35f, 0.8f);
+        mc.setScreen(new HealthScreen(кто, ступень));
     }
 
     /**
@@ -121,6 +157,17 @@ public class HealthScreen extends Screen {
     private static final Вкладка[] ВКЛАДКИ = Вкладка.values();
 
     /**
+     * Вкладки соседа: только «Самочувствие» и «Тело» — чужих ощущений
+     * и чужой памяти знать неоткуда. Готовый массив, не новый на кадр.
+     */
+    private static final Вкладка[] ВКЛАДКИ_ЧУЖОГО = { Вкладка.STATE, Вкладка.BODY };
+
+    /** Какие вкладки доступны сейчас. Ссылка на готовый массив — без аллокаций в кадре. */
+    protected Вкладка[] вкладки() {
+        return чужой ? ВКЛАДКИ_ЧУЖОГО : ВКЛАДКИ;
+    }
+
+    /**
      * Прямоугольники всех частей тела, посчитанные один раз в {@link #init()}.
      * Геометрия зависит только от {@code левый}/{@code верхний}, которые
      * на кадр не меняются — пересчитывать её в {@code render} незачем.
@@ -130,9 +177,9 @@ public class HealthScreen extends Screen {
     /** Выбранная часть тела. {@code null} — ещё ничего не выбрано. */
     protected Wellbeing.Часть выбрана;
 
-    /** Кого осматриваем. В своём экране — сам игрок; чужого даёт задача 12. */
+    /** Кого осматриваем: сам игрок или сосед из чужого осмотра. */
     protected LivingEntity цель() {
-        return Minecraft.getInstance().player;
+        return чужой ? ктоЧужой : Minecraft.getInstance().player;
     }
 
     protected void нарисоватьМодель(GuiGraphics графика) {
@@ -216,17 +263,18 @@ public class HealthScreen extends Screen {
     protected int правыйX() { return левый + МОДЕЛЬ_X + МОДЕЛЬ_Ш + 12; }
     protected int праваяШирина() { return левый + ШИРИНА - 10 - правыйX(); }
 
-    /** Первая вкладка стоит левее правого края на четыре ячейки с зазором. */
+    /** Первая вкладка стоит левее правого края на столько ячеек, сколько их доступно. */
     private int вкладкаX(int номер) {
-        return левый + ШИРИНА - 8 - (4 - номер) * (ЯЧЕЙКА + 2);
+        return левый + ШИРИНА - 8 - (вкладки().length - номер) * (ЯЧЕЙКА + 2);
     }
 
     private int вкладкаY() { return верхний + 6; }
 
     private void нарисоватьВкладки(GuiGraphics графика, int мышьX, int мышьY) {
-        for (int i = 0; i < ВКЛАДКИ.length; i++) {
+        Вкладка[] вкладки = вкладки();
+        for (int i = 0; i < вкладки.length; i++) {
             int x = вкладкаX(i), y = вкладкаY();
-            boolean своя = вкладка == ВКЛАДКИ[i];
+            boolean своя = вкладка == вкладки[i];
             boolean под = мышьX >= x && мышьX < x + ЯЧЕЙКА
                        && мышьY >= y && мышьY < y + ЯЧЕЙКА;
 
@@ -238,10 +286,11 @@ public class HealthScreen extends Screen {
     }
 
     private Вкладка вкладкаПод(int мышьX, int мышьY) {
-        for (int i = 0; i < ВКЛАДКИ.length; i++) {
+        Вкладка[] вкладки = вкладки();
+        for (int i = 0; i < вкладки.length; i++) {
             int x = вкладкаX(i), y = вкладкаY();
             if (мышьX >= x && мышьX < x + ЯЧЕЙКА && мышьY >= y && мышьY < y + ЯЧЕЙКА) {
-                return ВКЛАДКИ[i];
+                return вкладки[i];
             }
         }
         return null;
@@ -261,11 +310,14 @@ public class HealthScreen extends Screen {
         int y = верхний + 24;
         switch (вкладка) {
             case STATE -> {
-                y = протянуть(графика, HealthSense.общее(), y, ТЕКСТ) + 6;
+                Component строка = чужой ? чужоеОбщееКэш : HealthSense.общее();
+                y = протянуть(графика, строка, y, ТЕКСТ) + 6;
                 y = сердца(графика, y) + 4;
-                y = строкаСоЗначком(графика, HealthSense.голод(), y, true);
-                if (HealthSense.жажда() != null) {
-                    строкаСоЗначком(графика, HealthSense.жажда(), y, false);
+                if (!чужой) {
+                    y = строкаСоЗначком(графика, HealthSense.голод(), y, true);
+                    if (HealthSense.жажда() != null) {
+                        строкаСоЗначком(графика, HealthSense.жажда(), y, false);
+                    }
                 }
             }
             case BODY -> {
@@ -273,7 +325,8 @@ public class HealthScreen extends Screen {
                     протянуть(графика,
                         Component.translatable("plaguecore.health.hint.pick"), y, ТУСКЛЫЙ);
                 } else {
-                    протянуть(графика, HealthSense.часть(выбрана), y, ТЕКСТ);
+                    Component строка = чужой ? чужаяЧастьКэш.get(выбрана) : HealthSense.часть(выбрана);
+                    протянуть(графика, строка, y, ТЕКСТ);
                 }
             }
             case FEEL -> {
