@@ -18,11 +18,12 @@ import java.util.function.Supplier;
  * Без мода жажды всё молча ничего не делает: болезнь тогда бьёт только
  * по голоду.
  */
-final class ThirstBridge {
+public final class ThirstBridge {
     private ThirstBridge() {}
 
     private static AttachmentType<?> тип;
     private static Method методТратить;
+    private static Method методУровень;
     private static boolean инициализирован;
     private static boolean доступен;
 
@@ -38,6 +39,9 @@ final class ThirstBridge {
             методТратить = Class
                 .forName("dev.ghen.thirst.foundation.common.capability.IThirst")
                 .getMethod("addExhaustion", Player.class, float.class);
+            методУровень = Class
+                .forName("dev.ghen.thirst.foundation.common.capability.IThirst")
+                .getMethod("getThirst");
             доступен = true;
             PlagueCore.LOG.info("Мод жажды найден, чума будет сушить горло");
         } catch (ReflectiveOperationException | RuntimeException e) {
@@ -55,6 +59,24 @@ final class ThirstBridge {
             if (жажда != null) методТратить.invoke(жажда, игрок, сколько);
         } catch (ReflectiveOperationException | RuntimeException e) {
             доступен = false;   // одна осечка — больше не дёргаем каждую секунду
+        }
+    }
+
+    /**
+     * Уровень жажды 0..20. {@code -1} — мода жажды в сборке нет,
+     * и тогда интерфейс просто не рисует строку жажды: пустой или
+     * сломанный элемент показывать нельзя.
+     */
+    public static int уровень(Player игрок) {
+        инициализировать();
+        if (!доступен) return -1;
+        try {
+            Object жажда = игрок.getData(тип);
+            if (жажда == null) return -1;
+            Object результат = методУровень.invoke(жажда);
+            return результат instanceof Integer число ? число : -1;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return -1;
         }
     }
 }

@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
  * Любая ошибка отражения — тихий отказ, не краш: без `lmpc_classes`
  * (или при не совпавшей версии) защита от классов просто не добавляется.
  */
-final class ClassBridge {
+public final class ClassBridge {
     private ClassBridge() {}
 
     private static Method методЗащита;
@@ -57,17 +57,33 @@ final class ClassBridge {
     }
 
     /**
+     * Класс игрока строкой: NONE, CLERIC, SMITH, FARMER, CHRONICLER.
+     * Без `lmpc_classes` — всегда NONE, и это не ошибка, а отсутствие мода.
+     *
+     * Работает и на клиенте: вложение класса синкается игроку с 0.6.0.
+     */
+    public static String класс(Player игрок) {
+        инициализировать();
+        if (!доступен) return "NONE";
+        try {
+            Object результат = методКласс.invoke(null, игрок);
+            return результат instanceof String строка ? строка : "NONE";
+        } catch (ReflectiveOperationException e) {
+            return "NONE";
+        }
+    }
+
+    /** Клирик ли игрок. Ему интерфейс здоровья говорит чуть больше. */
+    public static boolean клирик(Player игрок) {
+        return "CLERIC".equals(класс(игрок));
+    }
+
+    /**
      * Летописец ли игрок. Без `lmpc_classes` — нет, и тогда подсказок
      * тайнописи не получает никто: движок работает, просто без них.
      */
     static boolean летописец(Player игрок) {
-        инициализировать();
-        if (!доступен) return false;
-        try {
-            return "CHRONICLER".equals(методКласс.invoke(null, игрок));
-        } catch (ReflectiveOperationException e) {
-            return false;
-        }
+        return "CHRONICLER".equals(класс(игрок));
     }
 
     /**
