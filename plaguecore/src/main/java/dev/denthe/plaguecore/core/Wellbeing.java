@@ -1,6 +1,7 @@
 package dev.denthe.plaguecore.core;
 
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Что игрок чувствует и какими словами он об этом думает.
@@ -66,4 +67,74 @@ public final class Wellbeing {
     private static String имя(Часть часть) {
         return часть.name().toLowerCase(Locale.ROOT);
     }
+
+    /**
+     * Голод — четыре ступени по ванильной сытости 0..20.
+     *
+     * Коэффициенты болезни сюда не попадают принципиально: игрок
+     * чувствует, что есть хочется чаще, а не что стадия добавляет
+     * 0.04 истощения в секунду.
+     */
+    public static String голод(int сытость) {
+        return КОРЕНЬ + "hunger." + четверть(сытость);
+    }
+
+    /** Жажда — та же шкала 0..20, что у мода жажды. */
+    public static String жажда(int уровень) {
+        return КОРЕНЬ + "thirst." + четверть(уровень);
+    }
+
+    /** 0..20 → ступень 0..3. Мусор прижимается к краям. */
+    private static int четверть(int значение) {
+        if (значение <= 3) return 0;
+        if (значение <= 10) return 1;
+        if (значение <= 17) return 2;
+        return 3;
+    }
+
+    /**
+     * Действующий эффект человеческими словами.
+     *
+     * Незнакомый эффект молчит, а не показывает свой идентификатор:
+     * лучше промолчать, чем вывалить игроку «somemod:quantum_flux».
+     * Ни названия, ни уровня, ни длительности — всё это техническое.
+     *
+     * @return ключ локализации или {@code null}, если эффект незнаком
+     */
+    public static String ощущение(String идентификатор) {
+        if (идентификатор == null) return null;
+        String хвост = ОЩУЩЕНИЯ.get(идентификатор);
+        return хвост == null ? null : КОРЕНЬ + "feel." + хвост;
+    }
+
+    /**
+     * Эффекты, которым есть что сказать телом. Список нарочно неполный:
+     * сюда входит то, что действительно встречается в паке.
+     */
+    private static final Map<String, String> ОЩУЩЕНИЯ = Map.ofEntries(
+        Map.entry("minecraft:weakness", "weakness"),
+        Map.entry("minecraft:mining_fatigue", "mining_fatigue"),
+        Map.entry("minecraft:slowness", "slowness"),
+        Map.entry("minecraft:nausea", "nausea"),
+        Map.entry("minecraft:hunger", "hunger"),
+        Map.entry("minecraft:poison", "poison"),
+        Map.entry("minecraft:wither", "wither"),
+        Map.entry("minecraft:blindness", "blindness"),
+        Map.entry("minecraft:darkness", "darkness"),
+        Map.entry("minecraft:regeneration", "regeneration"),
+        Map.entry("minecraft:speed", "speed"),
+        Map.entry("minecraft:haste", "haste"),
+        Map.entry("minecraft:strength", "strength"),
+        Map.entry("minecraft:resistance", "resistance"),
+        Map.entry("minecraft:fire_resistance", "fire_resistance"),
+        Map.entry("minecraft:water_breathing", "water_breathing"),
+        Map.entry("minecraft:night_vision", "night_vision"),
+        Map.entry("minecraft:invisibility", "invisibility"),
+        Map.entry("minecraft:jump_boost", "jump_boost"),
+        Map.entry("minecraft:slow_falling", "slow_falling"),
+        Map.entry("minecraft:absorption", "absorption"),
+        Map.entry("minecraft:health_boost", "health_boost"),
+        Map.entry("minecraft:saturation", "saturation"),
+        Map.entry("minecraft:levitation", "levitation"),
+        Map.entry("minecraft:glowing", "glowing"));
 }

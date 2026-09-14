@@ -68,4 +68,37 @@ class WellbeingTest {
         assertFalse(ключ.contains("infection"), "в ключе не должно быть заражения: " + ключ);
         assertTrue(ключ.startsWith("plaguecore.health."), "чужой корень ключа: " + ключ);
     }
+
+    @Test
+    void голодРазбиваетсяНаЧетыреСтупени() {
+        assertEquals(Wellbeing.голод(0), Wellbeing.голод(3));
+        assertNotEquals(Wellbeing.голод(3), Wellbeing.голод(4));
+        assertNotEquals(Wellbeing.голод(10), Wellbeing.голод(11));
+        assertNotEquals(Wellbeing.голод(17), Wellbeing.голод(18));
+        assertEquals(Wellbeing.голод(18), Wellbeing.голод(20));
+        assertEquals(Wellbeing.голод(0), Wellbeing.голод(-5), "мусор снизу");
+        assertEquals(Wellbeing.голод(20), Wellbeing.голод(99), "мусор сверху");
+    }
+
+    @Test
+    void жаждаРазбиваетсяТакЖе() {
+        assertEquals(Wellbeing.жажда(0), Wellbeing.жажда(3));
+        assertNotEquals(Wellbeing.жажда(3), Wellbeing.жажда(4));
+        assertEquals(Wellbeing.жажда(20), Wellbeing.жажда(99));
+    }
+
+    @Test
+    void знакомыйЭффектПревращаетсяВОщущение() {
+        assertEquals("plaguecore.health.feel.weakness",
+            Wellbeing.ощущение("minecraft:weakness"));
+        assertEquals("plaguecore.health.feel.water_breathing",
+            Wellbeing.ощущение("minecraft:water_breathing"));
+    }
+
+    @Test
+    void незнакомыйЭффектМолчит() {
+        assertNull(Wellbeing.ощущение("somemod:quantum_flux"));
+        assertNull(Wellbeing.ощущение(""));
+        assertNull(Wellbeing.ощущение(null));
+    }
 }
