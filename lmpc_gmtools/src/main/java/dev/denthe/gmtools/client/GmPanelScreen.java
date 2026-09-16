@@ -254,6 +254,11 @@ public class GmPanelScreen extends Screen {
                 () -> run("effect clear " + n),
             });
 
+        y += BTN_H + 3;
+        addRenderableWidget(Button.builder(Component.literal("Состояние здоровья…"),
+            b -> { run("plague health edit " + n); onClose(); })
+            .bounds(x, y, w, BTN_H).build());
+
         y += BTN_H + 14;
         hdrMod = y - 11;
         reasonBox = new EditBox(font, x, y, w, 14, Component.literal("причина"));
