@@ -12,8 +12,10 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import dev.denthe.plaguecore.core.Marks;
 import dev.denthe.plaguecore.core.Wellbeing;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -119,24 +121,78 @@ public class HealthScreen extends Screen {
     protected Player ктоЧужой;
     protected int чужаяСтупень;
 
-    /**
-     * Тексты соседа, собранные один раз в конструкторе, а не в render:
-     * ступень чужого не меняется, пока экран открыт, так что пересобирать
-     * компонент и строку ключа каждый кадр незачем — раздел 14 спека.
-     */
-    private Component чужоеОбщееКэш;
-    private Map<Wellbeing.Часть, Component> чужаяЧастьКэш;
-
     protected HealthScreen(Player кто, int ступень) {
         this();
         this.чужой = true;
         this.ктоЧужой = кто;
         this.чужаяСтупень = ступень;
-        this.чужоеОбщееКэш = Component.translatable(Wellbeing.чужоеОбщее(ступень));
-        this.чужаяЧастьКэш = new EnumMap<>(Wellbeing.Часть.class);
-        for (Wellbeing.Часть часть : ЧАСТИ) {
-            чужаяЧастьКэш.put(часть, Component.translatable(Wellbeing.чужаяЧасть(часть, ступень)));
+    }
+
+    // Готовые тексты соседа больше не собираются в конструкторе: теперь
+    // и свои, и чужие строки идут через кэш строкиМеста(), где к ним
+    // подмешиваются пометки Мастера игры. Два кэша на один текст
+    // разъехались бы на первой же правке.
+
+    /** Пометки того, кого осматриваем: свои или соседа. */
+    protected List<Marks.Пометка> пометки() {
+        return чужой ? HealthMarksClient.чужие(ктоЧужой == null ? -1 : ктоЧужой.getId())
+                     : HealthMarksClient.свои();
+    }
+
+    /**
+     * Кэш готовых строк места: пересобирается, когда меняется место,
+     * ступень, набор пометок или класс смотрящего, но не в кадре.
+     * Собирать Component каждый кадр — тот же дефект, что уже чинили
+     * в базовом спеке (раздел 14).
+     *
+     * Кэш на одно место, а не на все: в кадре рисуется одна вкладка,
+     * значит и место запрашивается одно.
+     */
+    private Marks.Место кэшМесто;
+    private int кэшСтупень = Integer.MIN_VALUE;
+    private int кэшВерсия = -1;
+    private boolean кэшКлирик;
+    private List<Component> кэшСтроки = List.of();
+    private List<Boolean> кэшТусклые = List.of();
+
+    /** Готовые строки места: автотекст и пометки, в порядке вывода. */
+    protected List<Component> строкиМеста(Marks.Место место, String автоКлюч) {
+        boolean клирик = HealthSense.клирик();
+        int ступень = ступеньДляТекста();
+        if (место != кэшМесто || ступень != кэшСтупень
+                || HealthMarksClient.версия() != кэшВерсия || клирик != кэшКлирик) {
+            кэшМесто = место;
+            кэшСтупень = ступень;
+            кэшВерсия = HealthMarksClient.версия();
+            кэшКлирик = клирик;
+
+            List<Component> строки = new ArrayList<>();
+            List<Boolean> тусклые = new ArrayList<>();
+            for (Marks.Вывод в : Marks.строки(место, автоКлюч, пометки(), чужой, клирик)) {
+                строки.add(в.ключ() != null
+                    ? Component.translatable(в.ключ())
+                    : Component.literal(в.текст()));
+                тусклые.add(в.тусклый());
+            }
+            кэшСтроки = List.copyOf(строки);
+            кэшТусклые = List.copyOf(тусклые);
         }
+        return кэшСтроки;
+    }
+
+    /** Тускло ли печатается строка с этим номером. Идёт парой к {@link #строкиМеста}. */
+    protected boolean тусклая(int номер) {
+        return номер < кэшТусклые.size() && кэшТусклые.get(номер);
+    }
+
+    /** Часть тела как место пометки: перечисления разные, смысл один. */
+    protected static Marks.Место место(Wellbeing.Часть часть) {
+        return switch (часть) {
+            case HEAD -> Marks.Место.HEAD;
+            case TORSO -> Marks.Место.TORSO;
+            case ARMS -> Marks.Место.ARMS;
+            case LEGS -> Marks.Место.LEGS;
+        };
     }
 
     /** Открыть осмотр самого себя. */
@@ -460,8 +516,13 @@ public class HealthScreen extends Screen {
 
         switch (вкладка) {
             case STATE -> {
-                Component строка = чужой ? чужоеОбщееКэш : HealthSense.общее();
-                y = протянуть(графика, строка, y, ТЕКСТ) + 5;
+                String автоКлюч = чужой ? Wellbeing.чужоеОбщее(чужаяСтупень)
+                                        : Wellbeing.общее(HealthSense.ступень());
+                List<Component> строки = строкиМеста(Marks.Место.OVERALL, автоКлюч);
+                for (int i = 0; i < строки.size(); i++) {
+                    y = протянуть(графика, строки.get(i), y,
+                        тусклая(i) ? ТУСКЛЫЙ : ТЕКСТ) + 4;
+                }
                 if (чужой && HealthSense.клирик()) {
                     протянуть(графика, клирикОбщее(чужаяСтупень), y, ТУСКЛЫЙ);
                 }
@@ -471,26 +532,49 @@ public class HealthScreen extends Screen {
                 if (выбрана == null) {
                     протянуть(графика, ПОДСКАЗКА_ВЫБОР, y, ТУСКЛЫЙ);
                 } else {
-                    Component строка = чужой ? чужаяЧастьКэш.get(выбрана) : HealthSense.часть(выбрана);
-                    y = протянуть(графика, строка, y, ТЕКСТ);
+                    String автоКлюч = чужой
+                        ? Wellbeing.чужаяЧасть(выбрана, чужаяСтупень)
+                        : Wellbeing.часть(выбрана, HealthSense.ступень());
+                    List<Component> строки = строкиМеста(место(выбрана), автоКлюч);
+                    for (int i = 0; i < строки.size(); i++) {
+                        y = протянуть(графика, строки.get(i), y,
+                            тусклая(i) ? ТУСКЛЫЙ : ТЕКСТ) + 3;
+                    }
                     if (HealthSense.клирик()) {
-                        протянуть(графика, клирикЧасть(выбрана), y + 4, ТУСКЛЫЙ);
+                        протянуть(графика, клирикЧасть(выбрана), y + 1, ТУСКЛЫЙ);
                     }
                 }
             }
             case FEEL -> {
-                List<Component> что = HealthSense.ощущения();
-                if (что.isEmpty()) {
+                // Пометка-замена прячет автоматические ощущения целиком:
+                // ГМ сказал, что человек чувствует, и спорить с ним экран
+                // не должен.
+                List<Component> метки = строкиМеста(Marks.Место.FEEL, null);
+                List<Component> что = Marks.заменяет(Marks.Место.FEEL, пометки())
+                    ? List.of() : HealthSense.ощущения();
+                if (что.isEmpty() && метки.isEmpty()) {
                     протянуть(графика, ОЩУЩЕНИЙ_НЕТ, y, ТУСКЛЫЙ);
                 } else {
                     for (Component строка : что) y = протянуть(графика, строка, y, ТЕКСТ) + 2;
+                    for (int i = 0; i < метки.size(); i++) {
+                        y = протянуть(графика, метки.get(i), y,
+                            тусклая(i) ? ТУСКЛЫЙ : ТЕКСТ) + 2;
+                    }
                 }
             }
             case MEMORY -> {
-                List<Component> что = HealthMemory.записи();
-                if (что.isEmpty()) {
+                // Пометки журнала идут сверху: ГМ пишет о том, что человек
+                // заметил за собой недавно, а ниже продолжается его
+                // собственная короткая память.
+                List<Component> метки = строкиМеста(Marks.Место.MEMORY, null);
+                List<Component> что = Marks.заменяет(Marks.Место.MEMORY, пометки())
+                    ? List.of() : HealthMemory.записи();
+                if (что.isEmpty() && метки.isEmpty()) {
                     протянуть(графика, ПАМЯТЬ_ПУСТА, y, ТУСКЛЫЙ);
                 } else {
+                    for (Component строка : метки) {
+                        y = протянуть(графика, строка, y, ТЕКСТ) + 2;
+                    }
                     for (int i = что.size() - 1; i >= 0; i--) {
                         y = протянуть(графика, что.get(i), y, ТУСКЛЫЙ) + 1;
                         if (y > верхний + ВЫСОТА - 16) break;
