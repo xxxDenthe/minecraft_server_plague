@@ -4,8 +4,12 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.denthe.plaguecore.PlagueCore;
 import dev.denthe.plaguecore.core.Marks;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
@@ -28,6 +32,9 @@ import java.util.function.Supplier;
  * этого флага не переживает смерть само собой, поэтому кода очистки
  * не нужно вовсе.
  */
+// bus не указываем: в 21.1 шина определяется по типу события,
+// PlayerLoggedInEvent — игровое
+@EventBusSubscriber(modid = PlagueCore.MODID)
 public class PlayerHealthMarks {
 
     public static final DeferredRegister<AttachmentType<?>> ВЛОЖЕНИЯ =
@@ -118,6 +125,17 @@ public class PlayerHealthMarks {
         PlayerHealthMarks д = данные(игрок);
         д.пометки.clear();
         игрок.setData(ПОМЕТКИ.get(), д);
+    }
+
+    /**
+     * При входе игрок получает свои пометки: иначе его экран будет
+     * чистым до первой правки ГМ, хотя пометки лежат в сохранении.
+     */
+    @SubscribeEvent
+    public static void приВходе(PlayerEvent.PlayerLoggedInEvent событие) {
+        if (событие.getEntity() instanceof ServerPlayer игрок) {
+            PlagueNetwork.отправитьПометки(игрок, игрок, (byte) 0);
+        }
     }
 
     public static void register(IEventBus modEventBus) {

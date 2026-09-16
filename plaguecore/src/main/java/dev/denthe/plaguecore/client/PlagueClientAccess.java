@@ -55,6 +55,11 @@ public final class PlagueClientAccess {
         SecretText.принять(пакет);
     }
 
+    /** Пометки Мастера игры. Разбирает {@link HealthMarksClient}. */
+    public static void принятьПометки(PlagueNetwork.MarkList пакет) {
+        HealthMarksClient.принять(пакет);
+    }
+
     /** Чужая рука на пульте нашего тела. Разбирает {@link PossessionClient}. */
     public static void принятьУправление(PlagueNetwork.Drive пакет) {
         PossessionClient.принять(пакет);

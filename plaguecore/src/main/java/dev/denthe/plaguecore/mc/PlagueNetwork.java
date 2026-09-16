@@ -2,6 +2,7 @@ package dev.denthe.plaguecore.mc;
 
 import dev.denthe.plaguecore.PlagueCore;
 import dev.denthe.plaguecore.VoiceKnobs;
+import dev.denthe.plaguecore.core.Marks;
 import dev.denthe.plaguecore.core.PlagueGrid;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -10,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -37,7 +39,7 @@ public final class PlagueNetwork {
     private PlagueNetwork() {}
 
     /** Версия протокола. Меняется, если поменяется формат пакетов. */
-    private static final String VERSION = "6";
+    private static final String VERSION = "7";
 
     // ── номера действий ────────────────────────────────────────────────
     public static final int ACTION_REFRESH = 0;
@@ -367,9 +369,80 @@ public final class PlagueNetwork {
         PacketDistributor.sendToPlayer(кому, new Words(List.copyOf(записи)));
     }
 
+    /**
+     * Пометки Мастера игры. Один пакет на три случая, потому что данные
+     * во всех трёх одни и те же:
+     *   режим 0 — показ: свои пометки или пометки осматриваемого соседа;
+     *   режим 1 — редактор: пакет адресован ГМ, экран открывается
+     *             или обновляется, если уже открыт.
+     *
+     * Поле «ступень» заполняется только для режима 1: ГМ — оператор,
+     * и без ступени его редактор не показал бы автотекст болезни, то
+     * есть ровно то, что видит игрок. Обычному игроку ступень отсюда
+     * не отдаётся: свою он знает пакетом Stage, чужую — Impression.
+     */
+    public record MarkList(int сущность, byte режим, byte ступень, List<Marks.Пометка> пометки)
+            implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<MarkList> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "marks"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, MarkList> CODEC =
+            StreamCodec.of(
+                (buf, м) -> {
+                    buf.writeVarInt(м.сущность);
+                    buf.writeByte(м.режим);
+                    buf.writeByte(м.ступень);
+                    buf.writeVarInt(м.пометки.size());
+                    for (Marks.Пометка п : м.пометки) {
+                        buf.writeVarInt(п.id());
+                        buf.writeVarInt(п.место().ordinal());
+                        buf.writeBoolean(п.заменяет());
+                        buf.writeUtf(п.заготовка(), 32);
+                        buf.writeUtf(п.текст(), Marks.ДЛИНА_СТРОКИ);
+                    }
+                },
+                buf -> {
+                    int сущность = buf.readVarInt();
+                    byte режим = buf.readByte();
+                    byte ступень = buf.readByte();
+                    int n = buf.readVarInt();
+                    if (n < 0 || n > Marks.ПРЕДЕЛ) {
+                        throw new IllegalArgumentException("подозрительное число пометок: " + n);
+                    }
+                    Marks.Место[] места = Marks.Место.values();
+                    List<Marks.Пометка> список = new ArrayList<>(n);
+                    for (int i = 0; i < n; i++) {
+                        int id = buf.readVarInt();
+                        int место = buf.readVarInt();
+                        список.add(new Marks.Пометка(id,
+                            места[Mth.clamp(место, 0, места.length - 1)],
+                            buf.readBoolean(),
+                            buf.readUtf(32),
+                            buf.readUtf(Marks.ДЛИНА_СТРОКИ)));
+                    }
+                    return new MarkList(сущность, режим, ступень, List.copyOf(список));
+                });
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
     /** Послать текущие ручки голоса одному игроку. */
     public static void отправитьГолос(ServerPlayer кому) {
         PacketDistributor.sendToPlayer(кому, new Voice(VoiceKnobs.снимок()));
+    }
+
+    /**
+     * Послать пометки игрока получателю. Режим 0 — показ, 1 — редактор.
+     * Одна точка отправки на все случаи: и вход в мир, и осмотр соседа,
+     * и правка ГМ ходят сюда.
+     */
+    public static void отправитьПометки(ServerPlayer кому, Player чьи, byte режим) {
+        byte ступень = режим == 1 ? (byte) PlayerPlagueData.данные(чьи).стадия : 0;
+        PacketDistributor.sendToPlayer(кому,
+            new MarkList(чьи.getId(), режим, ступень, PlayerHealthMarks.список(чьи)));
     }
 
     @SubscribeEvent
@@ -418,6 +491,10 @@ public final class PlagueNetwork {
             (payload, ctx) -> ctx.enqueueWork(
                 () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьВпечатление(payload)));
 
+        registrar.playToClient(MarkList.TYPE, MarkList.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(
+                () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьПометки(payload)));
+
         registrar.playToServer(Look.TYPE, Look.CODEC,
             (payload, ctx) -> ctx.enqueueWork(() -> {
                 if (ctx.player() instanceof ServerPlayer player) осмотреть(player, payload);
@@ -439,6 +516,9 @@ public final class PlagueNetwork {
         if (кто.distanceTo(цель) > ОСМОТР_ДИСТАНЦИЯ) return;
 
         int ступень = PlayerPlagueData.данные(цель).стадия;
+        // Пометки уходят раньше впечатления: Impression открывает экран,
+        // и к этому моменту список уже обязан лежать на клиенте.
+        отправитьПометки(кто, цель, (byte) 0);
         PacketDistributor.sendToPlayer(кто, new Impression(цель.getId(), ступень));
     }
 
