@@ -103,6 +103,13 @@ public class HealthScreen extends Screen {
     private static final Component ОЩУЩЕНИЙ_НЕТ = Component.translatable("plaguecore.health.feel.none");
     private static final Component ПАМЯТЬ_ПУСТА = Component.translatable("plaguecore.health.memory.none");
 
+    /**
+     * Ощущения и журнал живут на клиенте того человека: ни сервер, ни
+     * чужой экран их не знают. Подделывать этот показ — врать, поэтому
+     * при чужом осмотре тут стоит честная подпись.
+     */
+    private static final Component ТОЛЬКО_СВОЁ = Component.translatable("plaguecore.health.edit.hidden");
+
     protected Вкладка вкладка = Вкладка.STATE;
 
     protected int левый, верхний;
@@ -154,10 +161,11 @@ public class HealthScreen extends Screen {
     private boolean кэшКлирик;
     private List<Component> кэшСтроки = List.of();
     private List<Boolean> кэшТусклые = List.of();
+    private List<Integer> кэшИд = List.of();
 
     /** Готовые строки места: автотекст и пометки, в порядке вывода. */
     protected List<Component> строкиМеста(Marks.Место место, String автоКлюч) {
-        boolean клирик = HealthSense.клирик();
+        boolean клирик = клирикСтрока();
         int ступень = ступеньДляТекста();
         if (место != кэшМесто || ступень != кэшСтупень
                 || HealthMarksClient.версия() != кэшВерсия || клирик != кэшКлирик) {
@@ -168,14 +176,17 @@ public class HealthScreen extends Screen {
 
             List<Component> строки = new ArrayList<>();
             List<Boolean> тусклые = new ArrayList<>();
-            for (Marks.Вывод в : Marks.строки(место, автоКлюч, пометки(), чужой, клирик)) {
+            List<Integer> номера = new ArrayList<>();
+            for (Marks.Вывод в : Marks.строки(место, автоКлюч, пометки(), соСтороны(), клирик)) {
                 строки.add(в.ключ() != null
                     ? Component.translatable(в.ключ())
                     : Component.literal(в.текст()));
                 тусклые.add(в.тусклый());
+                номера.add(в.id());
             }
             кэшСтроки = List.copyOf(строки);
             кэшТусклые = List.copyOf(тусклые);
+            кэшИд = List.copyOf(номера);
         }
         return кэшСтроки;
     }
@@ -184,6 +195,30 @@ public class HealthScreen extends Screen {
     protected boolean тусклая(int номер) {
         return номер < кэшТусклые.size() && кэшТусклые.get(номер);
     }
+
+    /** Номер пометки, от которой строка, или −1 у автотекста. */
+    protected int идСтроки(int номер) {
+        return номер < кэшИд.size() ? кэшИд.get(номер) : -1;
+    }
+
+    /**
+     * Печать готовых строк подряд. Вынесено из вкладок, чтобы редактор ГМ
+     * знал, где легла каждая строка, и мог повесить на неё крестик.
+     *
+     * @return новый y
+     */
+    protected int печатьСтрок(GuiGraphics графика, List<Component> строки, int y, int зазор) {
+        for (int i = 0; i < строки.size(); i++) {
+            int сверху = y;
+            int снизу = протянуть(графика, строки.get(i), y, тусклая(i) ? ТУСКЛЫЙ : ТЕКСТ);
+            приСтроке(графика, i, сверху, снизу);
+            y = снизу + зазор;
+        }
+        return y;
+    }
+
+    /** Крючок редактора ГМ. Обычный экран у строк ничего не дорисовывает. */
+    protected void приСтроке(GuiGraphics графика, int номер, int сверху, int снизу) {}
 
     /** Часть тела как место пометки: перечисления разные, смысл один. */
     protected static Marks.Место место(Wellbeing.Часть часть) {
@@ -307,6 +342,20 @@ public class HealthScreen extends Screen {
     protected int ступеньДляТекста() {
         return чужой ? чужаяСтупень : HealthSense.ступень();
     }
+
+    /**
+     * Текст читается как наблюдение со стороны, а не как своё ощущение.
+     * Совпадает с «осматриваем соседа» везде, кроме редактора ГМ: тому
+     * нужно видеть ровно то, что читает сам игрок.
+     */
+    protected boolean соСтороны() { return чужой; }
+
+    /**
+     * Показывать ли вторую строку Клирика. Обычно её видит только Клирик;
+     * редактор ГМ показывает её всегда — ГМ должен видеть всё, что
+     * увидит любой осматривающий.
+     */
+    protected boolean клирикСтрока() { return HealthSense.клирик(); }
 
     /**
      * Тень под фигурой: три сужающиеся полосы у дна врезки. Без неё
@@ -516,14 +565,11 @@ public class HealthScreen extends Screen {
 
         switch (вкладка) {
             case STATE -> {
-                String автоКлюч = чужой ? Wellbeing.чужоеОбщее(чужаяСтупень)
-                                        : Wellbeing.общее(HealthSense.ступень());
-                List<Component> строки = строкиМеста(Marks.Место.OVERALL, автоКлюч);
-                for (int i = 0; i < строки.size(); i++) {
-                    y = протянуть(графика, строки.get(i), y,
-                        тусклая(i) ? ТУСКЛЫЙ : ТЕКСТ) + 4;
-                }
-                if (чужой && HealthSense.клирик()) {
+                String автоКлюч = соСтороны()
+                    ? Wellbeing.чужоеОбщее(ступеньДляТекста())
+                    : Wellbeing.общее(ступеньДляТекста());
+                y = печатьСтрок(графика, строкиМеста(Marks.Место.OVERALL, автоКлюч), y, 4);
+                if (чужой && клирикСтрока()) {
                     протянуть(графика, клирикОбщее(чужаяСтупень), y, ТУСКЛЫЙ);
                 }
                 подвал(графика);
@@ -532,15 +578,11 @@ public class HealthScreen extends Screen {
                 if (выбрана == null) {
                     протянуть(графика, ПОДСКАЗКА_ВЫБОР, y, ТУСКЛЫЙ);
                 } else {
-                    String автоКлюч = чужой
-                        ? Wellbeing.чужаяЧасть(выбрана, чужаяСтупень)
-                        : Wellbeing.часть(выбрана, HealthSense.ступень());
-                    List<Component> строки = строкиМеста(место(выбрана), автоКлюч);
-                    for (int i = 0; i < строки.size(); i++) {
-                        y = протянуть(графика, строки.get(i), y,
-                            тусклая(i) ? ТУСКЛЫЙ : ТЕКСТ) + 3;
-                    }
-                    if (HealthSense.клирик()) {
+                    String автоКлюч = соСтороны()
+                        ? Wellbeing.чужаяЧасть(выбрана, ступеньДляТекста())
+                        : Wellbeing.часть(выбрана, ступеньДляТекста());
+                    y = печатьСтрок(графика, строкиМеста(место(выбрана), автоКлюч), y, 3);
+                    if (клирикСтрока()) {
                         протянуть(графика, клирикЧасть(выбрана), y + 1, ТУСКЛЫЙ);
                     }
                 }
@@ -550,36 +592,33 @@ public class HealthScreen extends Screen {
                 // ГМ сказал, что человек чувствует, и спорить с ним экран
                 // не должен.
                 List<Component> метки = строкиМеста(Marks.Место.FEEL, null);
-                List<Component> что = Marks.заменяет(Marks.Место.FEEL, пометки())
+                List<Component> что = чужой || Marks.заменяет(Marks.Место.FEEL, пометки())
                     ? List.of() : HealthSense.ощущения();
                 if (что.isEmpty() && метки.isEmpty()) {
                     протянуть(графика, ОЩУЩЕНИЙ_НЕТ, y, ТУСКЛЫЙ);
                 } else {
                     for (Component строка : что) y = протянуть(графика, строка, y, ТЕКСТ) + 2;
-                    for (int i = 0; i < метки.size(); i++) {
-                        y = протянуть(графика, метки.get(i), y,
-                            тусклая(i) ? ТУСКЛЫЙ : ТЕКСТ) + 2;
-                    }
+                    y = печатьСтрок(графика, метки, y, 2);
                 }
+                if (чужой) протянуть(графика, ТОЛЬКО_СВОЁ, y + 3, ТУСКЛЫЙ);
             }
             case MEMORY -> {
                 // Пометки журнала идут сверху: ГМ пишет о том, что человек
                 // заметил за собой недавно, а ниже продолжается его
                 // собственная короткая память.
                 List<Component> метки = строкиМеста(Marks.Место.MEMORY, null);
-                List<Component> что = Marks.заменяет(Marks.Место.MEMORY, пометки())
+                List<Component> что = чужой || Marks.заменяет(Marks.Место.MEMORY, пометки())
                     ? List.of() : HealthMemory.записи();
                 if (что.isEmpty() && метки.isEmpty()) {
                     протянуть(графика, ПАМЯТЬ_ПУСТА, y, ТУСКЛЫЙ);
                 } else {
-                    for (Component строка : метки) {
-                        y = протянуть(графика, строка, y, ТЕКСТ) + 2;
-                    }
+                    y = печатьСтрок(графика, метки, y, 2);
                     for (int i = что.size() - 1; i >= 0; i--) {
                         y = протянуть(графика, что.get(i), y, ТУСКЛЫЙ) + 1;
                         if (y > верхний + ВЫСОТА - 16) break;
                     }
                 }
+                if (чужой) протянуть(графика, ТОЛЬКО_СВОЁ, y + 3, ТУСКЛЫЙ);
             }
         }
         графика.pose().popPose();

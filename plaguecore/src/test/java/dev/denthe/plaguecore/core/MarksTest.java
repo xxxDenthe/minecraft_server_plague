@@ -79,6 +79,15 @@ class MarksTest {
     }
 
     @Test
+    void строкаПомнитНомерПометкиААвтотекстНет() {
+        List<Marks.Вывод> вывод = Marks.строки(Marks.Место.ARMS, "авто.руки",
+            List.of(заготовка(7, Marks.Место.ARMS, false, Marks.Заготовка.FRACTURE)), false, true);
+        assertEquals(-1, вывод.get(0).id(), "у автотекста снимать нечего");
+        assertEquals(7, вывод.get(1).id());
+        assertEquals(-1, вывод.get(2).id(), "строка Клирика уйдёт вместе со своей пометкой");
+    }
+
+    @Test
     void чужиеМестаНеПопадаютВВывод() {
         List<Marks.Вывод> вывод = Marks.строки(Marks.Место.ARMS, "авто.руки",
             List.of(заготовка(1, Marks.Место.LEGS, true, Marks.Заготовка.FRACTURE)), false, false);

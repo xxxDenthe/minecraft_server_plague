@@ -96,6 +96,9 @@ class LangCoverageTest {
                 "replace", "append", "empty", "hidden", "place" }) {
             ключи.add("plaguecore.health.edit." + подпись);
         }
+        for (Marks.Место м : Marks.Место.values()) {
+            ключи.add("plaguecore.health.place." + м.name().toLowerCase(java.util.Locale.ROOT));
+        }
         return ключи;
     }
 }
