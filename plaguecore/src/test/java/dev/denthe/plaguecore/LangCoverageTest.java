@@ -1,5 +1,6 @@
 package dev.denthe.plaguecore;
 
+import dev.denthe.plaguecore.core.Marks;
 import dev.denthe.plaguecore.core.Wellbeing;
 import org.junit.jupiter.api.Test;
 
@@ -80,6 +81,21 @@ class LangCoverageTest {
         }
         ключи.add("key.plaguecore.health");
         ключи.add("key.categories.plaguecore");
+
+        // Пометки Мастера игры: у каждой заготовки четыре текста —
+        // название в списке ГМ, своё ощущение, взгляд со стороны
+        // и подробность Клирику.
+        for (Marks.Заготовка з : Marks.Заготовка.values()) {
+            ключи.add(Marks.имя(з));
+            ключи.add(Marks.ключ(з, false));
+            ключи.add(Marks.ключ(з, true));
+            ключи.add(Marks.ключКлирика(з));
+        }
+        for (String подпись : new String[] {
+                "title", "add", "reset", "reset.confirm", "own",
+                "replace", "append", "empty", "hidden", "place" }) {
+            ключи.add("plaguecore.health.edit." + подпись);
+        }
         return ключи;
     }
 }
