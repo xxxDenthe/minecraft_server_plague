@@ -163,6 +163,8 @@ public final class PlagueCommands {
                     .executes(PlagueCommands::выставитьГолос))));
         корень.then(голос);
 
+        HealthMarksCommands.подключить(корень);
+
         event.getDispatcher().register(корень);
     }
 
