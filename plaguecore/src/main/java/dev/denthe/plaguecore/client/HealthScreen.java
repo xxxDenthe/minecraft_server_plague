@@ -149,7 +149,6 @@ public class HealthScreen extends Screen {
         for (Wellbeing.Часть часть : ЧАСТИ) {
             геометрия.put(часть, построить(часть));
         }
-
         подписьВысота = Math.max(1, Math.round(font.lineHeight * ПОДПИСЬ_МАСШТАБ));
         Вкладка[] вкладки = вкладки();
         вкладкаЛевый = new int[вкладки.length];
@@ -563,9 +562,15 @@ public class HealthScreen extends Screen {
      * поверх скина нечем, а уголки читаются и картинку не портят.
      */
     protected void уголки(GuiGraphics графика, Wellbeing.Часть часть, int цвет) {
+        // Фигурку ваниль рисует на z = 50 (InventoryScreen.renderEntityInInventory),
+        // а fill идёт на z = 0 — без подъёма уголки уходят ЗА модель, и на
+        // экране остаются только те куски рамки, что торчат мимо силуэта.
+        графика.pose().pushPose();
+        графика.pose().translate(0f, 0f, 400f);
         for (int[] п : прямоугольники(часть)) {
             рамкаУголками(графика, п[0], п[1], п[2], п[3], цвет);
         }
+        графика.pose().popPose();
     }
 
     private void рамкаУголками(GuiGraphics г, int x1, int y1, int x2, int y2, int цвет) {
@@ -584,9 +589,8 @@ public class HealthScreen extends Screen {
         г.fill(x2 - 1, y2 - д, x2, y2, цвет);
     }
 
-    /** Цвет уголков под курсором и у выбранной части. */
-    private static final int НАВЕДЕНИЕ = 0xFF9A9A8A;
-    private static final int ВЫБРАНО = 0xFFE0E0E0;
+    /** Цвет уголков части тела под курсором — белый, одинаковый для всех частей. */
+    private static final int РАМКА_ЧАСТИ = 0xFFFFFFFF;
 
     @Override
     public void render(GuiGraphics графика, int мышьX, int мышьY, float кадр) {
@@ -618,8 +622,7 @@ public class HealthScreen extends Screen {
         нарисоватьМодель(графика);
 
         Wellbeing.Часть под = частьПод(мышьX, мышьY);
-        if (выбрана != null) уголки(графика, выбрана, ВЫБРАНО);
-        if (под != null && под != выбрана) уголки(графика, под, НАВЕДЕНИЕ);
+        if (под != null) уголки(графика, под, РАМКА_ЧАСТИ);
 
         нарисоватьВкладки(графика, мышьX, мышьY);
         правая(графика);
