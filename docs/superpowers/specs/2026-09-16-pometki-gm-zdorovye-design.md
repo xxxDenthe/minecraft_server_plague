@@ -70,7 +70,7 @@ core/Marks.java                каталог заготовок и слияни
 
 mc/PlayerHealthMarks.java      вложение-хранилище (Data Attachment + Codec)
 mc/HealthMarksCommands.java    подкоманды /plague health (в дереве PlagueCommands)
-mc/PlagueNetwork.java          +1 пакет Marks (playToClient)
+mc/PlagueNetwork.java          +1 пакет MarkList (playToClient)
 
 client/HealthMarksClient.java  свои пометки и пометки осматриваемых соседей
 client/HealthEditScreen.java   экран ГМ: тот же планшет + правка
@@ -168,7 +168,7 @@ plaguecore.health.mark.<id>.cleric   подробность      — втора�
 
 ```java
 public static List<Вывод> строки(Место место, String автоКлюч,
-                                 List<Пометка> пометки, boolean чужой);
+                                 List<Пометка> пометки, boolean чужой, boolean клирик);
 
 public record Вывод(String ключ, String текст, boolean тусклый) {}
 ```
