@@ -90,6 +90,22 @@ public class Watcher extends MutatedZombie implements GeoEntity {
     }
 
     /**
+     * Ни одной ванильной цели. Наблюдатель наследует зомби ради телосложения
+     * и урона, но не ради поведения: зомби бродит
+     * ({@code WaterAvoidingRandomStrollGoal}), сам находит жителей, големов
+     * и черепах ({@code NearestAttackableTargetGoal}) и отвечает всякому,
+     * кто его задел ({@code HurtByTargetGoal}). Стоило снять «без ИИ»
+     * в {@link #броситься}, как всё это оживало разом — и вместо явления
+     * по миру бегал зомби, дерущийся с мобами.
+     *
+     * Цель у него одна и выдаётся руками: игрок, за которым он пришёл.
+     * Единственная цель поведения появляется там же, в {@link #броситься}.
+     */
+    @Override
+    protected void registerGoals() {
+    }
+
+    /**
      * Крепче мутировавшего зомби, но не босс: вчетвером его кладут
      * быстро, в одиночку ночью — тяжело. Урон в полтора раза больше
      * ванильного зомби, скорость выше человеческой ходьбы.
@@ -242,7 +258,9 @@ public class Watcher extends MutatedZombie implements GeoEntity {
     /** Третий раз. Тишина кончилась. */
     private void броситься(Player игрок) {
         бросился = true;
-        setSilent(false);
+        // Немым он и остаётся: стоны, хрип от удара и предсмертный крик
+        // зомби выдают в нём обычного моба, а он не моб. Слышен только
+        // кашель ниже — он звучит от мира, а не от сущности.
         setNoAi(false);
         goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0, false));
         setTarget(игрок instanceof net.minecraft.world.entity.LivingEntity живой ? живой : null);
