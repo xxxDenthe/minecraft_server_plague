@@ -46,7 +46,7 @@ public class GmPanelScreen extends Screen {
         SELF("Себе"), PLAYERS("Игроки"), MAP("Карта"),
         WORLD("Мир", "Погода", "Правила"),
         BROADCAST("Вещание", "Заголовок", "Чат", "Звук"),
-        PLAGUE("Чума", "Общее", "Голос", "Тело"),
+        PLAGUE("Чума", "Общее", "Голос", "Тело", "Страх"),
         GRAPHICS("Графика", "Кадр", "Ночь", "Туман", "Небо"),
         EXPERIMENTAL("Опыты"), LOG("Журнал");
         final String label;
@@ -259,6 +259,17 @@ public class GmPanelScreen extends Screen {
             b -> { run("plague health edit " + n); onClose(); })
             .bounds(x, y, w, BTN_H).build());
 
+        // Страх. Ручное событие заводит ту же долину тишины, что и
+        // режиссёр, — мастер и машина не бьют в одну точку дважды.
+        y += BTN_H + 3;
+        buttonRow(x, y, w, new String[] { "Шорох", "Видение", "Явление", "Тишина 10м" },
+            new Runnable[] {
+                () -> run("plague dread rustle " + n),
+                () -> run("plague dread vision " + n),
+                () -> run("plague dread watcher " + n),
+                () -> run("plague dread silence " + n + " 10"),
+            });
+
         y += BTN_H + 14;
         hdrMod = y - 11;
         reasonBox = new EditBox(font, x, y, w, 14, Component.literal("причина"));
@@ -329,6 +340,10 @@ public class GmPanelScreen extends Screen {
             initPossession();
             return;
         }
+        if (folder() == 3) {
+            initDread();
+            return;
+        }
         int y = contentY + 14;
         y = add(contentX, y, contentW, "Состояние чумы  (/plague info)",
             () -> { run("plague info"); onClose(); });
@@ -338,6 +353,19 @@ public class GmPanelScreen extends Screen {
             plagueGuiWait = 0;
             run("plague gui");
         });
+    }
+
+    // ── Страх ─────────────────────────────────────────────────────────────
+    // Пульт режиссёра напряжения: спек 2026-09-17-horror-rezhissyor-design.
+    // Отдельные события выдаются из карточки игрока — там видно, кому.
+    // Здесь только то, что относится ко всей сессии сразу.
+
+    private void initDread() {
+        int y = contentY + 14;
+        y = add(contentX, y, contentW, "Кто как напуган  (/plague dread info)",
+            () -> { run("plague dread info"); onClose(); });
+        add(contentX, y, contentW, "Сбросить счётчик явлений (новая сессия)",
+            () -> run("plague dread resetwatchers"));
     }
 
     // ── Голос больного ────────────────────────────────────────────────────

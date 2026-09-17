@@ -164,6 +164,7 @@ public final class PlagueCommands {
         корень.then(голос);
 
         HealthMarksCommands.подключить(корень);
+        DreadCommands.подключить(корень);
 
         event.getDispatcher().register(корень);
     }
