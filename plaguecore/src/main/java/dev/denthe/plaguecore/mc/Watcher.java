@@ -1,13 +1,19 @@
 package dev.denthe.plaguecore.mc;
 
 import dev.denthe.plaguecore.PlagueConstants;
+import dev.denthe.plaguecore.PlagueCore;
 import dev.denthe.plaguecore.core.WatcherMath;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -81,6 +87,17 @@ public class Watcher extends MutatedZombie implements GeoEntity {
     private static final RawAnimation БЕГ = RawAnimation.begin().thenLoop("run");
 
     private final AnimatableInstanceCache кэш = GeckoLibUtil.createInstanceCache(this);
+
+    /**
+     * Свой тип урона — ради строки смерти. Ванильная «%s был убит» назвала бы
+     * убийцу по имени сущности, а имени у него нет и быть не должно: игроки
+     * не узнают, что их убило. Описание типа лежит в
+     * {@code data/plaguecore/damage_type/watcher.json}, сама строка —
+     * {@code death.attack.watcher} в языковых файлах.
+     */
+    private static final ResourceKey<DamageType> ВЗГЛЯД = ResourceKey.create(
+        Registries.DAMAGE_TYPE,
+        ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "watcher"));
 
     public Watcher(EntityType<? extends Watcher> тип, Level уровень) {
         super(тип, уровень);
@@ -253,6 +270,38 @@ public class Watcher extends MutatedZombie implements GeoEntity {
     /** Маска снята. Читает клиентская модель: до броска он не анимирован. */
     public boolean бросился() {
         return бросился;
+    }
+
+    /**
+     * Его видит только тот, за кем он пришёл. Метод решает, слать ли сущность
+     * конкретному игроку, поэтому остальные о ней вовсе не узнают: ни модели,
+     * ни имени, ни частиц — для их клиента её нет.
+     *
+     * Так и задумано по спеку: явление адресное. Двое в одном лесу, один
+     * видит фигуру между деревьев, второй — пустой лес, и спорить об этом
+     * они будут в голосовом чате. Общий Наблюдатель, на которого можно
+     * показать пальцем, стал бы обычным мобом.
+     *
+     * Тело при этом остаётся на сервере: чужой игрок может в него врезаться.
+     * Это лучше, чем призрак без столкновений, — он стоит в 12 блоках
+     * и дальше, врезаться в него случайно почти невозможно.
+     */
+    @Override
+    public boolean broadcastToPlayer(ServerPlayer игрок) {
+        return цель == null || цель.equals(игрок.getUUID());
+    }
+
+    /**
+     * Бьёт своим типом урона, а не «атакой моба»: иначе в строке смерти
+     * стояло бы имя сущности. Ванильные тонкости удара — зачарования,
+     * поджог, оружие — пропущены намеренно: он бьёт руками и ничего не носит.
+     */
+    @Override
+    public boolean doHurtTarget(Entity жертва) {
+        boolean попал = жертва.hurt(damageSources().source(ВЗГЛЯД, this),
+            (float) getAttributeValue(Attributes.ATTACK_DAMAGE));
+        if (попал) setLastHurtMob(жертва);
+        return попал;
     }
 
     /** Третий раз. Тишина кончилась. */
