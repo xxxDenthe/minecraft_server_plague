@@ -50,6 +50,11 @@ public final class PlagueClientAccess {
         голос = пакет.значения();
     }
 
+    /** Видение страха: темнота, сердцебиение или силуэт. Разбирает {@link DreadClient}. */
+    public static void видение(PlagueNetwork.Vision пакет) {
+        DreadClient.принять(пакет);
+    }
+
     /** Словарь тайнописи. Разбирает и держит {@link SecretText}. */
     public static void принятьСлова(PlagueNetwork.Words пакет) {
         SecretText.принять(пакет);

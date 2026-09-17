@@ -4,6 +4,7 @@ import dev.denthe.plaguecore.PlagueConstants;
 import dev.denthe.plaguecore.PlagueCore;
 import dev.denthe.plaguecore.core.DreadMath;
 import net.minecraft.core.SectionPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -11,6 +12,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -115,9 +117,7 @@ public final class DreadDirector {
                 шорохов++;
             }
             case ВИДЕНИЕ -> {
-                // Видения приедут следующей задачей. Пока это тот же
-                // кашель, но с длинной долиной: ритм уже читается.
-                DreadCatalog.кашель(игрок, игрок.serverLevel().getRandom());
+                видение(игрок);
                 долина = PlagueConstants.DREAD_VALLEY_VISION;
                 видений++;
             }
@@ -176,6 +176,26 @@ public final class DreadDirector {
             if (другой.distanceToSqr(игрок) <= радиус * радиус) счёт++;
         }
         return счёт;
+    }
+
+    /**
+     * Одно случайное видение: темнота, сердцебиение или силуэт.
+     *
+     * Силуэт ставится сбоку-сзади, а не прямо за спиной: строго позади
+     * его не увидят вовсе, а в лицо — это уже не «показалось».
+     */
+    private static void видение(ServerPlayer игрок) {
+        RandomSource случай = игрок.serverLevel().getRandom();
+        int вид = случай.nextInt(DreadKinds.ВСЕГО);
+        int тиков = вид == DreadKinds.СИЛУЭТ ? 25 : 50;
+
+        float[] точка = DreadMath.заСпиной(
+            (float) игрок.getX(), (float) игрок.getY(), (float) игрок.getZ(),
+            игрок.getYRot() + (случай.nextBoolean() ? 115f : -115f),
+            8f + случай.nextFloat() * 6f);
+
+        PacketDistributor.sendToPlayer(игрок,
+            new PlagueNetwork.Vision(вид, тиков, точка[0], точка[1], точка[2]));
     }
 
     private static boolean явлениеДоступно(ServerLevel уровень) {

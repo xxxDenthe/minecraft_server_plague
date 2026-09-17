@@ -39,7 +39,7 @@ public final class PlagueNetwork {
     private PlagueNetwork() {}
 
     /** Версия протокола. Меняется, если поменяется формат пакетов. */
-    private static final String VERSION = "7";
+    private static final String VERSION = "8";
 
     // ── номера действий ────────────────────────────────────────────────
     public static final int ACTION_REFRESH = 0;
@@ -142,6 +142,35 @@ public final class PlagueNetwork {
             StreamCodec.of(
                 (buf, s) -> buf.writeVarInt(s.стадия),
                 buf -> new Stage(buf.readVarInt()));
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    /**
+     * Видение — короткий обман чувств на клиенте. Спек хоррора, раздел 2.
+     *
+     * Вид — из {@link DreadKinds}. Для силуэта x/y/z говорят, где его
+     * нарисовать; у темноты и сердцебиения там нули.
+     */
+    public record Vision(int вид, int тиков, double x, double y, double z)
+            implements CustomPacketPayload {
+
+        public static final CustomPacketPayload.Type<Vision> TYPE =
+            new CustomPacketPayload.Type<>(
+                ResourceLocation.fromNamespaceAndPath(PlagueCore.MODID, "vision"));
+
+        public static final StreamCodec<RegistryFriendlyByteBuf, Vision> CODEC =
+            StreamCodec.of(
+                (buf, в) -> {
+                    buf.writeVarInt(в.вид);
+                    buf.writeVarInt(в.тиков);
+                    buf.writeDouble(в.x);
+                    buf.writeDouble(в.y);
+                    buf.writeDouble(в.z);
+                },
+                buf -> new Vision(buf.readVarInt(), buf.readVarInt(),
+                    buf.readDouble(), buf.readDouble(), buf.readDouble()));
 
         @Override
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
@@ -456,6 +485,10 @@ public final class PlagueNetwork {
         registrar.playToClient(Stage.TYPE, Stage.CODEC,
             (payload, ctx) -> ctx.enqueueWork(
                 () -> dev.denthe.plaguecore.client.PlagueClientAccess.принятьСтадию(payload)));
+
+        registrar.playToClient(Vision.TYPE, Vision.CODEC,
+            (payload, ctx) -> ctx.enqueueWork(
+                () -> dev.denthe.plaguecore.client.PlagueClientAccess.видение(payload)));
 
         registrar.playToClient(Flash.TYPE, Flash.CODEC,
             (payload, ctx) -> ctx.enqueueWork(
