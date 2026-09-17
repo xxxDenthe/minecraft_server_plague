@@ -58,6 +58,10 @@ public final class PlagueEntityRenderers {
 
         событие.registerEntityRenderer(PlagueEntities.MUTATED_ZOMBIE.get(), РендерерЗомби::new);
 
+        // Наблюдатель рисуется тем же рендерером: он и есть тот же
+        // человек в последней стадии, отдельная модель ему не нужна.
+        событие.registerEntityRenderer(PlagueEntities.WATCHER.get(), РендерерЗомби::new);
+
         // Сердце рисует GeckoLib: у него своя геометрия, своя анимация
         // и куски, которые прячутся по одному. Слой ванильной модели
         // ему не нужен — GeckoLib читает geo.json сам.

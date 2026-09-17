@@ -76,10 +76,11 @@ public final class DreadDirector {
         long сейчас = уровень.getGameTime();
         Счёт счёт = сбросЧаса(состояние(игрок), сейчас);
 
+        DreadMath.Факторы ф = факторы(игрок, уровень);
         // Тик режиссёра идёт раз в секунду, поэтому прирост за секунду
         // прибавляется как есть, без пересчёта на тики.
         float напряжение = DreadMath.копить(счёт.напряжение(),
-            DreadMath.прирост(факторы(игрок, уровень), PlagueConstants.весаСтраха()));
+            DreadMath.прирост(ф, PlagueConstants.весаСтраха()));
 
         if (DreadMath.вДолине(сейчас, счёт.последнее(), счёт.долина())) {
             запомнить(игрок, счёт, напряжение);
@@ -88,7 +89,8 @@ public final class DreadDirector {
 
         DreadMath.Уровень уровеньСобытия = поБюджету(DreadMath.уровень(напряжение,
             PlagueConstants.DREAD_RUSTLE_AT, PlagueConstants.DREAD_VISION_AT,
-            PlagueConstants.DREAD_WATCHER_AT, явлениеДоступно(уровень)), счёт);
+            PlagueConstants.DREAD_WATCHER_AT,
+            явлениеДоступно(уровень, игрок, ф)), счёт);
 
         if (уровеньСобытия == DreadMath.Уровень.НЕТ) {
             запомнить(игрок, счёт, напряжение);
@@ -122,8 +124,9 @@ public final class DreadDirector {
                 видений++;
             }
             case ЯВЛЕНИЕ -> {
-                // Наблюдатель приедет задачей 5.
-                DreadCatalog.кашель(игрок, игрок.serverLevel().getRandom());
+                // Если поставить его некуда, событие не пропадает:
+                // человек дошёл до сотни и обязан хоть что-то получить.
+                if (!Watcher.явить(игрок)) видение(игрок);
                 долина = PlagueConstants.DREAD_VALLEY_WATCHER;
             }
             default -> {
@@ -198,10 +201,17 @@ public final class DreadDirector {
             new PlagueNetwork.Vision(вид, тиков, точка[0], точка[1], точка[2]));
     }
 
-    private static boolean явлениеДоступно(ServerLevel уровень) {
-        // Наблюдатель приедет задачей 5; до тех пор явлений не бывает,
-        // и порог 95 честно опускается до видения.
-        return false;
+    /**
+     * Можно ли сейчас явление. Кроме лимита сессии, нужны условия
+     * самой сцены: человек один и либо ночь, либо он под землёй.
+     * Днём в поле Наблюдатель — это просто моб, стоящий в траве.
+     */
+    private static boolean явлениеДоступно(ServerLevel уровень, ServerPlayer игрок,
+                                           DreadMath.Факторы ф) {
+        if (PlagueState.get(уровень).watchers()
+            >= PlagueConstants.DREAD_WATCHERS_PER_SESSION) return false;
+        if (!ф.один()) return false;
+        return ф.ночь() || ф.y() < PlagueConstants.DREAD_DEPTH_Y;
     }
 
     /**

@@ -34,6 +34,7 @@ public class PlagueState extends SavedData {
     private static final String KEY_TERRAIN_READY = "TerrainReady";
     private static final String KEY_EPICENTERS = "Epicenters";
     private static final String KEY_WORDS = "RevealedWords";
+    private static final String KEY_WATCHERS = "Watchers";
 
     private PlagueGrid grid;
     private int night;
@@ -46,6 +47,14 @@ public class PlagueState extends SavedData {
      * это память команды, а не рюкзак игрока — так же, как Хроника.
      */
     private final Set<String> раскрытыеСлова = new LinkedHashSet<>();
+
+    /**
+     * Сколько раз за сессию приходил Наблюдатель. Счётчик один на весь
+     * сервер, а не на игрока: явление — событие сессии, и последнее из
+     * отпущенных настоящее. Переживает перезапуск, иначе рестарт
+     * посреди сессии обнулил бы всю драматургию.
+     */
+    private int watchers;
 
     /** Флаг «ночь этих суток уже обработана», в NBT не пишется. */
     private long lastProcessedDay = -1;
@@ -78,6 +87,7 @@ public class PlagueState extends SavedData {
         st.раскрытыеСлова.clear();
         ListTag слова = tag.getList(KEY_WORDS, Tag.TAG_STRING);
         for (int i = 0; i < слова.size(); i++) st.раскрытыеСлова.add(слова.getString(i));
+        st.watchers = tag.getInt(KEY_WATCHERS);
         return st;
     }
 
@@ -93,6 +103,7 @@ public class PlagueState extends SavedData {
         ListTag слова = new ListTag();
         for (String к : раскрытыеСлова) слова.add(StringTag.valueOf(к));
         tag.put(KEY_WORDS, слова);
+        tag.putInt(KEY_WATCHERS, watchers);
         return tag;
     }
 
@@ -114,6 +125,14 @@ public class PlagueState extends SavedData {
         setDirty();
         return true;
     }
+
+    /** Сколько явлений Наблюдателя уже было за сессию. */
+    public int watchers() { return watchers; }
+
+    public void addWatcher() { watchers++; setDirty(); }
+
+    /** Сбросить счётчик явлений — ручка мастера на новую сессию. */
+    public void resetWatchers() { watchers = 0; setDirty(); }
 
     public PlagueGrid grid() { return grid; }
 

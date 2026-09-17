@@ -14,6 +14,7 @@
   "entity.plaguecore.infected_cow": "Заражённая корова",
   "entity.plaguecore.infected_pig": "Заражённая свинья",
   "entity.plaguecore.mutated_zombie": "Мутировавший зомби",
+  "entity.plaguecore.watcher": "Мутировавший зомби",
   "entity.plaguecore.rotten_heart": "Сердце чумы",
   "item.plaguecore.archive_record": "Запись",
   "item.plaguecore.infected_cow_spawn_egg": "Яйцо призыва заражённой коровы",

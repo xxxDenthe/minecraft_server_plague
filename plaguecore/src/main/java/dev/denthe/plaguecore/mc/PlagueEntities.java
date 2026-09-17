@@ -56,6 +56,19 @@ public final class PlagueEntities {
             .build("mutated_zombie"));
 
     /**
+     * Наблюдатель. Хитбокс зомбиный: это тот же человек в последней
+     * стадии, и модель у него та же. MobCategory.MONSTER, но в
+     * естественном спавне он не участвует — его ставит режиссёр страха.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<Watcher>> WATCHER =
+        СУЩНОСТИ.register("watcher", () -> EntityType.Builder
+            .of(Watcher::new, MobCategory.MONSTER)
+            .sized(0.6F, 1.95F)
+            .eyeHeight(1.74F)
+            .clientTrackingRange(10)
+            .build("watcher"));
+
+    /**
      * Сердце чумы. Хитбокс под модель: она примерно 2.6 x 2.9 x 2.3 блока,
      * и коробка меньше означала бы, что по торчащим корням не попасть.
      *
@@ -82,5 +95,6 @@ public final class PlagueEntities {
         событие.put(INFECTED_COW.get(), InfectedAnimal.атрибутыКоровы().build());
         событие.put(MUTATED_ZOMBIE.get(), MutatedZombie.атрибуты().build());
         событие.put(ROTTEN_HEART.get(), RottenHeart.атрибуты().build());
+        событие.put(WATCHER.get(), Watcher.атрибуты().build());
     }
 }
