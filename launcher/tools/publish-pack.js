@@ -21,12 +21,16 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 import { parseManifest } from '../src/main/manifest.js';
 import { isProtected } from '../src/main/sync.js';
 import { zip } from '../src/main/archive.js';
 import { apiHeaders, assetUrl, releaseByTag, checkToken } from '../src/main/github.js';
 import { contentIdOf, planUpload } from './pack.js';
+
+const execFileAsync = promisify(execFile);
 
 const API = 'https://api.github.com';
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -167,6 +171,37 @@ async function ensureRelease({ owner, repo, tag, token }) {
   return response.json();
 }
 
+/**
+ * Больше этого размера ассет уходит через curl, а не fetch.
+ *
+ * 2026-09-17 выкладка mods.zip на 369 МБ падала три раза подряд:
+ * fetch failed, потом 500 «Error saving asset», потом 504. Причина —
+ * в том, что fetch читает архив целиком в память и шлёт одним куском
+ * без повторов: одного обрыва хватает, чтобы потерять получасовую
+ * заливку. curl отдаёт файл потоком и сам повторяет попытку.
+ *
+ * Мелочь (манифест, конфиги) по-прежнему идёт через fetch: там curl
+ * ничего не улучшит, а зависимость от внешней программы лишняя.
+ */
+const STREAM_UPLOAD_FROM = 64 * 1024 * 1024;
+
+/** Заливка потоком, с повторами. curl есть и в Windows 10, и в Linux. */
+async function uploadViaCurl({ url, token, file }) {
+  const { stdout } = await execFileAsync('curl', [
+    '--fail-with-body', '--silent', '--show-error',
+    '--retry', '5', '--retry-delay', '10', '--retry-all-errors',
+    '--connect-timeout', '30', '--max-time', '3600',
+    '-X', 'POST',
+    '-H', `Authorization: Bearer ${token}`,
+    '-H', 'Accept: application/vnd.github+json',
+    '-H', 'Content-Type: application/octet-stream',
+    '--data-binary', `@${file}`,
+    url,
+  ], { maxBuffer: 1 << 24 });
+
+  return JSON.parse(stdout);
+}
+
 async function uploadAsset({ release, repo, token, name, file, existing }) {
   // Перезалить ассет с тем же именем нельзя — сначала удаляем старый.
   if (existing) {
@@ -174,12 +209,15 @@ async function uploadAsset({ release, repo, token, name, file, existing }) {
   }
 
   const uploadUrl = release.upload_url.replace(/\{\?[^}]*\}$/, '');
-  const body = await fsp.readFile(file);
+  const url = `${uploadUrl}?name=${encodeURIComponent(name)}`;
+  const { size } = await fsp.stat(file);
 
-  const response = await github(`${uploadUrl}?name=${encodeURIComponent(name)}`, {
+  if (size >= STREAM_UPLOAD_FROM) return uploadViaCurl({ url, token, file });
+
+  const response = await github(url, {
     token,
     method: 'POST',
-    body,
+    body: await fsp.readFile(file),
     contentType: 'application/octet-stream',
   });
 
