@@ -3,7 +3,6 @@ package dev.denthe.classes.client;
 import dev.denthe.classes.ClassNetwork;
 import dev.denthe.classes.LmpcClasses;
 import dev.denthe.classes.SnapshotGrid;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -21,10 +20,15 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
  * она работает на партию. Живёт снимок ограниченное время
  * ({@code chroniclerSnapshotMinutes}) и гаснет сам.
  *
- * <p>Карта нарисована заливками, без текстур: каждый чанк — квадратик,
- * цвет по уровню заражения, белая рамка — чанк, где стоит смотрящий.
- * Заводить ради этого модель, атлас или экран было бы дороже самой
+ * <p>Карта нарисована заливками: каждый чанк — квадратик, цвет по
+ * уровню заражения, костяная рамка — чанк, где стоит смотрящий.
+ * Заводить ради этого модель или экран было бы дороже самой
  * способности.
+ *
+ * <p>Само окошко одето в кожу полевого лазарета ({@link LazaretHud}) —
+ * тот же вид, что у планшета осмотра на клавише `Y` и у летописи
+ * в левом углу. До 0.21.0 здесь была плоская заливка с лиловой каймой,
+ * и панель выглядела деталью чужого мода.
  */
 @EventBusSubscriber(value = Dist.CLIENT, modid = LmpcClasses.MODID)
 public final class SnapshotHud {
@@ -55,21 +59,24 @@ public final class SnapshotHud {
 
         GuiGraphics графика = событие.getGuiGraphics();
         int карта = сторона * КЛЕТКА;
-        Component подпись = Component.translatable("hud.lmpc_classes.snapshot", снимок.автор());
-        int ширина = Math.max(карта, mc.font.width(подпись)) + 8;
-        int высота = карта + mc.font.lineHeight + 12;
+        Component подпись = LazaretHud.клеймо("hud.lmpc_classes.snapshot");
+        Component автор = Component.literal(снимок.автор());
+        int ширина = Math.max(карта, Math.max(mc.font.width(подпись), mc.font.width(автор)))
+            + LazaretHud.ПОЛЕ * 2;
+        int высота = карта + (mc.font.lineHeight + 1) * 2 + LazaretHud.ПОЛЕ * 2 + 2;
 
         // Правый верхний угол: слева уже живёт летопись Летописца.
-        int x = событие.getGuiGraphics().guiWidth() - ширина - 4;
+        int x = графика.guiWidth() - ширина - 4;
         int y = 4;
 
-        графика.fill(x, y, x + ширина, y + высота, 0x88120E08);
-        графика.renderOutline(x, y, ширина, высота, 0x664A3A7A);
-        графика.drawString(mc.font, подпись.copy().withStyle(ChatFormatting.BOLD),
-            x + 4, y + 4, ClassStyle.цвет(dev.denthe.classes.PlayerClassData.Класс.CHRONICLER), false);
+        LazaretHud.панель(графика, x, y, ширина, высота);
+        графика.drawString(mc.font, подпись, x + LazaretHud.ПОЛЕ, y + LazaretHud.ПОЛЕ,
+            ClassStyle.цвет(dev.denthe.classes.PlayerClassData.Класс.CHRONICLER), false);
+        графика.drawString(mc.font, автор, x + LazaretHud.ПОЛЕ,
+            y + LazaretHud.ПОЛЕ + mc.font.lineHeight + 1, LazaretHud.ТУСКЛЫЙ, false);
 
-        int картаX = x + 4;
-        int картаY = y + mc.font.lineHeight + 8;
+        int картаX = x + LazaretHud.ПОЛЕ;
+        int картаY = y + LazaretHud.ПОЛЕ + (mc.font.lineHeight + 1) * 2 + 2;
         int мойЧанкX = mc.player.blockPosition().getX() >> 4;
         int мойЧанкZ = mc.player.blockPosition().getZ() >> 4;
 
@@ -84,7 +91,8 @@ public final class SnapshotHud {
                 графика.fill(левый, верхний, левый + КЛЕТКА - 1, верхний + КЛЕТКА - 1, цвет(уровень));
 
                 if (снимок.чанкX() + dx == мойЧанкX && снимок.чанкZ() + dz == мойЧанкZ) {
-                    графика.renderOutline(левый - 1, верхний - 1, КЛЕТКА + 1, КЛЕТКА + 1, 0xFFF0E6D2);
+                    графика.renderOutline(левый - 1, верхний - 1, КЛЕТКА + 1, КЛЕТКА + 1,
+                        LazaretHud.КОСТЬ);
                 }
             }
         }

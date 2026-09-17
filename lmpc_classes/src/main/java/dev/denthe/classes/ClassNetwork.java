@@ -44,7 +44,7 @@ import java.util.UUID;
 public final class ClassNetwork {
     private ClassNetwork() {}
 
-    private static final String VERSION = "3";
+    private static final String VERSION = "4";
 
     /** Клиент закончил канал наведения — просит напоить цель. */
     public record FeedRequest(UUID targetId) implements CustomPacketPayload {
@@ -61,18 +61,27 @@ public final class ClassNetwork {
     }
 
     /**
-     * Обзор Летописца: кто рядом и насколько заражён. Отправляется
-     * только Летописцам и только пока есть что показать.
+     * Обзор Летописца: кто рядом и куда катится его здоровье.
+     * Отправляется только Летописцам и только пока есть что показать.
+     *
+     * <p><b>Ни стадии, ни заражённости в пакете нет намеренно.</b>
+     * Раньше он нёс точные числа, и Летописец знал о болезни больше
+     * самого больного — работа Клирика обесценивалась. Теперь наружу
+     * уходит один знак ({@link Trend}), и вычитать из сети исходные
+     * очки подменённому клиенту не из чего.
+     *
+     * @param памятьТиков сколько клиенту держать строку человека,
+     *                    который вышел из радиуса; растёт с тиром
      */
-    public record Insight(List<Запись> записи, int уровеньЧанка) implements CustomPacketPayload {
+    public record Insight(List<Запись> записи, int уровеньЧанка, int памятьТиков)
+            implements CustomPacketPayload {
 
         /**
-         * @param имя          ник игрока
-         * @param стадия       стадия чумы 0..4; −1 — `plaguecore` не отвечает
-         * @param заражённость очки заражённости; отрицательное — неизвестно
-         * @param этоЯ         сам Летописец, для выделения строки
+         * @param имя         ник игрока
+         * @param направление знак перемены из {@link Trend}
+         * @param этоЯ        сам Летописец, для выделения строки
          */
-        public record Запись(String имя, int стадия, float заражённость, boolean этоЯ) {}
+        public record Запись(String имя, int направление, boolean этоЯ) {}
 
         /** Больше строк экран всё равно не покажет — и заодно потолок на размер пакета. */
         public static final int МАКС_ЗАПИСЕЙ = 16;
@@ -84,23 +93,25 @@ public final class ClassNetwork {
             StreamCodec.of(
                 (buf, x) -> {
                     buf.writeVarInt(x.уровеньЧанка + 1);
+                    buf.writeVarInt(x.памятьТиков);
                     buf.writeVarInt(x.записи.size());
                     for (Запись з : x.записи) {
                         buf.writeUtf(з.имя(), 32);
-                        buf.writeVarInt(з.стадия() + 1);   // −1 не влезает в VarInt дёшево
-                        buf.writeFloat(з.заражённость());
+                        // Сдвиг на два: «неизвестно» = −2, в VarInt минус дорог.
+                        buf.writeVarInt(з.направление() + 2);
                         buf.writeBoolean(з.этоЯ());
                     }
                 },
                 buf -> {
                     int уровень = buf.readVarInt() - 1;
+                    int память = buf.readVarInt();
                     int сколько = Math.min(buf.readVarInt(), МАКС_ЗАПИСЕЙ);
                     List<Запись> список = new ArrayList<>(сколько);
                     for (int i = 0; i < сколько; i++) {
                         список.add(new Запись(
-                            buf.readUtf(32), buf.readVarInt() - 1, buf.readFloat(), buf.readBoolean()));
+                            buf.readUtf(32), buf.readVarInt() - 2, buf.readBoolean()));
                     }
-                    return new Insight(List.copyOf(список), уровень);
+                    return new Insight(List.copyOf(список), уровень, память);
                 });
 
         @Override

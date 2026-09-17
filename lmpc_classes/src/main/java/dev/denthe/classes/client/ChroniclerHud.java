@@ -2,7 +2,8 @@ package dev.denthe.classes.client;
 
 import dev.denthe.classes.ClassNetwork;
 import dev.denthe.classes.LmpcClasses;
-import net.minecraft.ChatFormatting;
+import dev.denthe.classes.PlayerClassData;
+import dev.denthe.classes.Trend;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -11,22 +12,32 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Обзор Летописца — маленькая летопись в углу экрана: кто рядом
- * и насколько заражён. Спек, раздел 7: «подсказка должна показывать
- * точное число уровня вместо округлённой строки».
+ * Обзор Летописца — маленькая летопись в углу экрана: кто рядом и куда
+ * катится его здоровье. Спек классов, раздел 7.
  *
- * Плагина Jade, на который рассчитывал спек, в проекте нет — тот,
- * что лежал в `plaguecore`, был нерабочей заглушкой и удалён
- * 2026-09-04. Вместо интеграции с чужим модом — свой HUD на
- * ванильном {@code RenderGuiEvent}: ни зависимости, ни чужого API.
+ * <p><b>Точных чисел здесь больше нет.</b> До 0.21.0 строка выглядела
+ * как «Ник — стадия 2 · 41»: Летописец знал о чужой болезни больше
+ * самого больного, осмотр Клирика рядом с этим терял смысл, а правило
+ * интерфейса здоровья «игроку не показывается ни стадия, ни проценты»
+ * держалось только до тех пор, пока в партии нет Летописца. Теперь
+ * панель показывает направление ({@link Trend}) — «хуже», «легче»,
+ * «без перемен», — и ни стадии, ни очков в пакете уже не приходит.
  *
- * Числа целиком приходят с сервера ({@link ClassNetwork.Insight}):
- * заражённость живёт в чужом вложении `plaguecore` и на клиент
- * не синкается, придумать её здесь не из чего. Поэтому же панель
- * молча пуста, если `plaguecore` не стоит.
+ * <p><b>Тир мастерства даёт память.</b> Сервер шлёт только тех, кто
+ * сейчас в радиусе, и одно число: сколько держать ушедшего. Держит
+ * его клиент — это его же собственные, только что полученные данные,
+ * и гонять их по сети второй раз незачем.
+ *
+ * <p>Оформление — то же, что у планшета осмотра на клавише `Y`:
+ * кожа, латунь и клеймёный шрифт из {@link LazaretHud}. Панель
+ * молча пуста, если `plaguecore` не стоит: числа считает он.
  */
 @EventBusSubscriber(value = Dist.CLIENT, modid = LmpcClasses.MODID)
 public final class ChroniclerHud {
@@ -35,58 +46,95 @@ public final class ChroniclerHud {
     /** Свежесть данных: сервер шлёт раз в секунду, три секунды тишины — прячем. */
     private static final int ЖИВЁТ_ТИКОВ = 60;
 
-    private static List<ClassNetwork.Insight.Запись> записи = List.of();
+    /**
+     * Строка летописи на клиенте.
+     *
+     * @param виден тик, когда человека видели в последний раз
+     */
+    private record Строка(int направление, boolean этоЯ, long виден) {}
+
+    /** Порядок вставки — порядок строк: свой первым, дальше как пришли. */
+    private static final Map<String, Строка> ЖУРНАЛ = new LinkedHashMap<>();
+
     private static int уровеньЧанка = -1;
+    private static int памятьТиков;
     private static long обновленоТик = Long.MIN_VALUE;
 
     /** Пришёл свежий обзор. Зовётся из {@code ClassNetwork} уже в потоке клиента. */
     public static void принять(ClassNetwork.Insight пакет) {
-        записи = пакет.записи();
-        уровеньЧанка = пакет.уровеньЧанка();
         Minecraft mc = Minecraft.getInstance();
-        обновленоТик = mc.level == null ? Long.MIN_VALUE : mc.level.getGameTime();
+        if (mc.level == null) {
+            ЖУРНАЛ.clear();
+            обновленоТик = Long.MIN_VALUE;
+            return;
+        }
+
+        long сейчас = mc.level.getGameTime();
+        уровеньЧанка = пакет.уровеньЧанка();
+        памятьТиков = пакет.памятьТиков();
+        обновленоТик = сейчас;
+
+        for (ClassNetwork.Insight.Запись з : пакет.записи()) {
+            ЖУРНАЛ.put(з.имя(), new Строка(з.направление(), з.этоЯ(), сейчас));
+        }
+        // Забытые уходят молча: без этого журнал рос бы весь сеанс,
+        // а на первом тире (память 0) он и вовсе обязан очищаться сразу.
+        Iterator<Map.Entry<String, Строка>> обход = ЖУРНАЛ.entrySet().iterator();
+        while (обход.hasNext()) {
+            if (сейчас - обход.next().getValue().виден() > памятьТиков) обход.remove();
+        }
     }
 
     @SubscribeEvent
     public static void рисовать(RenderGuiEvent.Post событие) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.options.hideGui || mc.screen != null) return;
-        if (записи.isEmpty() || mc.level.getGameTime() - обновленоТик > ЖИВЁТ_ТИКОВ) return;
+        if (ЖУРНАЛ.isEmpty() || mc.level.getGameTime() - обновленоТик > ЖИВЁТ_ТИКОВ) return;
 
-        GuiGraphics графика = событие.getGuiGraphics();
-        Component заголовок = Component.translatable("hud.lmpc_classes.chronicle");
-
+        long сейчас = mc.level.getGameTime();
+        Component заголовок = LazaretHud.клеймо("hud.lmpc_classes.chronicle");
         Component местность = строкаМестности();
 
+        List<Component> строки = new ArrayList<>(ЖУРНАЛ.size());
+        List<Integer> цвета = new ArrayList<>(ЖУРНАЛ.size());
+        for (Map.Entry<String, Строка> запись : ЖУРНАЛ.entrySet()) {
+            boolean ушёл = сейчас - запись.getValue().виден() > ЖИВЁТ_ТИКОВ;
+            строки.add(строка(запись.getKey(), запись.getValue(), ушёл, сейчас));
+            цвета.add(ушёл ? LazaretHud.ТУСКЛЫЙ : цвет(запись.getValue().направление()));
+        }
+
+        GuiGraphics графика = событие.getGuiGraphics();
         int ширина = Math.max(mc.font.width(заголовок), mc.font.width(местность));
-        for (ClassNetwork.Insight.Запись з : записи) {
-            ширина = Math.max(ширина, mc.font.width(строка(з)));
+        for (Component с : строки) ширина = Math.max(ширина, mc.font.width(с));
+
+        int шаг = mc.font.lineHeight + 1;
+        ширина += LazaretHud.ПОЛЕ * 2;
+        int высота = LazaretHud.ПОЛЕ * 2 + (строки.size() + 2) * шаг;
+
+        // Ниже строки самочувствия `plaguecore`: она живёт в том же
+        // левом верхнем углу, и панель на четвёртом пикселе легла бы
+        // прямо поверх неё.
+        int x = 4, y = 4 + mc.font.lineHeight + 4;
+        LazaretHud.панель(графика, x, y, ширина, высота);
+
+        int текстX = x + LazaretHud.ПОЛЕ;
+        int текстY = y + LazaretHud.ПОЛЕ;
+        графика.drawString(mc.font, заголовок, текстX, текстY,
+            ClassStyle.цвет(PlayerClassData.Класс.CHRONICLER), false);
+        текстY += шаг;
+
+        for (int i = 0; i < строки.size(); i++) {
+            графика.drawString(mc.font, строки.get(i), текстX, текстY, цвета.get(i), false);
+            текстY += шаг;
         }
-        ширина += 8;
-        int высота = 8 + (записи.size() + 2) * (mc.font.lineHeight + 1);
 
-        графика.fill(4, 4, 4 + ширина, 4 + высота, 0x88120E08);
-        графика.renderOutline(4, 4, ширина, высота, 0x66B8942F);
-
-        int y = 8;
-        графика.drawString(mc.font, заголовок.copy().withStyle(ChatFormatting.BOLD),
-            8, y, ClassStyle.цвет(dev.denthe.classes.PlayerClassData.Класс.CHRONICLER), false);
-        y += mc.font.lineHeight + 1;
-
-        for (ClassNetwork.Insight.Запись з : записи) {
-            графика.drawString(mc.font, строка(з), 8, y, цветСтадии(з.стадия(), з.этоЯ()), false);
-            y += mc.font.lineHeight + 1;
-        }
-
-        графика.drawString(mc.font, местность, 8, y, 0xA89878, false);
+        графика.drawString(mc.font, местность, текстX, текстY, LazaretHud.ТУСКЛЫЙ, false);
     }
 
     /**
      * Заражение чанка, на который Летописец смотрит, точным числом.
-     * Это и есть обещанная спеком замена «округлённой строки» Jade:
-     * плагина к Jade нет — он потребовал бы жёсткой зависимости на
-     * чужой API, а Jade в этом паке уже один раз ронял клиент
-     * (заметка 2026-09-05-jade-otkachen-radi-zhazhdy).
+     * Число местности осталось точным намеренно: оно про землю, а не
+     * про человека, и ниши Клирика не задевает — тот смотрит тело.
      */
     private static Component строкаМестности() {
         return уровеньЧанка < 0
@@ -94,36 +142,36 @@ public final class ChroniclerHud {
             : Component.translatable("hud.lmpc_classes.chunk", уровеньЧанка);
     }
 
-    /** «Ник — стадия 2 · 41». Неизвестные числа показываем прочерком, а не нулём. */
-    private static Component строка(ClassNetwork.Insight.Запись з) {
-        String имя = з.этоЯ() ? "▸ " + з.имя() : з.имя();
-        if (з.стадия() < 0) {
-            return Component.translatable("hud.lmpc_classes.unknown", имя);
+    /** «Ник — хуже» и, у забытого журналом, ещё и «видел 3 мин назад». */
+    private static Component строка(String имя, Строка данные, boolean ушёл, long сейчас) {
+        String подпись = данные.этоЯ() ? "▸ " + имя : имя;
+        Component куда = Component.translatable(ключНаправления(данные.направление()));
+        if (!ушёл) {
+            return Component.translatable("hud.lmpc_classes.entry", подпись, куда);
         }
-        return Component.translatable("hud.lmpc_classes.entry",
-            имя, з.стадия(), String.format("%.0f", Math.max(0f, з.заражённость())));
+        long минут = Math.max(1, (сейчас - данные.виден()) / 1200);
+        return Component.translatable("hud.lmpc_classes.entry_seen", подпись, куда, минут);
+    }
+
+    private static String ключНаправления(int направление) {
+        return switch (направление) {
+            case Trend.ХУЖЕ -> "hud.lmpc_classes.trend.worse";
+            case Trend.ЛЕГЧЕ -> "hud.lmpc_classes.trend.better";
+            case Trend.БЕЗ_ПЕРЕМЕН -> "hud.lmpc_classes.trend.same";
+            default -> "hud.lmpc_classes.trend.unknown";
+        };
     }
 
     /**
-     * Цвет строки — от стадии, а не от того, кто это: Летописцу важно
-     * с одного взгляда увидеть, кому хуже всех. Своя строка только
-     * помечена стрелкой.
+     * Цвет строки — от направления. Палитра проекта: тревога уходит
+     * в бурый, облегчение — в приглушённый зелёный, покой — костяной.
      */
-    private static int цветСтадии(int стадия, boolean этоЯ) {
-        int цвет = switch (Math.min(4, Math.max(0, стадия))) {
-            case 0 -> 0x7FA05A;
-            case 1 -> 0xC8B44A;
-            case 2 -> 0xC8843A;
-            case 3 -> 0xB8523A;
-            default -> 0x8A2A2A;
+    private static int цвет(int направление) {
+        return switch (направление) {
+            case Trend.ХУЖЕ -> 0xFFB8523A;
+            case Trend.ЛЕГЧЕ -> 0xFF7FA05A;
+            case Trend.БЕЗ_ПЕРЕМЕН -> LazaretHud.КОСТЬ;
+            default -> LazaretHud.ТУСКЛЫЙ;
         };
-        return этоЯ ? осветлить(цвет) : цвет;
-    }
-
-    private static int осветлить(int цвет) {
-        int r = Math.min(255, ((цвет >> 16) & 0xFF) + 40);
-        int g = Math.min(255, ((цвет >> 8) & 0xFF) + 40);
-        int b = Math.min(255, (цвет & 0xFF) + 40);
-        return (r << 16) | (g << 8) | b;
     }
 }

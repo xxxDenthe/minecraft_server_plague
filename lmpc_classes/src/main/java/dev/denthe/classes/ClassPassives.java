@@ -33,9 +33,12 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Пассивки Кузнеца, Фермера и Летописца и рост их мастерства.
@@ -61,12 +64,29 @@ import java.util.Set;
 public final class ClassPassives {
     private ClassPassives() {}
 
-    /** Раз во сколько тиков Летописец получает свежие числа. Секунда — глазу хватает. */
+    /** Раз во сколько тиков Летописец получает свежий обзор. Секунда — глазу хватает. */
     private static final int ИНТЕРВАЛ_ОБЗОРА = 20;
+
+    /**
+     * Замеры заражённости каждого играющего: из них считается
+     * направление, которое видит Летописец ({@link Trend}).
+     *
+     * История общая, а не привязана к смотрящему. Два Летописца рядом
+     * видят одну и ту же картину, и она не начинается заново, когда
+     * один из них отошёл и вернулся. Живёт только в памяти сервера:
+     * после перезапуска стрелки честно молчат две минуты, пока окно
+     * не наберётся заново.
+     */
+    private static final Map<UUID, Trend.Кольцо> ЗАМЕРЫ = new HashMap<>();
 
     @SubscribeEvent
     public static void тикИгрока(PlayerTickEvent.Post событие) {
         if (!(событие.getEntity() instanceof ServerPlayer игрок)) return;
+
+        // Замеряем всех, а не только тех, кто сейчас у кого-то в поле
+        // зрения: иначе у подошедшего человека истории нет и Летописец
+        // две минуты видит прочерк ровно тогда, когда тот ему нужен.
+        замерить(игрок);
 
         PlayerClassData данные = PlayerClassData.данные(игрок);
         switch (данные.класс) {
@@ -298,15 +318,37 @@ public final class ClassPassives {
 
     // ── Летописец ─────────────────────────────────────────────────────
 
+    /** Снять очередной замер заражённости игрока. Раз в пятнадцать секунд. */
+    private static void замерить(ServerPlayer игрок) {
+        if (игрок.level().getGameTime() % Trend.ТИКОВ_МЕЖДУ_ЗАМЕРАМИ != 0) return;
+        if (!PlagueBridge.доступен()) return;
+
+        float значение = PlagueBridge.заражённость(игрок);
+        if (значение < 0) return;               // чума не ответила — врать нечем
+        ЗАМЕРЫ.computeIfAbsent(игрок.getUUID(), ключ -> new Trend.Кольцо()).добавить(значение);
+    }
+
+    /** Вышел из игры — забываем его замеры, иначе карта растёт весь сезон. */
+    @SubscribeEvent
+    public static void вышел(PlayerEvent.PlayerLoggedOutEvent событие) {
+        ЗАМЕРЫ.remove(событие.getEntity().getUUID());
+    }
+
     /**
-     * «Глаза партии»: раз в секунду шлём Летописцу точные числа
-     * заражённости — свои и тех, кто в радиусе. Числа живут
-     * в `plaguecore`, на клиент не синкаются, поэтому иначе их взять
-     * неоткуда (и поэтому же без `plaguecore` обзор просто пуст).
+     * «Глаза партии»: раз в секунду шлём Летописцу, куда катится
+     * здоровье тех, кто рядом, — и своё собственное.
+     *
+     * <p><b>Точных чисел он больше не видит.</b> До 0.21.0 сюда уходили
+     * стадия и очки заражённости: Летописец знал о болезни больше
+     * самого больного, а осмотр Клирика рядом с этим терял смысл.
+     * Теперь наружу уходит только знак перемены за две минуты
+     * ({@link Trend}). Клирик отвечает на «насколько плохо сейчас»,
+     * Летописец — на «куда идёт», и подменить друг друга они не могут.
      *
      * Заодно — единственный источник мастерства Летописца: минута
      * рядом хотя бы с одним заражённым. Наблюдать за здоровыми
-     * не считается: летопись пишут про беду.
+     * не считается: летопись пишут про беду. Стадию для этого
+     * спрашиваем прямо здесь, на сервере, — в пакет она не попадает.
      */
     private static void летописецСмотрит(ServerPlayer летописец) {
         long сейчас = летописец.level().getGameTime();
@@ -316,7 +358,7 @@ public final class ClassPassives {
         int тир = PlayerClassData.данные(летописец).тир();
         double радиус = ClassesConfig.летописецРадиус(тир);
         List<ClassNetwork.Insight.Запись> записи = new ArrayList<>();
-        boolean естьЗаражённый = false;
+        boolean естьЗаражённый = PlagueBridge.стадия(летописец) > 0;
 
         записи.add(запись(летописец, true));
         for (ServerPlayer другой : летописец.serverLevel().players()) {
@@ -324,13 +366,13 @@ public final class ClassPassives {
             if (записи.size() >= ClassNetwork.Insight.МАКС_ЗАПИСЕЙ) break;
             if (летописец.distanceToSqr(другой) > радиус * радиус) continue;
             записи.add(запись(другой, false));
-        }
-        for (ClassNetwork.Insight.Запись з : записи) {
-            if (з.стадия() > 0) естьЗаражённый = true;
+            if (PlagueBridge.стадия(другой) > 0) естьЗаражённый = true;
         }
 
-        PacketDistributor.sendToPlayer(летописец,
-            new ClassNetwork.Insight(List.copyOf(записи), уровеньПодПрицелом(летописец)));
+        PacketDistributor.sendToPlayer(летописец, new ClassNetwork.Insight(
+            List.copyOf(записи),
+            уровеньПодПрицелом(летописец),
+            ClassesConfig.летописецПамятьТики(тир)));
 
         if (естьЗаражённый && сейчас % ClassSwitch.ТИКОВ_В_МИНУТЕ == 0) {
             PlayerClassData.прибавитьМастерство(летописец, ClassesConfig.летописецМастерствоВМинуту());
@@ -386,11 +428,16 @@ public final class ClassPassives {
         return PlagueBridge.уровеньЧанкаВ(летописец.serverLevel(), точка);
     }
 
+    /**
+     * Строка обзора: имя и знак перемены. Человек, за которым ещё не
+     * набралось двух замеров, честно едет с «неизвестно» — прочерк
+     * лучше выдуманного «без перемен».
+     */
     private static ClassNetwork.Insight.Запись запись(ServerPlayer игрок, boolean этоЯ) {
-        return new ClassNetwork.Insight.Запись(
-            игрок.getGameProfile().getName(),
-            PlagueBridge.стадия(игрок),
-            PlagueBridge.заражённость(игрок),
-            этоЯ);
+        Trend.Кольцо кольцо = ЗАМЕРЫ.get(игрок.getUUID());
+        int направление = кольцо == null
+            ? Trend.НЕИЗВЕСТНО
+            : кольцо.знак((float) ClassesConfig.летописецПорогПеремены());
+        return new ClassNetwork.Insight.Запись(игрок.getGameProfile().getName(), направление, этоЯ);
     }
 }
