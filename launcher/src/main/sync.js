@@ -89,7 +89,8 @@ export async function planSync(manifest, instanceDir, state = { archives: {} }) 
   const toKeep = [];
 
   for (const archive of manifest.archives) {
-    const have = installed[archive.dir];
+    // Ключ — имя архива: в `mods` их два, чужие моды и наши.
+    const have = installed[archive.name ?? archive.dir];
 
     // Хеш отвечает «та ли версия», список файлов — «цел ли пак».
     // Второе нужно ради живого сценария: игрок удалил мод, чтобы
@@ -131,6 +132,9 @@ export async function planSync(manifest, instanceDir, state = { archives: {} }) 
   };
 }
 
+/** Папка верхнего уровня, которой принадлежит путь внутри инстанса. */
+const dirOf = (relative) => relative.split('/')[0];
+
 // Вычистить папку под распаковку, не тронув пользовательское.
 async function wipeDir(instanceDir, dir) {
   const removed = [];
@@ -156,9 +160,11 @@ export async function applySync(
 ) {
   const cache = cacheDir ?? path.join(instanceDir, '.cache', 'pack');
 
+  const nameOf = (archive) => archive.name ?? archive.dir;
+
   const items = plan.toInstall.map((archive) => ({
     url: archive.url,
-    dest: path.join(cache, `${archive.dir}.zip`),
+    dest: path.join(cache, `${nameOf(archive)}.zip`),
     sha256: archive.sha256,
     size: archive.size,
   }));
@@ -175,17 +181,40 @@ export async function applySync(
   const archives = { ...(state.archives ?? {}) };
   const installed = [];
 
+  // Папку чистим целиком только там, где о ней ничего не известно:
+  // первая установка или переход со старой схемы, где `mods` был
+  // одним архивом. Если состояние про папку знает, сносить её целиком
+  // нельзя — вместе с обновляемым архивом улетел бы соседний, и игрок
+  // качал бы 369 МБ чужих модов ради правки наших трёх.
+  const known = new Set(
+    Object.values(archives).flatMap((entry) => (entry.files ?? []).map(dirOf))
+  );
+
+  for (const dir of new Set(plan.toInstall.map((a) => a.dir))) {
+    if (!known.has(dir)) await wipeDir(instanceDir, dir);
+  }
+
   for (const archive of plan.toInstall) {
-    const file = path.join(cache, `${archive.dir}.zip`);
+    const name = nameOf(archive);
+    const file = path.join(cache, `${name}.zip`);
 
-    await wipeDir(instanceDir, archive.dir);
+    // Файлы прошлой версии этого архива — и только его.
+    for (const relative of archives[name]?.files ?? []) {
+      if (isProtected(relative)) continue;
+      await fsp.rm(path.join(instanceDir, relative), { force: true });
+    }
+
+    const before = new Set(await listDir(instanceDir, archive.dir));
     await unzip(file, instanceDir);
+    const after = await listDir(instanceDir, archive.dir);
 
-    archives[archive.dir] = {
+    archives[name] = {
       sha256: archive.sha256,
-      files: await listDir(instanceDir, archive.dir),
+      // Что принёс именно этот архив: папка общая, и полный её листинг
+      // приписал бы одному архиву файлы соседа.
+      files: after.filter((relative) => !before.has(relative)),
     };
-    installed.push(archive.dir);
+    installed.push(name);
 
     // Архив больше не нужен: второй раз ту же версию не качают,
     // а 262 МБ на диске игрока лежат зря.
@@ -195,7 +224,11 @@ export async function applySync(
   const wiped = [];
   for (const dir of plan.dirsToWipe) {
     await wipeDir(instanceDir, dir);
-    delete archives[dir];
+    // Папки в паке больше нет — забываем все её архивы, а не один
+    // одноимённый: у `mods` их два.
+    for (const [name, entry] of Object.entries(archives)) {
+      if ((entry.files ?? []).every((relative) => dirOf(relative) === dir)) delete archives[name];
+    }
     wiped.push(dir);
   }
 
@@ -203,7 +236,7 @@ export async function applySync(
   // осталось старое состояние, и следующий запуск повторит работу.
   await writeState(instanceDir, { packVersion: plan.packVersion, archives });
 
-  return { installed, wiped, kept: plan.toKeep.map((a) => a.dir) };
+  return { installed, wiped, kept: plan.toKeep.map(nameOf) };
 }
 
 // Пустая папка после удаления последнего мода — мусор, но подниматься

@@ -28,7 +28,7 @@ import { parseManifest } from '../src/main/manifest.js';
 import { isProtected } from '../src/main/sync.js';
 import { zip } from '../src/main/archive.js';
 import { apiHeaders, assetUrl, releaseByTag, checkToken } from '../src/main/github.js';
-import { contentIdOf, planUpload } from './pack.js';
+import { contentIdOf, planUpload, splitArchives } from './pack.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -269,7 +269,13 @@ async function main() {
     }
 
     if (files.length === 0) continue;
-    dirs.push({ dir, files, contentId: contentIdOf(files) });
+
+    // Папка может распасться на несколько архивов: `mods` едет двумя,
+    // чужие моды отдельно от наших. Иначе правка нашего джарника на
+    // 3 МБ гонит 369 МБ при канале 0.25 МБ/с.
+    for (const part of splitArchives(dir, files)) {
+      dirs.push({ ...part, contentId: contentIdOf(part.files) });
+    }
   }
 
   if (dirs.length === 0) {
@@ -278,7 +284,7 @@ async function main() {
 
   for (const d of dirs) {
     const bytes = d.files.reduce((sum, f) => sum + f.size, 0);
-    console.log(`  ${d.dir}: ${d.files.length} файлов, ${mb(bytes)} МБ`);
+    console.log(`  ${d.name}: ${d.files.length} файлов, ${mb(bytes)} МБ`);
   }
 
   if (args['dry-run']) {
@@ -300,23 +306,24 @@ async function main() {
   const archives = [...reuse];
 
   for (const d of build) {
-    const file = path.join(cacheDir, `${d.dir}.zip`);
+    const file = path.join(cacheDir, `${d.name}.zip`);
 
     await zip({ sourceDir: packDir, entries: d.files.map((f) => f.path), archive: file });
 
     const size = (await fsp.stat(file)).size;
-    console.log(`жму и заливаю ${d.dir}.zip, ${mb(size)} МБ`);
+    console.log(`жму и заливаю ${d.name}.zip, ${mb(size)} МБ`);
 
     const asset = await uploadAsset({
       release,
       repo: args.repo,
       token: args.token,
-      name: `${d.dir}.zip`,
+      name: `${d.name}.zip`,
       file,
-      existing: existing.get(`${d.dir}.zip`),
+      existing: existing.get(`${d.name}.zip`),
     });
 
     archives.push({
+      name: d.name,
       dir: d.dir,
       sha256: await sha256(file),
       contentId: d.contentId,
@@ -331,7 +338,7 @@ async function main() {
 
   // 4. Ассеты папок, которых в паке больше нет: релиз не должен
   // хранить то, что лаунчер уже не спросит.
-  const wanted = new Set(archives.map((a) => `${a.dir}.zip`));
+  const wanted = new Set(archives.map((a) => `${a.name ?? a.dir}.zip`));
   for (const [name, asset] of existing) {
     if (name === 'pack.json' || wanted.has(name) || !name.endsWith('.zip')) continue;
     await github(`${API}/repos/${args.repo}/releases/assets/${asset.id}`, { token: args.token, method: 'DELETE' });
@@ -349,7 +356,7 @@ async function main() {
       jvmArgs: ['-XX:+UseG1GC', '-XX:MaxGCPauseMillis=50'],
     },
     managedDirs,
-    archives: archives.sort((a, b) => a.dir.localeCompare(b.dir)),
+    archives: archives.sort((a, b) => (a.name ?? a.dir).localeCompare(b.name ?? b.dir)),
   };
 
   if (args.server) {

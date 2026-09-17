@@ -167,6 +167,20 @@ describe('применение плана', () => {
       archive: path.join(zips, 'config.zip'),
     });
 
+    // Два архива одной папки: чужие моды и наши. Заметка
+    // `2026-09-17-mods-dvumya-arhivami.md`.
+    await fsp.writeFile(path.join(packDir, 'mods', 'plaguecore-0.6.0.jar'), 'наш мод');
+    await zip({
+      sourceDir: packDir,
+      entries: ['mods/create.jar', 'mods/jei.jar'],
+      archive: path.join(zips, 'mods-core.zip'),
+    });
+    await zip({
+      sourceDir: packDir,
+      entries: ['mods/plaguecore-0.6.0.jar'],
+      archive: path.join(zips, 'mods-lmpc.zip'),
+    });
+
     server = http.createServer((req, res) => {
       const file = path.join(zips, path.basename(req.url));
       if (!fs.existsSync(file)) return res.writeHead(404).end();
@@ -282,5 +296,106 @@ describe('применение плана', () => {
     await expect(applySync(plan, { instanceDir: dir, retries: 1 })).rejects.toThrow();
     expect(fs.existsSync(path.join(dir, 'mods', 'старый.jar'))).toBe(true);
     expect(fs.existsSync(path.join(dir, STATE_FILE))).toBe(false);
+  });
+});
+
+// Ради этого всё и затевалось: правка нашего мода на 3 МБ не должна
+// гнать игроку 369 МБ чужих. Заметка `2026-09-17-mods-dvumya-arhivami`.
+describe('два архива в одной папке', () => {
+  let server;
+  let base;
+  let packDir;
+  let zips;
+
+  beforeAll(async () => {
+    packDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'plague-pack2-'));
+    zips = await fsp.mkdtemp(path.join(os.tmpdir(), 'plague-zips2-'));
+
+    await fsp.mkdir(path.join(packDir, 'mods'), { recursive: true });
+    await fsp.writeFile(path.join(packDir, 'mods', 'create.jar'), 'чужой мод');
+    await fsp.writeFile(path.join(packDir, 'mods', 'plaguecore-0.6.0.jar'), 'наш мод');
+
+    await zip({ sourceDir: packDir, entries: ['mods/create.jar'],
+      archive: path.join(zips, 'mods-core.zip') });
+    await zip({ sourceDir: packDir, entries: ['mods/plaguecore-0.6.0.jar'],
+      archive: path.join(zips, 'mods-lmpc.zip') });
+
+    // Новая версия нашего мода — другое содержимое, другой хеш.
+    await fsp.writeFile(path.join(packDir, 'mods', 'plaguecore-0.6.0.jar'), 'наш мод, версия два');
+    await zip({ sourceDir: packDir, entries: ['mods/plaguecore-0.6.0.jar'],
+      archive: path.join(zips, 'mods-lmpc-2.zip') });
+
+    server = http.createServer((req, res) => {
+      const file = path.join(zips, path.basename(req.url));
+      if (!fs.existsSync(file)) return res.writeHead(404).end();
+      return res.writeHead(200).end(fs.readFileSync(file));
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    base = `http://127.0.0.1:${server.address().port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(packDir, { recursive: true, force: true });
+    fs.rmSync(zips, { recursive: true, force: true });
+  });
+
+  const часть = (name, file = name) => ({
+    name,
+    dir: 'mods',
+    sha256: shaOfFile(path.join(zips, `${file}.zip`)),
+    contentId: `${file}-content`,
+    size: fs.statSync(path.join(zips, `${file}.zip`)).size,
+    url: `${base}/${file}.zip`,
+  });
+
+  it('ставит оба и запоминает их по отдельности', async () => {
+    const plan = await planSync(manifest([часть('mods-core'), часть('mods-lmpc')]), dir);
+    const result = await applySync(plan, { instanceDir: dir });
+
+    expect(result.installed.sort()).toEqual(['mods-core', 'mods-lmpc']);
+    expect(fs.readFileSync(path.join(dir, 'mods', 'create.jar'), 'utf8')).toBe('чужой мод');
+    expect(fs.readFileSync(path.join(dir, 'mods', 'plaguecore-0.6.0.jar'), 'utf8')).toBe('наш мод');
+
+    const записано = await readState(dir);
+    expect(записано.archives['mods-core'].files).toEqual(['mods/create.jar']);
+    expect(записано.archives['mods-lmpc'].files).toEqual(['mods/plaguecore-0.6.0.jar']);
+  });
+
+  it('обновление нашего архива не трогает чужой', async () => {
+    const первый = await planSync(manifest([часть('mods-core'), часть('mods-lmpc')]), dir);
+    await applySync(первый, { instanceDir: dir });
+
+    const состояние = await readState(dir);
+    const второй = await planSync(
+      manifest([часть('mods-core'), часть('mods-lmpc', 'mods-lmpc-2')]), dir, состояние);
+
+    expect(второй.toKeep.map((a) => a.name)).toEqual(['mods-core']);
+    expect(второй.toInstall.map((a) => a.name)).toEqual(['mods-lmpc']);
+
+    const итог = await applySync(второй, { instanceDir: dir, state: состояние });
+
+    expect(итог.installed).toEqual(['mods-lmpc']);
+    expect(fs.readFileSync(path.join(dir, 'mods', 'create.jar'), 'utf8')).toBe('чужой мод');
+    expect(fs.readFileSync(path.join(dir, 'mods', 'plaguecore-0.6.0.jar'), 'utf8'))
+      .toBe('наш мод, версия два');
+  });
+
+  it('джарник, выпавший из нашего архива, удаляется, а чужие остаются', async () => {
+    const первый = await planSync(manifest([часть('mods-core'), часть('mods-lmpc')]), dir);
+    await applySync(первый, { instanceDir: dir });
+    await put('mods/lmpc_classes-0.20.0.jar', 'старый класс');
+
+    // Состояние числит старый класс за нашим архивом: так было бы,
+    // если бы мод выложили, а потом убрали из пака.
+    const состояние = await readState(dir);
+    состояние.archives['mods-lmpc'].files.push('mods/lmpc_classes-0.20.0.jar');
+
+    const второй = await planSync(
+      manifest([часть('mods-core'), часть('mods-lmpc', 'mods-lmpc-2')]), dir, состояние);
+    await applySync(второй, { instanceDir: dir, state: состояние });
+
+    expect(fs.existsSync(path.join(dir, 'mods', 'lmpc_classes-0.20.0.jar'))).toBe(false);
+    expect(fs.existsSync(path.join(dir, 'mods', 'create.jar'))).toBe(true);
   });
 });

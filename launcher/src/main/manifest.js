@@ -30,8 +30,10 @@ function checkRelativePath(value, field) {
   return normalized;
 }
 
-// Пак раздаётся архивами: один zip на игровую папку. Адресуется архив
-// папкой, а не путём, поэтому «mods» здесь — целая запись, а не файл.
+// Пак раздаётся архивами. Адресуется архив именем, а папка говорит
+// только, куда его распаковать: у `mods` архива два — чужие моды
+// и наши, чтобы правка на 3 МБ не гнала 369. Манифест без имени —
+// старого образца, там имя равно папке.
 function parseArchive(raw, index, managedDirs) {
   const at = `archives[${index}]`;
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) fail(`${at}: не объект`);
@@ -42,6 +44,12 @@ function parseArchive(raw, index, managedDirs) {
   // вида «mods/create» означала бы чистку не того, что задумано.
   if (dir.includes('/')) fail(`${at}.dir: не одна папка, а путь «${raw.dir}»`);
   if (!managedDirs.includes(dir)) fail(`${at}.dir: «${dir}» отсутствует в managedDirs`);
+
+  const name = raw.name === undefined ? dir : checkRelativePath(raw.name, `${at}.name`);
+
+  // Имя становится именем файла в кэше игрока, поэтому тоже один
+  // сегмент: «mods/core.zip» ушло бы мимо папки кэша.
+  if (name.includes('/')) fail(`${at}.name: не одно имя, а путь «${raw.name}»`);
 
   if (!isText(raw.sha256) || !SHA256.test(raw.sha256)) {
     fail(`${at}.sha256: не 64 шестнадцатеричных символа`);
@@ -70,6 +78,7 @@ function parseArchive(raw, index, managedDirs) {
   }
 
   return {
+    name,
     dir,
     sha256: raw.sha256.toLowerCase(),
     contentId: raw.contentId ?? '',
@@ -126,8 +135,10 @@ export function parseManifest(text) {
   // Два архива на одну папку — не выбор наугад, а ошибка сборки манифеста.
   const seen = new Set();
   for (const archive of archives) {
-    if (seen.has(archive.dir)) fail(`дубликат папки «${archive.dir}»`);
-    seen.add(archive.dir);
+    // Дубликат имени, а не папки: два архива в одной папке — норма,
+    // два архива с одним именем затёрли бы друг друга в кэше.
+    if (seen.has(archive.name)) fail(`дубликат архива «${archive.name}»`);
+    seen.add(archive.name);
   }
 
   return {

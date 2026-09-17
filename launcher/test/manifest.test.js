@@ -147,7 +147,9 @@ describe('разбор манифеста: корректные данные', (
     expect(m.server).toEqual({ host: 'plague.example.net', port: 25565 });
     expect(m.managedDirs).toEqual(good.managedDirs);
     expect(m.archives).toHaveLength(1);
-    expect(m.archives[0]).toEqual(good.archives[0]);
+    // Имя добавляется разбором: у манифеста старого образца его нет,
+    // и тогда архив зовётся по своей папке.
+    expect(m.archives[0]).toEqual({ ...good.archives[0], name: good.archives[0].dir });
   });
 
   it('необязательные разделы можно опустить', () => {
@@ -186,5 +188,55 @@ describe('загрузка манифеста', () => {
   it('на не-200 бросает понятную ошибку, а не отдаёт мусор', async () => {
     const fetchImpl = async () => ({ ok: false, status: 404, text: async () => 'Not Found' });
     await expect(fetchManifest('https://example.net/pack.json', { fetchImpl })).rejects.toThrow(/404/);
+  });
+});
+
+// Два архива на одну папку: спек раздачи двумя архивами,
+// заметка `2026-09-17-mods-dvumya-arhivami.md`.
+describe('имя архива', () => {
+  const архив = (name, dir) => ({
+    ...(name ? { name } : {}),
+    dir,
+    sha256: 'a'.repeat(64),
+    contentId: `${name ?? dir}-1`,
+    size: 1,
+    url: 'https://api.github.com/x/1',
+  });
+
+  const манифест = (archives) => ({
+    packVersion: 18,
+    minecraft: '1.21.1',
+    neoforge: '21.1.249',
+    java: { major: 21 },
+    launch: { maxRamMb: 6144, jvmArgs: [] },
+    managedDirs: ['mods', 'config'],
+    archives,
+  });
+
+  it('два архива одной папки уживаются', () => {
+    const m = parseManifest(JSON.stringify(манифест([
+      архив('mods-core', 'mods'), архив('mods-lmpc', 'mods'),
+    ])));
+
+    expect(m.archives.map((a) => a.name)).toEqual(['mods-core', 'mods-lmpc']);
+    expect(m.archives.every((a) => a.dir === 'mods')).toBe(true);
+  });
+
+  it('без имени архив зовётся по папке — так читается старый манифест', () => {
+    const m = parseManifest(JSON.stringify(манифест([архив(null, 'mods')])));
+
+    expect(m.archives[0].name).toBe('mods');
+  });
+
+  it('одинаковые имена — ошибка: второй архив затёр бы первый', () => {
+    expect(() => parseManifest(JSON.stringify(манифест([
+      архив('mods-core', 'mods'), архив('mods-core', 'mods'),
+    ])))).toThrow(/mods-core/);
+  });
+
+  it('имя с путём внутри не принимается: оно станет именем файла в кэше', () => {
+    expect(() => parseManifest(JSON.stringify(манифест([
+      архив('mods/core', 'mods'),
+    ])))).toThrow();
   });
 });
