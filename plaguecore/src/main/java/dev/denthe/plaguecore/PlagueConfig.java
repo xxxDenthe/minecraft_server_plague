@@ -54,6 +54,31 @@ public final class PlagueConfig {
     private static final ModConfigSpec.IntValue НОЧЕЙ_СНА;
     private static final ModConfigSpec.IntValue МИНУТ_ОЧИСТКИ;
 
+    // ── страх ─────────────────────────────────────────────────────────
+    private static final ModConfigSpec.BooleanValue СТРАХ_ВКЛ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ТЕМНОТА;
+    private static final ModConfigSpec.DoubleValue СТРАХ_СУМЕРКИ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ГНИЛЬ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ПОГРАНИЧЬЕ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ГЛУБИНА;
+    private static final ModConfigSpec.IntValue СТРАХ_ГЛУБИНА_Y;
+    private static final ModConfigSpec.DoubleValue СТРАХ_НОЧЬ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ЗА_СТАДИЮ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ОДИНОЧЕСТВО;
+    private static final ModConfigSpec.DoubleValue СТРАХ_РАДИУС;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ЗА_ФАЗУ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_УСПОКОЕНИЕ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ПАДЕНИЕ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ПОРОГ_ШОРОХ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ПОРОГ_ВИДЕНИЕ;
+    private static final ModConfigSpec.DoubleValue СТРАХ_ПОРОГ_ЯВЛЕНИЕ;
+    private static final ModConfigSpec.IntValue СТРАХ_ДОЛИНА_ШОРОХ;
+    private static final ModConfigSpec.IntValue СТРАХ_ДОЛИНА_ВИДЕНИЕ;
+    private static final ModConfigSpec.IntValue СТРАХ_ДОЛИНА_ЯВЛЕНИЕ;
+    private static final ModConfigSpec.IntValue СТРАХ_ШОРОХОВ_В_ЧАС;
+    private static final ModConfigSpec.IntValue СТРАХ_ВИДЕНИЙ_В_ЧАС;
+    private static final ModConfigSpec.IntValue СТРАХ_ЯВЛЕНИЙ_ЗА_СЕССИЮ;
+
     // ── одержимость ───────────────────────────────────────────────────
     private static final ModConfigSpec.IntValue СТАДИЯ_ОДЕРЖИМОСТИ;
     private static final ModConfigSpec.IntValue ТИКОВ_ОДЕРЖИМОСТИ;
@@ -690,6 +715,108 @@ public final class PlagueConfig {
             .comment("С какого расстояния чума бьёт цель.")
             .defineInRange("seizeReach", окр(PlagueConstants.SEIZE_REACH), 1.0, 6.0);
 
+        СТРОИТЕЛЬ.pop().comment(
+            "Страх: как быстро копится напряжение и когда оно срабатывает.",
+            "Спек docs/superpowers/specs/2026-09-17-horror-rezhissyor-design.md",
+            "Долины тишины важнее порогов: без гарантированной паузы",
+            "после события шорохи превращаются в фон за один вечер."
+        ).push("dread");
+
+        СТРАХ_ВКЛ = СТРОИТЕЛЬ
+            .comment("Выключатель всей подсистемы страха.")
+            .define("enabled", PlagueConstants.DREAD_ENABLED);
+
+        СТРАХ_ТЕМНОТА = СТРОИТЕЛЬ
+            .comment("Прирост напряжения за секунду в темноте (свет меньше 4).")
+            .defineInRange("dark", окр(PlagueConstants.DREAD_DARK), 0.0, 20.0);
+
+        СТРАХ_СУМЕРКИ = СТРОИТЕЛЬ
+            .comment("Прирост за секунду в сумерках (свет 4-7).")
+            .defineInRange("dusk", окр(PlagueConstants.DREAD_DUSK), 0.0, 20.0);
+
+        СТРАХ_ГНИЛЬ = СТРОИТЕЛЬ
+            .comment("Прирост за секунду на Гнили (уровень чанка 3 и выше).")
+            .defineInRange("blight", окр(PlagueConstants.DREAD_BLIGHT), 0.0, 20.0);
+
+        СТРАХ_ПОГРАНИЧЬЕ = СТРОИТЕЛЬ
+            .comment("Прирост за секунду в Пограничье.")
+            .defineInRange("border", окр(PlagueConstants.DREAD_BORDER), 0.0, 20.0);
+
+        СТРАХ_ГЛУБИНА = СТРОИТЕЛЬ
+            .comment("Прирост за секунду под землёй.")
+            .defineInRange("depth", окр(PlagueConstants.DREAD_DEPTH), 0.0, 20.0);
+
+        СТРАХ_ГЛУБИНА_Y = СТРОИТЕЛЬ
+            .comment("Ниже какого Y место считается подземельем.")
+            .defineInRange("depthY", PlagueConstants.DREAD_DEPTH_Y, -64, 320);
+
+        СТРАХ_НОЧЬ = СТРОИТЕЛЬ
+            .comment("Прирост за секунду ночью.")
+            .defineInRange("night", окр(PlagueConstants.DREAD_NIGHT), 0.0, 20.0);
+
+        СТРАХ_ЗА_СТАДИЮ = СТРОИТЕЛЬ
+            .comment("Прирост за секунду за каждую стадию болезни.",
+                "Больному страшнее здорового — это симптом, а не отдельная механика.")
+            .defineInRange("perStage", окр(PlagueConstants.DREAD_PER_STAGE), 0.0, 20.0);
+
+        СТРАХ_ОДИНОЧЕСТВО = СТРОИТЕЛЬ
+            .comment("Множитель, когда рядом нет живого игрока.")
+            .defineInRange("alone", окр(PlagueConstants.DREAD_ALONE), 1.0, 10.0);
+
+        СТРАХ_РАДИУС = СТРОИТЕЛЬ
+            .comment("В каком радиусе ищется сосед.")
+            .defineInRange("aloneRadius", окр(PlagueConstants.DREAD_ALONE_RADIUS), 4.0, 256.0);
+
+        СТРАХ_ЗА_ФАЗУ = СТРОИТЕЛЬ
+            .comment("Насколько фаза эпидемии усиливает весь страх сразу.")
+            .defineInRange("perPhase", окр(PlagueConstants.DREAD_PER_PHASE), 0.0, 2.0);
+
+        СТРАХ_УСПОКОЕНИЕ = СТРОИТЕЛЬ
+            .comment("Множитель, когда рядом двое и светло. Компания обязана",
+                "гасить страх: иначе города и совместные вылазки ничего не стоят.")
+            .defineInRange("calm", окр(PlagueConstants.DREAD_CALM), 0.0, 1.0);
+
+        СТРАХ_ПАДЕНИЕ = СТРОИТЕЛЬ
+            .comment("Падение напряжения за секунду в безопасном месте.")
+            .defineInRange("fall", окр(PlagueConstants.DREAD_FALL), 0.0, 20.0);
+
+        СТРАХ_ПОРОГ_ШОРОХ = СТРОИТЕЛЬ
+            .comment("Порог шороха.")
+            .defineInRange("rustleAt", окр(PlagueConstants.DREAD_RUSTLE_AT), 1.0, 100.0);
+
+        СТРАХ_ПОРОГ_ВИДЕНИЕ = СТРОИТЕЛЬ
+            .comment("Порог видения.")
+            .defineInRange("visionAt", окр(PlagueConstants.DREAD_VISION_AT), 1.0, 100.0);
+
+        СТРАХ_ПОРОГ_ЯВЛЕНИЕ = СТРОИТЕЛЬ
+            .comment("Порог явления Наблюдателя.")
+            .defineInRange("watcherAt", окр(PlagueConstants.DREAD_WATCHER_AT), 1.0, 100.0);
+
+        СТРАХ_ДОЛИНА_ШОРОХ = СТРОИТЕЛЬ
+            .comment("Тишина после шороха, тиков. 3600 — три минуты.")
+            .defineInRange("valleyRustle", PlagueConstants.DREAD_VALLEY_RUSTLE, 0, 216000);
+
+        СТРАХ_ДОЛИНА_ВИДЕНИЕ = СТРОИТЕЛЬ
+            .comment("Тишина после видения, тиков. 6000 — пять минут.")
+            .defineInRange("valleyVision", PlagueConstants.DREAD_VALLEY_VISION, 0, 216000);
+
+        СТРАХ_ДОЛИНА_ЯВЛЕНИЕ = СТРОИТЕЛЬ
+            .comment("Тишина после явления, тиков. 18000 — пятнадцать минут.")
+            .defineInRange("valleyWatcher", PlagueConstants.DREAD_VALLEY_WATCHER, 0, 216000);
+
+        СТРАХ_ШОРОХОВ_В_ЧАС = СТРОИТЕЛЬ
+            .comment("Потолок шорохов в час на игрока.")
+            .defineInRange("rustlesPerHour", PlagueConstants.DREAD_RUSTLES_PER_HOUR, 0, 120);
+
+        СТРАХ_ВИДЕНИЙ_В_ЧАС = СТРОИТЕЛЬ
+            .comment("Потолок видений в час на игрока.")
+            .defineInRange("visionsPerHour", PlagueConstants.DREAD_VISIONS_PER_HOUR, 0, 60);
+
+        СТРАХ_ЯВЛЕНИЙ_ЗА_СЕССИЮ = СТРОИТЕЛЬ
+            .comment("Потолок явлений Наблюдателя за сессию, на весь сервер.",
+                "Первые два всегда кончаются растворением, настоящее — третье.")
+            .defineInRange("watchersPerSession", PlagueConstants.DREAD_WATCHERS_PER_SESSION, 0, 50);
+
         SPEC = СТРОИТЕЛЬ.pop().build();
     }
 
@@ -765,6 +892,30 @@ public final class PlagueConfig {
         PlagueConstants.HEART_PULSE_CLEAN_LEVEL = ЧИСТЫЙ_УРОВЕНЬ.get();
         PlagueConstants.HEART_SLEEP_NIGHTS = НОЧЕЙ_СНА.get();
         PlagueConstants.HEART_CLEANSE_MINUTES = МИНУТ_ОЧИСТКИ.get();
+
+        PlagueConstants.DREAD_ENABLED = СТРАХ_ВКЛ.get();
+        PlagueConstants.DREAD_DARK = СТРАХ_ТЕМНОТА.get().floatValue();
+        PlagueConstants.DREAD_DUSK = СТРАХ_СУМЕРКИ.get().floatValue();
+        PlagueConstants.DREAD_BLIGHT = СТРАХ_ГНИЛЬ.get().floatValue();
+        PlagueConstants.DREAD_BORDER = СТРАХ_ПОГРАНИЧЬЕ.get().floatValue();
+        PlagueConstants.DREAD_DEPTH = СТРАХ_ГЛУБИНА.get().floatValue();
+        PlagueConstants.DREAD_DEPTH_Y = СТРАХ_ГЛУБИНА_Y.get();
+        PlagueConstants.DREAD_NIGHT = СТРАХ_НОЧЬ.get().floatValue();
+        PlagueConstants.DREAD_PER_STAGE = СТРАХ_ЗА_СТАДИЮ.get().floatValue();
+        PlagueConstants.DREAD_ALONE = СТРАХ_ОДИНОЧЕСТВО.get().floatValue();
+        PlagueConstants.DREAD_ALONE_RADIUS = СТРАХ_РАДИУС.get().floatValue();
+        PlagueConstants.DREAD_PER_PHASE = СТРАХ_ЗА_ФАЗУ.get().floatValue();
+        PlagueConstants.DREAD_CALM = СТРАХ_УСПОКОЕНИЕ.get().floatValue();
+        PlagueConstants.DREAD_FALL = СТРАХ_ПАДЕНИЕ.get().floatValue();
+        PlagueConstants.DREAD_RUSTLE_AT = СТРАХ_ПОРОГ_ШОРОХ.get().floatValue();
+        PlagueConstants.DREAD_VISION_AT = СТРАХ_ПОРОГ_ВИДЕНИЕ.get().floatValue();
+        PlagueConstants.DREAD_WATCHER_AT = СТРАХ_ПОРОГ_ЯВЛЕНИЕ.get().floatValue();
+        PlagueConstants.DREAD_VALLEY_RUSTLE = СТРАХ_ДОЛИНА_ШОРОХ.get();
+        PlagueConstants.DREAD_VALLEY_VISION = СТРАХ_ДОЛИНА_ВИДЕНИЕ.get();
+        PlagueConstants.DREAD_VALLEY_WATCHER = СТРАХ_ДОЛИНА_ЯВЛЕНИЕ.get();
+        PlagueConstants.DREAD_RUSTLES_PER_HOUR = СТРАХ_ШОРОХОВ_В_ЧАС.get();
+        PlagueConstants.DREAD_VISIONS_PER_HOUR = СТРАХ_ВИДЕНИЙ_В_ЧАС.get();
+        PlagueConstants.DREAD_WATCHERS_PER_SESSION = СТРАХ_ЯВЛЕНИЙ_ЗА_СЕССИЮ.get();
 
         PlagueConstants.POSSESS_MIN_STAGE = СТАДИЯ_ОДЕРЖИМОСТИ.get();
         PlagueConstants.POSSESS_TICKS = ТИКОВ_ОДЕРЖИМОСТИ.get();

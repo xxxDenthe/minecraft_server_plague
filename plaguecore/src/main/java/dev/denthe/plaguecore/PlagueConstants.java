@@ -501,4 +501,89 @@ public final class PlagueConstants {
      */
     public static int BORDER_TIDE_MIN_DISTANCE = 24;
 
+    // ── страх ─────────────────────────────────────────────────────────
+    // Спек `2026-09-17-horror-rezhissyor-design.md`. Все числа — первые
+    // прикидки: балансировать придётся на живых людях, поэтому каждое
+    // из них правится в конфиге без пересборки.
+
+    /** Выключатель всей подсистемы — на случай, если на сессии окажется перебор. */
+    public static boolean DREAD_ENABLED = true;
+
+    /** Прирост напряжения за секунду в темноте (свет меньше 4). */
+    public static float DREAD_DARK = 0.8f;
+
+    /** Прирост за секунду в сумерках (свет 4–7). */
+    public static float DREAD_DUSK = 0.3f;
+
+    /** Прирост за секунду на Гнили (уровень чанка 3 и выше). */
+    public static float DREAD_BLIGHT = 0.6f;
+
+    /** Прирост за секунду в Пограничье. */
+    public static float DREAD_BORDER = 0.3f;
+
+    /** Прирост за секунду под землёй. */
+    public static float DREAD_DEPTH = 0.4f;
+
+    /** Ниже какого Y место считается подземельем. */
+    public static int DREAD_DEPTH_Y = 40;
+
+    /** Прирост за секунду ночью. */
+    public static float DREAD_NIGHT = 0.3f;
+
+    /** Прирост за секунду за каждую стадию болезни. */
+    public static float DREAD_PER_STAGE = 0.2f;
+
+    /** Множитель, когда рядом нет живого игрока. */
+    public static float DREAD_ALONE = 1.5f;
+
+    /** В каком радиусе ищется сосед. */
+    public static float DREAD_ALONE_RADIUS = 32f;
+
+    /** Насколько фаза эпидемии усиливает весь страх сразу. */
+    public static float DREAD_PER_PHASE = 0.15f;
+
+    /** Множитель, когда рядом двое и светло. */
+    public static float DREAD_CALM = 0.3f;
+
+    /** Падение напряжения за секунду в безопасном месте. */
+    public static float DREAD_FALL = 1.0f;
+
+    /** Порог шороха. */
+    public static float DREAD_RUSTLE_AT = 60f;
+
+    /** Порог видения. */
+    public static float DREAD_VISION_AT = 85f;
+
+    /** Порог явления Наблюдателя. */
+    public static float DREAD_WATCHER_AT = 95f;
+
+    /**
+     * Тишина после шороха, тиков. 3600 — три минуты.
+     * Долины важнее порогов: без них события становятся фоном.
+     */
+    public static int DREAD_VALLEY_RUSTLE = 3600;
+
+    /** Тишина после видения, тиков. 6000 — пять минут. */
+    public static int DREAD_VALLEY_VISION = 6000;
+
+    /** Тишина после явления, тиков. 18000 — пятнадцать минут. */
+    public static int DREAD_VALLEY_WATCHER = 18000;
+
+    /** Потолок шорохов в час на игрока. */
+    public static int DREAD_RUSTLES_PER_HOUR = 6;
+
+    /** Потолок видений в час на игрока. */
+    public static int DREAD_VISIONS_PER_HOUR = 2;
+
+    /** Потолок явлений Наблюдателя за сессию, на весь сервер. */
+    public static int DREAD_WATCHERS_PER_SESSION = 3;
+
+    /** Веса одним куском — директору не собирать их руками каждую секунду. */
+    public static dev.denthe.plaguecore.core.DreadMath.Веса весаСтраха() {
+        return new dev.denthe.plaguecore.core.DreadMath.Веса(
+            DREAD_DARK, DREAD_DUSK, DREAD_BLIGHT, DREAD_BORDER, DREAD_DEPTH,
+            DREAD_NIGHT, DREAD_PER_STAGE, DREAD_ALONE, DREAD_PER_PHASE,
+            DREAD_CALM, DREAD_FALL, DREAD_DEPTH_Y);
+    }
+
 }
