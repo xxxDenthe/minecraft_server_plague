@@ -44,8 +44,14 @@ export function isOwnMod(relative) {
  * Пустая половина архивом не становится: лаунчер вычистил бы под неё
  * папку и распаковал туда ничего.
  */
-export function splitArchives(dir, files) {
-  if (dir !== 'mods') return [{ name: dir, dir, files }];
+// ponytail: деление выключено. Лаунчеры, стоящие у игроков (до 0.2.4
+// включительно), считают два архива на одну папку ошибкой манифеста —
+// «дубликат папки mods» — и пак не запускается вовсе. Вернуть `true`,
+// когда у всех будет сборка с проверкой по имени архива (коммит 6b20c9d).
+export const SPLIT_MODS = false;
+
+export function splitArchives(dir, files, split = SPLIT_MODS) {
+  if (!split || dir !== 'mods') return [{ name: dir, dir, files }];
 
   const own = files.filter((f) => isOwnMod(f.path));
   const rest = files.filter((f) => !isOwnMod(f.path));

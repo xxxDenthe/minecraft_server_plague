@@ -114,7 +114,7 @@ describe('разделение модов на свои и чужие', () => {
 
   it('mods распадается на два архива, остальные папки не трогаются', () => {
     const файлы = [f('mods/create.jar'), f('mods/plaguecore-0.6.0.jar'), f('mods/jei.jar')];
-    const части = splitArchives('mods', файлы);
+    const части = splitArchives('mods', файлы, true);
 
     expect(части.map((ч) => ч.name).sort()).toEqual(['mods-core', 'mods-lmpc']);
     expect(части.every((ч) => ч.dir === 'mods')).toBe(true);
@@ -122,6 +122,16 @@ describe('разделение модов на свои и чужие', () => {
     const наши = части.find((ч) => ч.name === 'mods-lmpc');
     expect(наши.files.map((x) => x.path)).toEqual(['mods/plaguecore-0.6.0.jar']);
     expect(части.find((ч) => ч.name === 'mods-core').files).toHaveLength(2);
+  });
+
+  // Пока у игроков стоят лаунчеры до 0.2.4, два архива на папку `mods`
+  // они читают как испорченный манифест, поэтому деление выключено.
+  it('при выключенном делении mods едет одним архивом', () => {
+    const части = splitArchives('mods', [f('mods/create.jar'), f('mods/plaguecore-0.6.0.jar')]);
+
+    expect(части).toHaveLength(1);
+    expect(части[0].name).toBe('mods');
+    expect(части[0].dir).toBe('mods');
   });
 
   it('другая папка остаётся одним архивом со своим именем', () => {
@@ -135,7 +145,7 @@ describe('разделение модов на свои и чужие', () => {
   // Пустой архив в релизе — мусор: лаунчер вычистит папку и положит
   // в неё ничего. Такой группы быть не должно вовсе.
   it('пустая половина не превращается в архив', () => {
-    const части = splitArchives('mods', [f('mods/create.jar')]);
+    const части = splitArchives('mods', [f('mods/create.jar')], true);
 
     expect(части).toHaveLength(1);
     expect(части[0].name).toBe('mods-core');
