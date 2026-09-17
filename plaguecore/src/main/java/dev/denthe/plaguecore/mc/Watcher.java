@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -15,6 +16,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
+
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.UUID;
 
@@ -35,7 +43,7 @@ import java.util.UUID;
  * последнее из отпущенных: к тому времени игроки уже решили, что он
  * безвреден, и именно поэтому ошибутся.
  */
-public class Watcher extends MutatedZombie {
+public class Watcher extends MutatedZombie implements GeoEntity {
 
     private static final String KEY_REAL = "Real";
     private static final String KEY_TARGET = "Watched";
@@ -65,6 +73,14 @@ public class Watcher extends MutatedZombie {
     private UUID цель;
 
     private boolean бросился;
+
+    /** Стоит и смотрит: тело мёртво неподвижно, раз в несколько секунд — сбой кадра. */
+    private static final RawAnimation ПОКОЙ = RawAnimation.begin().thenLoop("idle");
+
+    /** Маска снята: рваный бег с волочащейся ногой. */
+    private static final RawAnimation БЕГ = RawAnimation.begin().thenLoop("run");
+
+    private final AnimatableInstanceCache кэш = GeckoLibUtil.createInstanceCache(this);
 
     public Watcher(EntityType<? extends Watcher> тип, Level уровень) {
         super(тип, уровень);
@@ -133,9 +149,15 @@ public class Watcher extends MutatedZombie {
     public void aiStep() {
         super.aiStep();
         if (level().isClientSide || бросился) return;
-        if (tickCount % ПЕРИОД != 0) return;
 
         Player игрок = цель == null ? null : level().getPlayerByUUID(цель);
+
+        // Голова ворочается каждый тик, а не раз в ПЕРИОД: раз в полсекунды
+        // она бы дёргалась рывками, а рывок читается как глюк моба.
+        if (игрок != null) следитьГоловой(игрок);
+
+        if (tickCount % ПЕРИОД != 0) return;
+
         if (игрок == null || игрок.isSpectator()) {
             discard();
             return;
@@ -153,9 +175,10 @@ public class Watcher extends MutatedZombie {
             на.x, на.y, на.z, КОНУС) && игрок.hasLineOfSight(this);
 
         switch (WatcherMath.решение(смотрят, дистанция, настоящий, РАСТВОРЕНИЕ)) {
-            // Стоять — буквально стоять: ни шага, ни поворота головы.
-            // Неподвижность и делает его страшным, а дрожащий моб
-            // читается как обычный зомби в углу.
+            // Стоять — буквально стоять: ни шага, ни движения телом.
+            // Живёт одна голова, и это хуже полной неподвижности:
+            // неподвижная фигура сойдёт за декорацию, а декорация,
+            // повернувшая голову, — уже нет.
             case СТОЯТЬ -> setDeltaMovement(Vec3.ZERO);
             case ПОДОЙТИ -> подойти(игрок, дистанция);
             case РАСТВОРИТЬСЯ -> discard();
@@ -185,6 +208,37 @@ public class Watcher extends MutatedZombie {
             игрок.position());
     }
 
+    /**
+     * Повернуть на игрока только голову.
+     *
+     * {@code lookAt} здесь не годится: он разворачивает и корпус, а фигура,
+     * которая всё время стоит к тебе анфас, читается как моб, который
+     * тебя агрит. Нужно другое: тело стоит, как встало, а голова его
+     * догоняет. Поэтому пишем прямо в {@code yHeadRot}, мимо {@code yBodyRot}.
+     */
+    private void следитьГоловой(Player игрок) {
+        Vec3 на = игрок.getEyePosition().subtract(getEyePosition());
+        yHeadRot = (float) (Mth.atan2(на.z, на.x) * (180.0 / Math.PI)) - 90.0F;
+        setXRot((float) (-(Mth.atan2(на.y, на.horizontalDistance()) * (180.0 / Math.PI))));
+    }
+
+    /**
+     * Ванильный моб доворачивает корпус, когда голова отвернута больше
+     * чем на 75° десяток тиков подряд. Наблюдателю этого нельзя:
+     * весь смысл в том, что он смотрит через плечо и не шевелится.
+     * После броска ограничение возвращается — иначе он будет гнаться
+     * боком, а это уже не страшно, а сломано.
+     */
+    @Override
+    public int getMaxHeadYRot() {
+        return бросился ? super.getMaxHeadYRot() : 180;
+    }
+
+    /** Маска снята. Читает клиентская модель: до броска он не анимирован. */
+    public boolean бросился() {
+        return бросился;
+    }
+
     /** Третий раз. Тишина кончилась. */
     private void броситься(Player игрок) {
         бросился = true;
@@ -208,6 +262,30 @@ public class Watcher extends MutatedZombie {
         super.readAdditionalSaveData(тег);
         настоящий = тег.getBoolean(KEY_REAL);
         цель = тег.hasUUID(KEY_TARGET) ? тег.getUUID(KEY_TARGET) : null;
+    }
+
+    // ── GeckoLib ──────────────────────────────────────────────────────
+
+    /**
+     * Два состояния, и переключает их не флаг {@code бросился}: он живёт
+     * только на сервере, а контроллер крутится на клиенте. Зато по сети
+     * ходит флаг «без ИИ», который до броска стоит, а в {@link #броситься}
+     * снимается, — по нему и различаем.
+     *
+     * Переход в три тика: idle и бег должны схлопываться друг в друга,
+     * а не переключаться кадром, иначе первый шаг выглядит как телепорт.
+     */
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar реестр) {
+        реестр.add(new AnimationController<>(this, "поза", 3, состояние ->
+            состояние.isMoving() && !isNoAi()
+                ? состояние.setAndContinue(БЕГ)
+                : состояние.setAndContinue(ПОКОЙ)));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return кэш;
     }
 
     /** Настоящий оставляет записку: единственный след, что он был. */
