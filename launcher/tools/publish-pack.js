@@ -190,7 +190,11 @@ async function uploadViaCurl({ url, token, file }) {
   const { stdout } = await execFileAsync('curl', [
     '--fail-with-body', '--silent', '--show-error',
     '--retry', '5', '--retry-delay', '10', '--retry-all-errors',
-    '--connect-timeout', '30', '--max-time', '3600',
+    // Час на попытку мало: 369 МБ на домашнем канале уходят
+    // полчаса, а после обрыва повтор начинается с нуля. Лимит
+    // должен покрывать несколько попыток подряд, иначе он рубит
+    // не зависшую заливку, а просто медленную.
+    '--connect-timeout', '30', '--max-time', '14400',
     '-X', 'POST',
     '-H', `Authorization: Bearer ${token}`,
     '-H', 'Accept: application/vnd.github+json',
