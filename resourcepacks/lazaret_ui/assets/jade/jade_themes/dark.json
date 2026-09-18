@@ -1,13 +1,32 @@
 {
   "version": 100,
   "tooltipStyle": {
-    "backgroundColor": "#1D1B16",
-    "borderColor": [
-      "#6C5931",
-      "#6C5931",
-      "#3D311B",
-      "#3D311B"
+    "sprite": "lazaret:jade/tooltip",
+    "padding": [
+      4,
+      4,
+      4,
+      4
     ]
   },
-  "changeRoundCorner": true
+  "iconSlotSprite": "lazaret:jade/icon_slot",
+  "iconSlotInflation": 1,
+  "text": {
+    "colors": {
+      "normal": "#8A8576",
+      "info": "#846E3E",
+      "title": "#CEC9B8",
+      "success": "#849496",
+      "warning": "#927644",
+      "danger": "#9E3A30",
+      "failure": "#7E2C24"
+    },
+    "shadow": false,
+    "modNameStyle": {
+      "color": "#544425",
+      "italic": true
+    },
+    "itemAmountColor": "#CEC9B8"
+  },
+  "changeOpacity": 1.0
 }
