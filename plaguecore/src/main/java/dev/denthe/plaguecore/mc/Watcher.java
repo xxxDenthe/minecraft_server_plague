@@ -354,13 +354,4 @@ public class Watcher extends MutatedZombie implements GeoEntity {
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return кэш;
     }
-
-    /** Настоящий оставляет записку: единственный след, что он был. */
-    @Override
-    protected void dropCustomDeathLoot(ServerLevel уровень,
-                                       net.minecraft.world.damagesource.DamageSource источник,
-                                       boolean отИгрока) {
-        super.dropCustomDeathLoot(уровень, источник, отИгрока);
-        if (настоящий) spawnAtLocation(PlagueBlocks.ARCHIVE_RECORD.get());
-    }
 }

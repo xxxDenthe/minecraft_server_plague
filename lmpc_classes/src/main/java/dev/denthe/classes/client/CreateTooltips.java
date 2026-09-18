@@ -6,7 +6,10 @@ import dev.denthe.classes.ClassBlocks;
 import dev.denthe.classes.ClassItems;
 import dev.denthe.classes.LmpcClasses;
 import net.createmod.catnip.lang.FontHelper;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -19,7 +22,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
  *
  * <b>Своего кода здесь нет намеренно.</b> Всё рисует сам Create:
  * {@link ItemDescription.Modifier} читает языковой файл по ключам
- * {@code item.lmpc_classes.<предмет>.tooltip.summary},
+ * {@code item.<мод>.<предмет>.tooltip.summary},
  * {@code .condition1}/{@code .behaviour1} и так далее, режет строки
  * по ширине и красит их палитрой {@code STANDARD_CREATE} — тем же
  * оранжевым с жёлтой подсветкой, что у самого Create и его дополнений.
@@ -52,11 +55,28 @@ public final class CreateTooltips {
             // он начинается с block., а не с item.
             подключить(ClassBlocks.ANDESITE_PURIFIER_ITEM);
             подключить(ClassBlocks.BRASS_PURIFIER_ITEM);
+
+            // Отвар и повязка принадлежат plaguecore, но подсказку им
+            // рисует тот же Create, а реестр модификаторов общий на всю
+            // игру. Компилироваться против plaguecore ради двух
+            // предметов ни к чему: берём их из реестра по имени, а
+            // тексты лежат в его же языковом файле.
+            подключить(ResourceLocation.fromNamespaceAndPath("plaguecore", "plague_brew"));
+            подключить(ResourceLocation.fromNamespaceAndPath("plaguecore", "plague_mask"));
         });
     }
 
     private static void подключить(DeferredItem<? extends Item> держатель) {
-        Item предмет = держатель.get();
+        зарегистрировать(держатель.get());
+    }
+
+    /** Без мода-хозяина реестр вернёт воздух — тогда просто молчим. */
+    private static void подключить(ResourceLocation имя) {
+        Item предмет = BuiltInRegistries.ITEM.get(имя);
+        if (предмет != Items.AIR) зарегистрировать(предмет);
+    }
+
+    private static void зарегистрировать(Item предмет) {
         TooltipModifier.REGISTRY.register(предмет,
             new ItemDescription.Modifier(предмет, FontHelper.Palette.STANDARD_CREATE));
     }
