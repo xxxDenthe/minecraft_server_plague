@@ -68,6 +68,8 @@
   "item.lmpc_classes.clerics_brew.tooltip.behaviour2": "A Cleric _feeds_ an ally by holding right-click. Not from afar — you have to stand next to them.",
   "item.lmpc_classes.clerics_brew.tooltip.condition3": "After a dose",
   "item.lmpc_classes.clerics_brew.tooltip.behaviour3": "One person can be helped once every _few minutes_. Before that a Cleric will not spend the bottle.",
+  "item.lmpc_classes.clerics_brew.tooltip.condition4": "Brewing stand",
+  "item.lmpc_classes.clerics_brew.tooltip.behaviour4": "Plague Brew below, _Plague Bloom_ above. One bloom is enough for exactly _two_ doses; a third bottle stays unfinished.",
 
   "item.lmpc_classes.class_codex.tooltip.summary": "A crew's work journal: what you do, what you answer for, what you still have to learn. This one fills itself in — it holds _your calling_.",
   "item.lmpc_classes.class_codex.tooltip.condition1": "Right-click any time",

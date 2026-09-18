@@ -68,6 +68,8 @@
   "item.lmpc_classes.clerics_brew.tooltip.behaviour2": "Клирик _поит_ союзника, удерживая ПКМ. Издалека не выйдет — надо стоять вплотную.",
   "item.lmpc_classes.clerics_brew.tooltip.condition3": "После глотка",
   "item.lmpc_classes.clerics_brew.tooltip.behaviour3": "Одному человеку отвар помогает не чаще раза в _несколько минут_. Раньше срока Клирик бутылку не потратит.",
+  "item.lmpc_classes.clerics_brew.tooltip.condition4": "Варочная стойка",
+  "item.lmpc_classes.clerics_brew.tooltip.behaviour4": "Внизу — Отвар от чумы, сверху — _Чумоцвет_. Одного цветка хватает ровно на _две_ порции, третья бутылка останется недоваренной.",
 
   "item.lmpc_classes.class_codex.tooltip.summary": "Рабочая тетрадь артели: чем занят, за что отвечаешь, чему ещё учиться. Эта заполняется сама — в ней записано _ваше призвание_.",
   "item.lmpc_classes.class_codex.tooltip.condition1": "ПКМ в любой момент",
