@@ -34,6 +34,8 @@ from PIL import Image
 ВАНИЛЬ = pathlib.Path.home() / "AppData/Roaming/LMPC/versions/1.21.1/1.21.1.jar"
 ПАК = КОРЕНЬ / "resourcepacks/lazaret_ui"
 ПРОФИЛЬ = pathlib.Path.home() / "AppData/Roaming/ModrinthApp/profiles/LMPCCHUMA/resourcepacks"
+МОДЫ = ПРОФИЛЬ.parent / "mods"
+ДЖЕЙД_КОНФИГ = ПРОФИЛЬ.parent / "config/jade/jade.json"
 
 # ── палитра лазарета: импортом, а не копией ─────────────────────────
 _спек = importlib.util.spec_from_file_location(
@@ -232,7 +234,7 @@ def скобы_кнопки(им):
     return им
 
 
-def заклепать(им):
+def заклепать(им, отступ=1):
     """Латунная заклёпка в каждом углу — узор мелких кнопок.
 
     Целую скобу в двадцать пикселей не втиснуть, а точка с тенью читается
@@ -243,8 +245,9 @@ def заклепать(им):
     if ш < 12 or в < 12:
         return им
     px = им.load()
-    for x, y, дx, дy in ((1, 1, 1, 1), (ш - 2, 1, -1, 1),
-                         (1, в - 2, 1, -1), (ш - 2, в - 2, -1, -1)):
+    о = отступ
+    for x, y, дx, дy in ((о, о, 1, 1), (ш - 1 - о, о, -1, 1),
+                         (о, в - 1 - о, 1, -1), (ш - 1 - о, в - 1 - о, -1, -1)):
         if px[x, y][3] < 128:
             continue
         px[x, y] = ЛАТУНЬ[0] + (px[x, y][3],)
@@ -416,6 +419,196 @@ def рамка_подсказок():
     return им
 
 
+# ── JEI ─────────────────────────────────────────────────────────────
+#
+# Повезло: JEI собран из тех же серых, что и ванильные окна — поле 198,
+# фаска 255, дно слота 138, обводка 0. Значит работают те же пороги,
+# а не выдуманные специально под мод.
+#
+# Крупные подложки нарезаны девятислойно с полем в шестнадцать пикселей.
+# Это больше, чем нужно скобе, поэтому оковка переносится на них почти
+# без изменений: углы лежат в несжимаемых квадратах, а стежок с шагом
+# в четыре пикселя ровно укладывается в повторяющуюся полосу в тридцать
+# два пикселя — шов не разъезжается, как бы широко панель ни встала.
+
+JEI_ФОН = ["gui_background_v2", "single_recipe_background_v2",
+           "recipe_preview_background_v2", "bookmark_list_background_v2",
+           "ingredient_list_background_v2",
+           "interactive_ingredient_tooltip_background"]
+JEI_СЛОТ = ["slot", "output_slot", "ingredient_list_slot_background_v2",
+            "bookmark_list_slot_background_v2",
+            "recipe_catalyst_slot_background_v2"]
+JEI_ОПРАВА = ["button_enabled_v2", "button_disabled_v2", "button_highlight_v2",
+              "button_pressed_v2", "button_pressed_highlight_v2",
+              "search_background_v2", "catalyst_tab_v2", "recipe_options_tab_v2",
+              "tab_selected", "tab_unselected", "scrollbar_background_v2",
+              "scrollbar_marker_v2"]
+# Стрелки и плюс нарисованы светлым по прозрачному, значки из icons/ —
+# наоборот, тёмным. Одной гаммой их не взять: тёмный глиф на кожаной
+# кнопке пропал бы вовсе, поэтому ему латунь раздаётся навыворот.
+JEI_СВЕТЛЫЕ = ["recipe_arrow", "recipe_arrow_filled", "recipe_plus_sign",
+               "icons/shapeless_icon_v2"]
+JEI_ПРИБОРЫ = ("flame", "brewing_stand", "exclusion_area_shadow", "debug")
+ЛАТУНЬ_НАВЫВОРОТ = ЛАТУНЬ[::-1]
+
+
+def оковать_плитку(им, отступ=4, скоба=7):
+    """Оковка для девятислойной подложки: шов с шагом 4 и скобы в углах.
+
+    От `оковать` отличается тем, что рисует по краю самой картинки, а не
+    по непрозрачной области, и шагом, который переживает размножение
+    средней полосы. Размер проверять не надо: сюда попадают только те
+    подложки, у которых поле нарезки заведомо шире скобы.
+    """
+    ш, в = им.size
+    px = им.load()
+
+    def кисть(x, y, цвет):
+        if px[x, y][3]:
+            px[x, y] = цвет + (px[x, y][3],)
+
+    for x in range(отступ, ш - отступ, 4):
+        кисть(x, отступ, _лз.ШОВ)
+        кисть(x, в - 1 - отступ, _лз.ШОВ)
+    for y in range(отступ, в - отступ, 4):
+        кисть(отступ, y, _лз.ШОВ)
+        кисть(ш - 1 - отступ, y, _лз.ШОВ)
+    for ух, уy, дx, дy in ((отступ, отступ, 1, 1),
+                           (ш - 1 - отступ, отступ, -1, 1),
+                           (отступ, в - 1 - отступ, 1, -1),
+                           (ш - 1 - отступ, в - 1 - отступ, -1, -1)):
+        for i in range(скоба):
+            кисть(ух + дx * i, уy, ЛАТУНЬ[1])
+            кисть(ух, уy + дy * i, ЛАТУНЬ[1])
+        кисть(ух + дx, уy + дy, ЛАТУНЬ[0])
+        кисть(ух + дx * 2, уy + дy * 2, ЛАТУНЬ[3])
+    return им
+
+
+def одеть_jei(показать):
+    """Все текстуры JEI из его же джарника — в кожу и латунь."""
+    джар = sorted(МОДЫ.glob("jei-*.jar"))
+    if not джар:
+        print("  JEI не найден в профиле — пропускаю")
+        return
+    корень = "assets/jei/textures/jei/atlas/gui/"
+    with zipfile.ZipFile(джар[-1]) as z:
+        имена = [n[len(корень):-4] for n in z.namelist()
+                 if n.startswith(корень) and n.endswith(".png")]
+        одето = 0
+        for имя in имена:
+            if any(п in имя for п in JEI_ПРИБОРЫ):
+                continue       # огонь, варка и тень зоны — показания, не оправа
+            им = Image.open(io.BytesIO(z.read(корень + имя + ".png")))
+            сид = zlib.crc32(имя.encode())
+            if имя in JEI_ФОН:
+                им = перекрасить(им, сид)
+                оковать_плитку(им)
+            elif имя in JEI_СЛОТ:
+                им = перекрасить(им, сид, границы=(200, 160, 60, 20))
+            elif имя in JEI_ОПРАВА:
+                # Тело кнопки JEI темнее её фаски всего вдвое, и общими
+                # порогами оно уезжает в дно слота. Свои пороги держат
+                # фаску светлой, а тело — кожаным.
+                им = перекрасить(им, сид, границы=(160, 90, 40, 10))
+                заклепать(им, отступ=2)
+            elif имя in JEI_СВЕТЛЫЕ:
+                им = перекрасить_значок(им, ЛАТУНЬ)
+            elif имя.startswith("icons/"):
+                им = перекрасить_значок(им, ЛАТУНЬ_НАВЫВОРОТ)
+            else:
+                им = перекрасить(им, сид)
+            цель = ПАК / "assets/jei/textures/jei/atlas/gui" / (имя + ".png")
+            цель.parent.mkdir(parents=True, exist_ok=True)
+            им.save(цель)
+            одето += 1
+        print("  %d текстур" % одето)
+    for имя in ("gui_background_v2", "button_enabled_v2", "tab_selected",
+                "slot", "icons/config_button", "recipe_arrow"):
+        им = Image.open(ПАК / "assets/jei/textures/jei/atlas/gui" / (имя + ".png"))
+        им = им.convert("RGBA")
+        показать.append(им.resize((им.width * 2, им.height * 2), Image.NEAREST))
+
+
+# ── Jade ────────────────────────────────────────────────────────────
+#
+# У Jade тема — не текстура, а JSON: рамку и фон мод рисует сам, цветом
+# из файла. Пак кладёт тему в свой ассет, её имя складывается из
+# пространства имён и имени файла, и это имя надо вписать в
+# config/jade/jade.json, в overlay.activeTheme. Сама тема не включится.
+
+ТЕМА_JADE = "lazaret:lazaret"
+
+
+def _шестнадцать(цвет):
+    return "#%02X%02X%02X" % цвет
+
+
+def макет_jade(тема):
+    """Как Jade нарисует подсказку по этой теме — от руки, для листа.
+
+    Настоящую выдать неоткуда: мод рисует её сам и только в игре. Здесь
+    повторено ровно то, что он делает по теме, — заливка фоном с
+    прозрачностью из его конфига и рамка в один пиксель по углам
+    градиента. Судить по этому квадрату можно только о цвете.
+    """
+    ш, в = 140, 30
+    фон = тема["tooltipStyle"]["backgroundColor"]
+    рамка = [tuple(int(ц[i:i + 2], 16) for i in (1, 3, 5))
+             for ц in тема["tooltipStyle"]["borderColor"]]
+    мир = Image.new("RGBA", (ш, в), (74, 82, 64, 255))
+    слой = Image.new("RGBA", (ш, в),
+                     tuple(int(фон[i:i + 2], 16) for i in (1, 3, 5)) + (179,))
+    px = слой.load()
+    for x in range(ш):
+        д = x / (ш - 1)
+        for y, верх, низ in ((0, рамка[0], рамка[1]), (в - 1, рамка[2], рамка[3])):
+            px[x, y] = tuple(int(верх[i] + (низ[i] - верх[i]) * д) for i in range(3)) + (255,)
+    for y in range(в):
+        д = y / (в - 1)
+        for x, верх, низ in ((0, рамка[0], рамка[2]), (ш - 1, рамка[1], рамка[3])):
+            px[x, y] = tuple(int(верх[i] + (низ[i] - верх[i]) * д) for i in range(3)) + (255,)
+    for x, y in ((0, 0), (ш - 1, 0), (0, в - 1), (ш - 1, в - 1)):
+        px[x, y] = (0, 0, 0, 0)          # скруглённый угол
+    мир.alpha_composite(слой)
+    return мир
+
+
+def одеть_jade(показать=None):
+    тема = {
+        "version": 100,
+        "tooltipStyle": {
+            "backgroundColor": _шестнадцать(КОЖА[3]),
+            # Четыре угла градиента: сверху латунь светлее, снизу темнее —
+            # так же, как у встроенных тем мода.
+            "borderColor": [_шестнадцать(ЛАТУНЬ[1]), _шестнадцать(ЛАТУНЬ[1]),
+                            _шестнадцать(ЛАТУНЬ[3]), _шестнадцать(ЛАТУНЬ[3])],
+        },
+        "changeRoundCorner": True,
+    }
+    if показать is not None:
+        показать.append(макет_jade(тема))
+    прост, имя = ТЕМА_JADE.split(":")
+    цель = ПАК / ("assets/%s/jade_themes/%s.json" % (прост, имя))
+    цель.parent.mkdir(parents=True, exist_ok=True)
+    цель.write_text(json.dumps(тема, ensure_ascii=False, indent=2), encoding="utf-8")
+    print("  тема " + ТЕМА_JADE)
+
+    if not ДЖЕЙД_КОНФИГ.exists():
+        print("  конфиг Jade не найден — включать тему некому")
+        return
+    конф = json.loads(ДЖЕЙД_КОНФИГ.read_text(encoding="utf-8"))
+    было = конф.get("overlay", {}).get("activeTheme")
+    if было != ТЕМА_JADE:
+        запас = ДЖЕЙД_КОНФИГ.with_suffix(".json.bak-ui")
+        if not запас.exists():
+            запас.write_text(ДЖЕЙД_КОНФИГ.read_text(encoding="utf-8"),
+                             encoding="utf-8")
+        конф.setdefault("overlay", {})["activeTheme"] = ТЕМА_JADE
+        ДЖЕЙД_КОНФИГ.write_text(json.dumps(конф, indent=2), encoding="utf-8")
+        print("  включена в конфиге профиля, была " + str(было))
+
+
 # ── контрольный лист ────────────────────────────────────────────────
 
 def превью(куски):
@@ -552,6 +745,11 @@ def main():
                          "hud/armor_full.png", "hud/air.png"):
                 показать.append(им.resize((им.width * 4, им.height * 4), Image.NEAREST))
         print(f"  {len([1 for п in имена])} шт. просмотрено, перекрашены сердца, еда, броня, воздух")
+
+    print("JEI:")
+    одеть_jei(показать)
+    print("Jade:")
+    одеть_jade(показать)
 
     рамка = рамка_подсказок()
     цель = ПАК / "assets/legendarytooltips/textures/gui/tooltip_borders.png"
